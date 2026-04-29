@@ -40,3 +40,50 @@ export async function listPets() {
     orderBy: { createdAt: 'asc' },
   });
 }
+
+// PRD §11.1, §14, §14.2 — 펫 헬스(알레르기·만성질환) 분리 명시 동의
+const SENSITIVE_INPUT_SCHEMA = z.object({
+  petId: z.string().uuid(),
+  allergies: z.array(z.string().max(40)).max(20),
+  conditions: z.array(z.string().max(40)).max(20),
+  consentVer: z.string(), // 동의 시점의 약관 버전 (예: 'pet-health-v1.0.0')
+});
+
+export type SensitiveInput = z.infer<typeof SENSITIVE_INPUT_SCHEMA>;
+
+export async function consentPetSensitive(input: SensitiveInput) {
+  const session = await auth();
+  if (!session?.user?.id) return { ok: false as const, error: 'Unauthorized' };
+
+  const parsed = SENSITIVE_INPUT_SCHEMA.safeParse(input);
+  if (!parsed.success) return { ok: false as const, error: parsed.error.message };
+
+  // 본인 소유 펫 검증 (RLS 우회 방지)
+  const pet = await prisma.pet.findUnique({
+    where: { id: parsed.data.petId },
+    select: { userId: true },
+  });
+  if (!pet || pet.userId !== session.user.id) {
+    return { ok: false as const, error: 'Forbidden' };
+  }
+
+  await prisma.petSensitive.upsert({
+    where: { petId: parsed.data.petId },
+    create: {
+      petId: parsed.data.petId,
+      allergies: parsed.data.allergies,
+      conditions: parsed.data.conditions,
+      consentedAt: new Date(),
+      consentVer: parsed.data.consentVer,
+    },
+    update: {
+      allergies: parsed.data.allergies,
+      conditions: parsed.data.conditions,
+      consentedAt: new Date(),
+      consentVer: parsed.data.consentVer,
+    },
+  });
+
+  revalidatePath('/me');
+  return { ok: true as const };
+}

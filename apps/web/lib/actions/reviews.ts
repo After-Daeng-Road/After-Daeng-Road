@@ -6,6 +6,8 @@ import { z } from 'zod';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
+import { enforceRateLimit, RateLimitError } from '@/lib/rate-limit';
+import { sanitizeText } from '@/lib/sanitize';
 
 const ReviewInputSchema = z.object({
   poiId: z.string().uuid(),
@@ -23,6 +25,13 @@ export async function createReview(input: ReviewInput) {
   const session = await auth();
   if (!session?.user?.id) return { ok: false as const, error: 'Unauthorized' };
 
+  try {
+    await enforceRateLimit({ userId: session.user.id, action: 'review', daily: true });
+  } catch (e) {
+    if (e instanceof RateLimitError) return { ok: false as const, error: e.message };
+    throw e;
+  }
+
   const parsed = ReviewInputSchema.safeParse(input);
   if (!parsed.success) return { ok: false as const, error: parsed.error.message };
 
@@ -30,8 +39,18 @@ export async function createReview(input: ReviewInput) {
     return { ok: false as const, error: '부적절한 내용이 포함되어 있어요' };
   }
 
+  // PRD §14.1 OWASP XSS — 사용자 입력 sanitize
+  const sanitizedBody = parsed.data.body ? sanitizeText(parsed.data.body) : null;
+
   const review = await prisma.review.create({
-    data: { ...parsed.data, userId: session.user.id, status: 'PUBLIC' },
+    data: {
+      poiId: parsed.data.poiId,
+      rating: parsed.data.rating,
+      body: sanitizedBody,
+      photos: parsed.data.photos,
+      userId: session.user.id,
+      status: 'PUBLIC',
+    },
   });
 
   revalidatePath(`/poi/${parsed.data.poiId}`);

@@ -1,0 +1,11 @@
+# 댕로드 보안 취약점 신고 — RFC 9116
+Contact: mailto:security@daengroad.app
+Expires: 2027-04-29T23:59:59+09:00
+Preferred-Languages: ko, en
+Canonical: https://daengroad.app/.well-known/security.txt
+Policy: https://daengroad.app/legal/privacy
+
+# 보안 연구자분들께
+# 1. 책임 있는 공개(responsible disclosure)를 부탁드립니다.
+# 2. 사용자 데이터 접근/수정 없이 PoC 만 작성해주세요.
+# 3. 90일 내 응답이 없으면 공개해도 무방합니다.

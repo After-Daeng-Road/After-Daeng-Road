@@ -7,6 +7,7 @@ import { z } from 'zod';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
+import { enforceRateLimit, RateLimitError } from '@/lib/rate-limit';
 
 const CheckInSchema = z.object({
   poiId: z.string().uuid(),
@@ -27,19 +28,36 @@ export async function checkIn(input: CheckInInput) {
   const session = await auth();
   if (!session?.user?.id) return { ok: false as const, error: 'Unauthorized' };
 
+  // PRD §14, §20: Rate Limit + 어뷰징 검증 배지 조작 방어
+  try {
+    await enforceRateLimit({ userId: session.user.id, action: 'checkIn', daily: true });
+  } catch (e) {
+    if (e instanceof RateLimitError) return { ok: false as const, error: e.message };
+    throw e;
+  }
+
   const parsed = CheckInSchema.safeParse(input);
   if (!parsed.success) return { ok: false as const, error: parsed.error.message };
 
-  // EXIF 좌표가 POI 근처(반경 1km 이내)인지 검증 (간이)
-  let isValid = true;
-  if (parsed.data.exif?.lat && parsed.data.exif?.lng) {
+  // PRD §6.3, §20: EXIF 검증 강화 — 어뷰징 검증 배지 조작 방어
+  // 1) GPS 좌표 → POI 1km 이내 검증
+  // 2) 촬영 시각 → 최근 7일 이내 (오래된 사진 재사용 방지)
+  // 3) GPS 없는 사진 → isValid=false (유저는 등록 가능하나 검증 카운트 X)
+  // 4) 사진 미첨부 → isValid=false
+  let isValid = false;
+  const exif = parsed.data.exif;
+  if (parsed.data.photoUrl && exif?.lat != null && exif?.lng != null) {
     const poi = await prisma.poi.findUnique({
       where: { id: parsed.data.poiId },
       select: { lat: true, lng: true },
     });
     if (poi) {
-      const distKm = haversine(poi.lat, poi.lng, parsed.data.exif.lat, parsed.data.exif.lng);
-      isValid = distKm <= 1.0;
+      const distKm = haversine(poi.lat, poi.lng, exif.lat, exif.lng);
+      const distOk = distKm <= 1.0;
+      const timeOk = exif.takenAt
+        ? Date.now() - new Date(exif.takenAt).getTime() <= 7 * 24 * 3600 * 1000
+        : false;
+      isValid = distOk && timeOk;
     }
   }
 

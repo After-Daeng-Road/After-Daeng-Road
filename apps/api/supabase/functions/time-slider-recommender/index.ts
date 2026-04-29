@@ -76,18 +76,38 @@ const AVG_SPEED_KMH = 50; // 1차 휴리스틱 (PRD §12.2)
 const TOP_N = 3;
 const MAX_CANDIDATES = 30;
 
-const CORS_HEADERS = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-};
+// PRD §14: CORS origin 화이트리스트 — production 도메인 + localhost
+const ALLOWED_ORIGINS = new Set([
+  'https://daengroad.app',
+  'https://www.daengroad.app',
+  'http://localhost:3000',
+]);
+
+function corsHeaders(req: Request): Record<string, string> {
+  const origin = req.headers.get('Origin');
+  const allowed = origin && ALLOWED_ORIGINS.has(origin) ? origin : 'https://daengroad.app';
+  return {
+    'Access-Control-Allow-Origin': allowed,
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Credentials': 'true',
+    Vary: 'Origin',
+  };
+}
 
 // ═══════════════ 핸들러 ═══════════════
 
 // @ts-expect-error — Deno global
 Deno.serve(async (req: Request): Promise<Response> => {
-  if (req.method === 'OPTIONS') return new Response(null, { headers: CORS_HEADERS });
-  if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
+  const cors = corsHeaders(req);
+  const j = (body: unknown, status = 200): Response =>
+    new Response(JSON.stringify(body), {
+      status,
+      headers: { ...cors, 'Content-Type': 'application/json' },
+    });
+
+  if (req.method === 'OPTIONS') return new Response(null, { headers: cors });
+  if (req.method !== 'POST') return j({ error: 'Method not allowed' }, 405);
 
   // 1. 사용자 인증 (Auth.js JWT → Supabase JWT)
   const authHeader = req.headers.get('Authorization');
@@ -97,21 +117,21 @@ Deno.serve(async (req: Request): Promise<Response> => {
   });
   const { data: userData } = await userClient.auth.getUser();
   const userId = userData?.user?.id;
-  if (!userId) return json({ error: 'Unauthorized' }, 401);
+  if (!userId) return j({ error: 'Unauthorized' }, 401);
 
   // 2. Rate Limit (PRD §13.5)
   const allowed = await checkRateLimit(userId);
-  if (!allowed) return json({ error: 'Too many requests' }, 429);
+  if (!allowed) return j({ error: 'Too many requests' }, 429);
 
   // 3. 입력 파싱 / 검증
   let input: RecommendInput;
   try {
     input = await req.json();
   } catch {
-    return json({ error: 'Invalid JSON' }, 400);
+    return j({ error: 'Invalid JSON' }, 400);
   }
   const v = validateInput(input);
-  if (!v.ok) return json({ error: v.error }, 400);
+  if (!v.ok) return j({ error: v.error }, 400);
 
   // 4. Service Role 클라이언트 (RLS 우회 — 서버 측 추천 알고리즘)
   const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE, {
@@ -125,7 +145,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
 
     // ─ 후보 POI (geohash + petAllowed 인덱스 사용) ─
     const candidates = await fetchPoiCandidates(admin, origin, radiusKm);
-    if (candidates.length === 0) return json({ recommendations: [] });
+    if (candidates.length === 0) return j({ recommendations: [] });
 
     // ─ ETA + 한적도 + 검증 수 병렬 조회 ─
     const enriched = await Promise.all(
@@ -142,7 +162,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
     // ─ 시간 예산(왕복 = timeHours/2 시간 = 분) 안에 들어오는 것만 ─
     const budgetMin = (input.timeHours / 2) * 60;
     const inBudget = enriched.filter((e) => e.eta && e.eta.minutes <= budgetMin);
-    if (inBudget.length === 0) return json({ recommendations: [] });
+    if (inBudget.length === 0) return j({ recommendations: [] });
 
     // ─ 점수 (PRD §12.2): 0.4*quietness + 0.3*verification + 0.2*dist_inv + 0.1*weather ─
     const maxDist = Math.max(...inBudget.map((e) => e.eta!.distanceKm), 1);
@@ -201,10 +221,10 @@ Deno.serve(async (req: Request): Promise<Response> => {
       completed_at: new Date().toISOString(),
     });
 
-    return json({ recommendations });
+    return j({ recommendations });
   } catch (err) {
     console.error('[time-slider-recommender]', err);
-    return json({ error: 'Internal error' }, 500);
+    return j({ error: 'Internal error' }, 500);
   }
 });
 
@@ -470,11 +490,4 @@ function geohash7(lat: number, lng: number): string {
 
 function round1(n: number): number {
   return Math.round(n * 10) / 10;
-}
-
-function json(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
-  });
 }
