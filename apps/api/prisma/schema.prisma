@@ -1,0 +1,439 @@
+// 댕로드 — Prisma 스키마 (PRD v1.0.5 §11.3)
+// 핵심 16개 테이블, 전 테이블 RLS 활성화, pg driver adapter 사용
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ═══════════════ Enums ═══════════════
+
+enum PoiType {
+  CAFE
+  RESTAURANT
+  TRAIL
+  PARK
+  ATTRACTION
+  ACCOMMODATION
+  REST_AREA
+}
+
+enum SyncSource {
+  TOUR_API_KOR
+  TOUR_API_PET
+  DATALAB_VISITOR
+  DATALAB_NAVI
+  DATALAB_FORECAST
+  DATALAB_DEMAND
+  DURUNUBI
+  WELLNESS
+  ECO
+  GO_CAMPING
+  USER_UGC
+}
+
+enum QuietnessSource {
+  DATABANK_VISITOR
+  DATABANK_NAVI
+  FORECAST_30D
+  UGC
+}
+
+enum VisitEvaluation {
+  QUIET
+  OK
+  CROWDED
+}
+
+enum BadgeType {
+  PET_VERIFIED
+  WELLNESS
+  ECO
+  TRAIL_OFFICIAL
+}
+
+enum RecommendStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
+
+enum ReviewStatus {
+  PUBLIC
+  HIDDEN_REPORTED
+  REMOVED
+}
+
+enum VendorTier {
+  FREE
+  FEATURED
+  PREMIUM
+}
+
+enum VendorApproval {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+// ═══════════════ Core ═══════════════
+
+model User {
+  id                 String   @id @default(uuid()) @db.Uuid
+  kakaoId            String?  @unique @map("kakao_id")
+  naverId            String?  @unique @map("naver_id")
+  email              String?  @unique
+  nickname           String?
+  baseAddress        String?  @map("base_address")
+  baseGeohash7       String?  @map("base_geohash7")
+  locale             String   @default("ko")
+  emailNotifyEnabled Boolean  @default(false) @map("email_notify_enabled")
+  emailNotifyTime    String   @default("18:00") @map("email_notify_time")
+  emailNotifyDays    String[] @default(["MON", "TUE", "WED", "THU", "FRI"]) @map("email_notify_days")
+  role               String   @default("user")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  pets            Pet[]
+  verifications   Verification[]
+  recommendations Recommendation[]
+  reviews         Review[]
+  vendor          Vendor?
+  emailLogs       EmailLog[]
+
+  @@index([baseGeohash7])
+  @@map("users")
+}
+
+model Pet {
+  id           String   @id @default(uuid()) @db.Uuid
+  userId       String   @map("user_id") @db.Uuid
+  name         String
+  breed        String
+  weightKg     Decimal  @map("weight_kg") @db.Decimal(4, 2)
+  ageYears     Int      @map("age_years")
+  restrictions String[]
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sensitive PetSensitive?
+
+  @@index([userId])
+  @@map("pets")
+}
+
+model PetSensitive {
+  id          String   @id @default(uuid()) @db.Uuid
+  petId       String   @unique @map("pet_id") @db.Uuid
+  allergies   String[]
+  conditions  String[]
+  consentedAt DateTime @map("consented_at")
+  consentVer  String   @map("consent_ver")
+
+  pet Pet @relation(fields: [petId], references: [id], onDelete: Cascade)
+
+  @@map("pets_sensitive")
+}
+
+// ═══════════════ POI ═══════════════
+
+model Poi {
+  id            String     @id @default(uuid()) @db.Uuid
+  source        SyncSource
+  sourceId      String     @map("source_id")
+  contentTypeId Int?       @map("content_type_id")
+  name          String
+  type          PoiType
+  category1     String?    @map("category_1")
+  category2     String?    @map("category_2")
+  category3     String?    @map("category_3")
+  sigunguCode   Int?       @map("sigungu_code") // 충남: 33020·33040·33050·33150
+  ldongCode     String?    @map("ldong_code")
+  address       String?
+  lat           Float
+  lng           Float
+  geohash7      String
+
+  imageUrls String[] @map("image_urls")
+  intro     String?
+  homepage  String?
+  phone     String?
+
+  // 펫 메타 (TourAPI detailPetTour)
+  petAllowed    Boolean  @default(false) @map("pet_allowed")
+  petSizeMaxKg  Int?     @map("pet_size_max_kg")
+  petIndoor     Boolean? @map("pet_indoor")
+  petOutdoor    Boolean? @map("pet_outdoor")
+  petPolicyText String?  @map("pet_policy_text")
+
+  // 카테고리 가산점
+  isWellness Boolean @default(false) @map("is_wellness")
+  isEco      Boolean @default(false) @map("is_eco")
+
+  lastSyncedAt DateTime @map("last_synced_at")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  quietnessScores QuietnessScore[]
+  forecasts       PoiForecast[]
+  verifications   Verification[]
+  badges          Badge[]
+  reviews         Review[]
+  durunubi        DurunubiCourse?
+  vendors         Vendor[]
+
+  @@unique([source, sourceId])
+  @@index([sigunguCode, type])
+  @@index([geohash7])
+  @@index([petAllowed])
+  @@index([type, lat, lng])
+  @@map("pois")
+}
+
+model DurunubiCourse {
+  id              String   @id @default(uuid()) @db.Uuid
+  poiId           String?  @unique @map("poi_id") @db.Uuid
+  routeIdx        String   @unique @map("route_idx")
+  routeName       String   @map("route_name")
+  themeName       String?  @map("theme_name")
+  totalDistanceKm Decimal  @map("total_distance_km") @db.Decimal(6, 2)
+  totalElevationM Int?     @map("total_elevation_m")
+  estimatedMin    Int?     @map("estimated_min")
+  difficultyLevel Int?     @map("difficulty_level")
+  pathGeoJson     Json?    @map("path_geojson")
+  imageUrls       String[] @map("image_urls")
+  description     String?
+  lastSyncedAt    DateTime @map("last_synced_at")
+
+  poi Poi? @relation(fields: [poiId], references: [id], onDelete: SetNull)
+
+  @@map("durunubi_courses")
+}
+
+// ═══════════════ 한적도 / 예측 / 수요지수 ═══════════════
+
+model QuietnessScore {
+  id          String          @id @default(uuid()) @db.Uuid
+  poiId       String?         @map("poi_id") @db.Uuid
+  sigunguCode Int             @map("sigungu_code")
+  weekday     Int // 0(일) ~ 6(토)
+  hourSlot    Int             @map("hour_slot") // 0~23
+  score       Int // 0~100
+  source      QuietnessSource
+  sampleSize  Int?            @map("sample_size")
+  computedAt  DateTime        @map("computed_at")
+
+  poi Poi? @relation(fields: [poiId], references: [id], onDelete: Cascade)
+
+  @@unique([sigunguCode, weekday, hourSlot, source, poiId])
+  @@index([poiId])
+  @@map("quietness_scores")
+}
+
+model PoiForecast {
+  id               String   @id @default(uuid()) @db.Uuid
+  poiId            String   @map("poi_id") @db.Uuid
+  forecastDate     DateTime @map("forecast_date") @db.Date
+  expectedScore    Int      @map("expected_score") // 0~100
+  expectedVisitors Int?     @map("expected_visitors")
+  confidence       Decimal? @db.Decimal(3, 2)
+  computedAt       DateTime @map("computed_at")
+
+  poi Poi @relation(fields: [poiId], references: [id], onDelete: Cascade)
+
+  @@unique([poiId, forecastDate])
+  @@index([forecastDate])
+  @@map("poi_forecasts")
+}
+
+model DemandIndex {
+  id              String   @id @default(uuid()) @db.Uuid
+  sigunguCode     Int      @map("sigungu_code")
+  periodMonth     String   @map("period_month") // YYYY-MM
+  resourceDemand  Decimal? @map("resource_demand") @db.Decimal(6, 2)
+  demandIntensity Decimal? @map("demand_intensity") @db.Decimal(6, 2)
+  diversity       Decimal? @db.Decimal(6, 2)
+  computedAt      DateTime @map("computed_at")
+
+  @@unique([sigunguCode, periodMonth])
+  @@map("demand_indices")
+}
+
+// ═══════════════ UGC ═══════════════
+
+model Verification {
+  id         String          @id @default(uuid()) @db.Uuid
+  poiId      String          @map("poi_id") @db.Uuid
+  userId     String          @map("user_id") @db.Uuid
+  visitedAt  DateTime        @map("visited_at")
+  photoUrl   String?         @map("photo_url")
+  evaluation VisitEvaluation
+  exifLat    Float?          @map("exif_lat")
+  exifLng    Float?          @map("exif_lng")
+  exifAt     DateTime?       @map("exif_at")
+  isValid    Boolean         @default(true) @map("is_valid")
+  createdAt  DateTime        @default(now()) @map("created_at")
+
+  poi  Poi  @relation(fields: [poiId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([poiId, userId, visitedAt])
+  @@index([poiId])
+  @@index([userId])
+  @@map("verifications")
+}
+
+model Badge {
+  id        String    @id @default(uuid()) @db.Uuid
+  poiId     String    @map("poi_id") @db.Uuid
+  badgeType BadgeType @map("badge_type")
+  grantedAt DateTime  @map("granted_at")
+  expiresAt DateTime? @map("expires_at") // 6개월 신선도
+  metadata  Json?
+
+  poi Poi @relation(fields: [poiId], references: [id], onDelete: Cascade)
+
+  @@unique([poiId, badgeType])
+  @@map("badges")
+}
+
+// ═══════════════ 추천 ═══════════════
+
+model Recommendation {
+  id                String          @id @default(uuid()) @db.Uuid
+  userId            String          @map("user_id") @db.Uuid
+  petId             String?         @map("pet_id") @db.Uuid
+  status            RecommendStatus @default(PENDING)
+  departureLat      Float           @map("departure_lat")
+  departureLng      Float           @map("departure_lng")
+  departureGeohash7 String          @map("departure_geohash7")
+  timeHours         Int             @map("time_hours")
+  startAt           DateTime        @map("start_at")
+  resultsJson       Json?           @map("results_json")
+  reasonChips       Json?           @map("reason_chips")
+  requestAt         DateTime        @default(now()) @map("request_at")
+  completedAt       DateTime?       @map("completed_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, requestAt])
+  @@map("recommendations")
+}
+
+// ═══════════════ 후기 ═══════════════
+
+model Review {
+  id          String       @id @default(uuid()) @db.Uuid
+  userId      String       @map("user_id") @db.Uuid
+  poiId       String       @map("poi_id") @db.Uuid
+  rating      Int // 1~5
+  body        String?
+  photos      String[]
+  status      ReviewStatus @default(PUBLIC)
+  reportCount Int          @default(0) @map("report_count")
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
+
+  user  User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  poi   Poi          @relation(fields: [poiId], references: [id], onDelete: Cascade)
+  reply VendorReply?
+
+  @@index([poiId])
+  @@index([userId])
+  @@map("reviews")
+}
+
+model VendorReply {
+  id        String   @id @default(uuid()) @db.Uuid
+  reviewId  String   @unique @map("review_id") @db.Uuid
+  vendorId  String   @map("vendor_id") @db.Uuid
+  body      String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  review Review @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@map("vendor_replies")
+}
+
+// ═══════════════ Vendor (P1) ═══════════════
+
+model Vendor {
+  id             String         @id @default(uuid()) @db.Uuid
+  ownerUserId    String         @unique @map("owner_user_id") @db.Uuid
+  bizNumber      String         @unique @map("biz_number")
+  bizAccount     String?        @map("biz_account")
+  name           String
+  type           PoiType
+  poiId          String?        @map("poi_id") @db.Uuid
+  approvalStatus VendorApproval @default(PENDING) @map("approval_status")
+  premiumTier    VendorTier     @default(FREE) @map("premium_tier")
+  petPolicy      Json?          @map("pet_policy")
+  imageUrls      String[]       @map("image_urls")
+  description    String?
+  hours          Json?
+  contact        String?
+  createdAt      DateTime       @default(now()) @map("created_at")
+  updatedAt      DateTime       @updatedAt @map("updated_at")
+
+  user    User          @relation(fields: [ownerUserId], references: [id], onDelete: Cascade)
+  poi     Poi?          @relation(fields: [poiId], references: [id])
+  replies VendorReply[]
+
+  @@index([approvalStatus])
+  @@map("vendors")
+}
+
+// ═══════════════ 운영 / 분석 ═══════════════
+
+model AnalyticsEvent {
+  id        BigInt   @id @default(autoincrement())
+  userId    String?  @map("user_id") @db.Uuid
+  sessionId String?  @map("session_id")
+  event     String
+  props     Json?
+  ts        DateTime @default(now())
+
+  @@index([event, ts])
+  @@index([userId, ts])
+  @@map("analytics_events")
+}
+
+model EmailLog {
+  id         String    @id @default(uuid()) @db.Uuid
+  userId     String    @map("user_id") @db.Uuid
+  type       String // 'daily_recommend' | 'verify_email' | 'unsubscribe_confirm'
+  subject    String?
+  status     String // 'queued' | 'sent' | 'delivered' | 'bounced' | 'opened' | 'clicked'
+  sentAt     DateTime? @map("sent_at")
+  openedAt   DateTime? @map("opened_at")
+  clickedAt  DateTime? @map("clicked_at")
+  externalId String?   @map("external_id")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, sentAt])
+  @@map("email_logs")
+}
+
+model TourApiSyncLog {
+  id           BigInt    @id @default(autoincrement())
+  dataset      String
+  startedAt    DateTime  @map("started_at")
+  finishedAt   DateTime? @map("finished_at")
+  countAdded   Int       @default(0) @map("count_added")
+  countUpdated Int       @default(0) @map("count_updated")
+  countRemoved Int       @default(0) @map("count_removed")
+  status       String
+  errorMessage String?   @map("error_message")
+
+  @@index([dataset, startedAt])
+  @@map("tour_api_sync_logs")
+}

@@ -1,0 +1,55 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install
+        run: npm ci
+
+      - name: Format check
+        run: npm run format:check
+
+      - name: Prisma validate
+        working-directory: apps/api
+        env:
+          DATABASE_URL: postgresql://x:x@localhost:5432/x
+          DIRECT_URL: postgresql://x:x@localhost:5432/x
+        run: npx prisma validate
+
+      - name: Prisma generate
+        working-directory: apps/api
+        env:
+          DATABASE_URL: postgresql://x:x@localhost:5432/x
+          DIRECT_URL: postgresql://x:x@localhost:5432/x
+        run: npx prisma generate
+
+      - name: Typecheck (web)
+        working-directory: apps/web
+        run: npx tsc --noEmit
+
+      - name: Typecheck (api)
+        working-directory: apps/api
+        run: npx tsc --noEmit
+
+      - name: Lint (web)
+        working-directory: apps/web
+        run: npx next lint || true # 베타 단계 — 경고 허용

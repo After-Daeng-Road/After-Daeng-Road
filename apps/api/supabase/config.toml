@@ -1,0 +1,83 @@
+# 댕로드 — Supabase 로컬 환경 설정
+# `supabase start` / `supabase functions serve` 시 사용
+project_id = "daengroad"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "storage", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+port = 54322
+shadow_port = 54320
+major_version = 15
+
+[db.pooler]
+enabled = true
+port = 54329
+pool_mode = "transaction"
+default_pool_size = 20
+max_client_conn = 100
+
+[realtime]
+enabled = true
+
+[studio]
+enabled = true
+port = 54323
+api_url = "http://127.0.0.1"
+
+[inbucket]
+enabled = true
+port = 54324
+
+[storage]
+enabled = true
+file_size_limit = "50MiB"
+
+# PRD §10.1: Auth.js + Supabase Auth — 카카오 + 네이버 OAuth
+[auth]
+enabled = true
+site_url = "http://localhost:3000"
+additional_redirect_urls = ["https://localhost:3000"]
+jwt_expiry = 3600         # PRD §14: JWT 1h
+enable_refresh_token_rotation = true
+refresh_token_reuse_interval = 10
+enable_signup = true
+enable_anonymous_sign_ins = false
+
+[auth.email]
+enable_signup = false
+double_confirm_changes = true
+enable_confirmations = false
+
+# 카카오 OAuth — 시크릿은 Supabase Dashboard 에서 등록
+[auth.external.kakao]
+enabled = true
+client_id = "env(AUTH_KAKAO_ID)"
+secret = "env(AUTH_KAKAO_SECRET)"
+redirect_uri = "http://localhost:54321/auth/v1/callback"
+
+# 네이버는 OIDC 표준 미지원 → Auth.js 측에서 직접 처리
+# (Supabase Auth external provider 미사용)
+
+[edge_runtime]
+enabled = true
+inspector_port = 8083
+
+# Edge Functions — PRD §12.2 time-slider-recommender
+[functions.time-slider-recommender]
+verify_jwt = true
+
+# PRD §13: TourAPI 일별 ETL (Cron 트리거)
+[functions.tour-api-etl]
+verify_jwt = false  # pg_cron 에서 service_role 키로 호출
+
+# PRD §16.4: 일일 추천 이메일 (Cron 트리거)
+[functions.daily-recommend-email]
+verify_jwt = false
+
+[analytics]
+enabled = false

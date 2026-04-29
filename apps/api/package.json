@@ -1,0 +1,35 @@
+{
+  "name": "@daengroad/api",
+  "version": "0.1.0",
+  "private": true,
+  "description": "댕로드 백엔드 — Prisma 스키마(16 테이블) + Supabase Edge Functions",
+  "scripts": {
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:deploy": "prisma migrate deploy",
+    "prisma:studio": "prisma studio",
+    "prisma:format": "prisma format",
+    "seed": "tsx prisma/seed.ts",
+    "supabase:serve": "supabase functions serve --no-verify-jwt",
+    "supabase:deploy": "supabase functions deploy time-slider-recommender",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@prisma/adapter-pg": "^5.22.0",
+    "@prisma/client": "^5.22.0",
+    "@supabase/supabase-js": "^2.45.0",
+    "pg": "^8.13.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/pg": "^8.11.10",
+    "dotenv": "^16.4.5",
+    "prisma": "^5.22.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0"
+  },
+  "prisma": {
+    "schema": "prisma/schema.prisma",
+    "seed": "tsx prisma/seed.ts"
+  }
+}

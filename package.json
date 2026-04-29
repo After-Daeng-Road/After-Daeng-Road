@@ -1,0 +1,27 @@
+{
+  "name": "daengroad",
+  "version": "0.1.0",
+  "private": true,
+  "description": "댕로드 — 퇴근 후 한적한 펫 외출 (2026 관광데이터 활용 공모전)",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:web": "npm run dev -w apps/web",
+    "dev:api": "supabase functions serve --no-verify-jwt",
+    "build:web": "npm run build -w apps/web",
+    "lint": "npm run lint --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "devDependencies": {
+    "prettier": "^3.8.3",
+    "prettier-plugin-prisma": "^5.0.0",
+    "prettier-plugin-tailwindcss": "^0.8.0"
+  }
+}

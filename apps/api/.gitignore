@@ -1,0 +1,36 @@
+# ─── 의존성 ───
+node_modules/
+
+# ─── 환경 변수 (실제 시크릿) ───
+.env
+.env.local
+.env.*.local
+# .env.example 은 템플릿이므로 커밋
+
+# ─── Prisma ───
+# 마이그레이션 SQL 은 커밋 (스키마 변경 이력)
+# 생성 클라이언트는 node_modules 안에 있으므로 추가 처리 불필요
+prisma/.prisma/
+prisma/dev.db
+prisma/dev.db-journal
+
+# ─── Supabase 로컬 ───
+supabase/.branches/
+supabase/.temp/
+supabase/.env
+supabase/seed.sql
+supabase/functions/.deno/
+
+# ─── DB 덤프 (운영 백업 실수 커밋 방지) ───
+*.dump
+*.sql.gz
+*.sql.bz2
+
+# ─── 빌드 ───
+dist/
+build/
+*.tsbuildinfo
+
+# ─── 로그 ───
+*.log
+npm-debug.log*

@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>댕로드 — 3.1 메인 화면 UI 명세서 v0.1</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: 'Malgun Gothic','맑은 고딕',sans-serif;
+    margin: 0; padding: 24px;
+    background: #f4f4f6; color: #222;
+  }
+  .doc-header {
+    background: #2d3748; color: white;
+    padding: 14px 24px; border-radius: 6px 6px 0 0;
+    font-size: 17px; font-weight: bold;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .ver { background: #d33; color: white; font-size: 11px; padding: 2px 7px; border-radius: 3px; margin-left: 10px; }
+  .meta { font-size: 11px; color: #cbd2dc; font-weight: normal; }
+  .legend {
+    background: white; padding: 10px 16px; border: 1px solid #e2e2e2; border-bottom: none;
+    display: flex; gap: 20px; font-size: 12px;
+  }
+  .legend-box { display: inline-block; width: 14px; height: 14px; vertical-align: middle; margin-right: 4px; border-radius: 2px; }
+  .layout {
+    display: grid; grid-template-columns: 880px 280px 540px;
+    gap: 14px; background: white; padding: 24px;
+    border: 1px solid #e2e2e2; border-radius: 0 0 6px 6px;
+    overflow-x: auto;
+  }
+  /* Wireframe */
+  .wf { background: white; border: 1px solid #c8c8c8; position: relative; font-size: 12px; border-radius: 4px; }
+  .wf-tl { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-bottom: 1px solid #ddd; background: #fafafa; font-size: 11px; color: #777; }
+  .wf-header { display: flex; justify-content: space-between; align-items: center; padding: 14px 18px; border-bottom: 1px solid #eee; }
+  .wf-logo { font-weight: bold; font-size: 17px; color: #f56500; }
+  .wf-nav { display: flex; gap: 14px; font-size: 12px; color: #666; }
+  .wf-section { padding: 18px; border-bottom: 1px solid #f0f0f0; position: relative; }
+  .wf-area { background: #f8f8f8; border: 1px dashed #b8b8b8; padding: 14px; margin: 8px 0; border-radius: 4px; }
+  .wf-btn { background: #444; color: white; padding: 8px 14px; border-radius: 4px; display: inline-block; font-weight: bold; font-size: 12px; }
+  .wf-btn-primary { background: #f56500; color: white; padding: 11px 28px; font-weight: bold; border: none; font-size: 14px; border-radius: 4px; cursor: pointer; }
+  .wf-card { background: white; border: 1px solid #ddd; border-radius: 6px; padding: 12px; margin: 8px 0; }
+  .wf-chip { background: #eef; padding: 3px 10px; border-radius: 12px; font-size: 11px; display: inline-block; margin-right: 4px; margin-top: 3px; }
+  /* Markers */
+  .mk {
+    position: absolute; background: #d33; color: white;
+    width: 22px; height: 22px; border-radius: 50%;
+    text-align: center; line-height: 22px;
+    font-size: 11px; font-weight: bold; z-index: 10;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    font-family: Arial;
+  }
+  .mk-sub { width: 28px; border-radius: 11px; font-size: 10px; }
+  /* Spec */
+  .spec { font-size: 12px; line-height: 1.55; }
+  .spec h2 { color: #d33; font-size: 13px; margin: 18px 0 8px; padding: 7px 10px; background: #fff5f5; border-left: 3px solid #d33; border-radius: 0 3px 3px 0; }
+  .spec-num { background: #d33; color: white; padding: 2px 8px; border-radius: 3px; font-weight: bold; margin-right: 6px; font-family: Arial; }
+  .spec-row { padding: 4px 12px 8px; border-bottom: 1px dashed #f0f0f0; }
+  .spec-row:last-child { border-bottom: none; }
+  .spec-row ul { margin: 4px 0 4px 18px; padding: 0; }
+  .spec-row li { margin: 2px 0; }
+  .req { color: #d33; font-weight: 600; }
+  .info { color: #0d6efd; font-weight: 600; }
+  .api { color: #198754; font-family: 'Courier New',monospace; font-size: 11px; background: #f0fcf4; padding: 1px 5px; border-radius: 2px; }
+  code { font-family: 'Courier New',monospace; background: #f0f0f0; padding: 1px 4px; border-radius: 2px; font-size: 11px; }
+  .floating-badge { position: absolute; right: 18px; bottom: 18px; background: #f56500; color: white; border-radius: 50%; width: 64px; height: 64px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; text-align: center; box-shadow: 0 6px 16px rgba(0,0,0,0.25); line-height: 1.2; }
+</style>
+</head>
+<body>
+
+<div class="doc-header">
+  <div>3.1. 메인 — 시간슬라이더 · 추천 결과 · 알림 CTA <span class="ver">v 0.1</span></div>
+  <div class="meta">댕로드(가칭) · 작성: Hun · 2026.04.26</div>
+</div>
+
+<div class="legend">
+  <span><span class="legend-box" style="background:#fff5f5;border-left:3px solid #d33"></span> <span class="req">필수 / 협의 중 정의</span></span>
+  <span><span class="legend-box" style="background:#f0f7ff;border-left:3px solid #0d6efd"></span> <span class="info">정보 메시지(알림·링크)</span></span>
+  <span><span class="api">API</span> <span style="color:#198754;font-weight:600">호출 동작</span></span>
+  <span style="margin-left:auto;color:#888">PC: 1280px+ / Mobile: 360~640px</span>
+</div>
+
+<div class="layout">
+
+<!-- ============ PC 와이어프레임 ============ -->
+<div class="wf" style="height: 1180px;">
+  <div class="wf-tl">⌐ PC view (1280px+)</div>
+
+  <!-- 헤더 -->
+  <div class="wf-header">
+    <div class="wf-logo">🐕 댕로드</div>
+    <div class="wf-nav">홈 · 추천 · 마이페이지 · 한국어▾ · <strong>로그인</strong></div>
+  </div>
+
+  <!-- 영역 1: 메인 검색 -->
+  <div class="wf-section">
+    <span class="mk" style="left:-10px; top:14px;">1</span>
+    <div style="text-align:center; font-size:24px; font-weight:bold; margin-bottom:6px;">오늘 어디 가지?</div>
+    <div style="text-align:center; color:#888; font-size:12px; margin-bottom:18px;">퇴근 후 한적한 펫 외출 코스를 5초 안에</div>
+
+    <div class="wf-area" style="padding:22px 28px;">
+      <!-- 1-1 슬라이더 -->
+      <div style="position:relative; margin-bottom:22px;">
+        <span class="mk mk-sub" style="left:-38px; top:0;">1-1</span>
+        <div style="display:flex; justify-content:space-between; font-size:11px; color:#666; margin-bottom:6px;">
+          <span>1h</span><span>2h</span><span style="color:#f56500;font-weight:bold">3h</span><span>4h</span><span>5h</span><span>6h</span>
+        </div>
+        <div style="height:6px; background:#ddd; border-radius:3px; position:relative;">
+          <div style="position:absolute; left:40%; width:16px; height:16px; background:#f56500; border-radius:50%; top:-5px; box-shadow:0 2px 4px rgba(0,0,0,0.2);"></div>
+        </div>
+      </div>
+
+      <!-- 1-2 출발지 -->
+      <div style="position:relative; margin:14px 0;">
+        <span class="mk mk-sub" style="left:-38px; top:6px;">1-2</span>
+        <div style="display:flex; gap:6px; align-items:center;">
+          <div style="flex:1; background:white; padding:10px 12px; border:1px solid #ccc; border-radius:4px; color:#999;">📍 출발지 (GPS · 주소 · 우편번호)</div>
+          <button style="padding:8px 12px; border:1px solid #ccc; background:white; border-radius:4px; cursor:pointer;">현 위치</button>
+        </div>
+      </div>
+
+      <!-- 1-3 펫 선택 -->
+      <div style="position:relative; margin:14px 0;">
+        <span class="mk mk-sub" style="left:-38px; top:6px;">1-3</span>
+        <div style="background:white; padding:10px 12px; border:1px solid #ccc; border-radius:4px; display:flex; align-items:center; gap:8px;">
+          <span style="width:28px;height:28px;background:#ddd;border-radius:50%;display:inline-block;"></span>
+          <span>다람이 (푸들 · 5kg · 3살)</span>
+          <span style="margin-left:auto;color:#888;">▾</span>
+        </div>
+      </div>
+
+      <!-- 1-4 출발 시각 -->
+      <div style="position:relative; margin:14px 0; display:flex; gap:8px;">
+        <span class="mk mk-sub" style="left:-38px; top:6px;">1-4</span>
+        <div style="background:white; padding:8px 12px; border:1px solid #ccc; border-radius:4px; flex:1;">📅 출발 시각: 지금 (18:12) ▾</div>
+      </div>
+
+      <!-- 1-5 추천받기 버튼 -->
+      <div style="position:relative; text-align:center; margin-top:18px;">
+        <span class="mk mk-sub" style="left:calc(50% - 105px); top:0;">1-5</span>
+        <button class="wf-btn-primary">지금 추천받기 →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 영역 2: 추천 결과 -->
+  <div class="wf-section">
+    <span class="mk" style="left:-10px; top:14px;">2</span>
+    <div style="font-weight:bold; margin-bottom:10px;">3시간 안에 다녀올 수 있는 한적한 곳 3</div>
+
+    <div class="wf-card" style="position:relative;">
+      <span class="mk mk-sub" style="left:-38px; top:0;">2-1</span>
+      <div style="display:flex; gap:14px;">
+        <div style="width:96px; height:96px; background:#ddd; border-radius:6px; flex-shrink:0;"></div>
+        <div style="flex:1; position:relative;">
+          <div style="font-weight:bold; font-size:14px;">서산 해미읍성 둘레길</div>
+          <div style="font-size:11px; color:#888; margin-top:2px;">충남 서산시 해미면 · 두루누비 코스</div>
+          <div style="margin-top:8px; position:relative;">
+            <span class="mk mk-sub" style="left:-38px; top:-2px;">2-2</span>
+            <span class="wf-chip">📍 42km · 48분</span>
+            <span class="wf-chip" style="background:#dfd;">🌿 한적도 87점</span>
+            <span class="wf-chip" style="background:#fef;">🐕 검증 배지 (5명)</span>
+          </div>
+          <div style="margin-top:6px; font-size:11px; color:#0d6efd; position:relative;">
+            <span class="mk mk-sub" style="left:-38px; top:-2px;">2-3</span>
+            📅 내일 같은 시간 <strong>92점</strong> · 이번 주 평균 89점
+          </div>
+          <div style="margin-top:10px; position:relative;">
+            <span class="mk mk-sub" style="left:-38px; top:-2px;">2-4</span>
+            <span class="wf-btn" style="cursor:pointer;">길찾기</span>
+            <span class="wf-chip" style="margin-left:6px;">저장</span>
+            <span class="wf-chip">공유</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="wf-card">
+      <div style="display:flex; gap:14px;">
+        <div style="width:96px; height:96px; background:#ddd; border-radius:6px; flex-shrink:0;"></div>
+        <div style="flex:1;">
+          <div style="font-weight:bold; font-size:14px;">아산 신정호 산책로</div>
+          <div style="font-size:11px; color:#888;">충남 아산시 · 두루누비 코스</div>
+          <div style="margin-top:8px;">
+            <span class="wf-chip">📍 28km · 32분</span>
+            <span class="wf-chip" style="background:#dfd;">🌿 한적도 79점</span>
+            <span class="wf-chip" style="background:#fef;">🐕 검증 배지 (8명)</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="wf-card">
+      <div style="display:flex; gap:14px;">
+        <div style="width:96px; height:96px; background:#ddd; border-radius:6px; flex-shrink:0;"></div>
+        <div style="flex:1;">
+          <div style="font-weight:bold; font-size:14px;">공주 무령왕릉 인근 야외 카페</div>
+          <div style="font-size:11px; color:#888;">충남 공주시 · 펫동반 가능</div>
+          <div style="margin-top:8px;">
+            <span class="wf-chip">📍 55km · 1h 02m</span>
+            <span class="wf-chip" style="background:#dfd;">🌿 한적도 91점</span>
+            <span class="wf-chip" style="background:#fef;">🐕 검증 배지 (3명)</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 영역 3: 알림 CTA -->
+  <div class="wf-section" style="background:#fff8e1;">
+    <span class="mk" style="left:-10px; top:14px;">3</span>
+    <div style="display:flex; justify-content:space-between; align-items:center; gap:14px;">
+      <div>
+        <div style="font-weight:bold; font-size:13px;">📧 매일 18시 한적도 추천을 메일로 받아볼래요?</div>
+        <div style="font-size:11px; color:#666; margin-top:3px;">시간·요일 자율 설정 · 1탭 수신거부</div>
+      </div>
+      <button class="wf-btn" style="border:none; cursor:pointer;">이메일 알림 켜기</button>
+    </div>
+  </div>
+
+  <!-- 영역 4: 플로팅 배지 -->
+  <div class="floating-badge">
+    <span class="mk" style="left:-12px; top:-12px;">4</span>
+    검증<br>배지
+  </div>
+</div>
+
+<!-- ============ 모바일 와이어프레임 ============ -->
+<div class="wf" style="height: 880px; width: 280px;">
+  <div class="wf-tl">📱 Mobile (~640px)</div>
+
+  <div class="wf-header" style="padding:10px 12px;">
+    <div class="wf-logo" style="font-size:14px;">🐕 댕로드</div>
+    <div style="font-size:13px;">≡</div>
+  </div>
+
+  <div class="wf-section" style="padding:14px;">
+    <div style="text-align:center; font-weight:bold; font-size:14px; margin-bottom:6px;">오늘 어디 가지?</div>
+    <div style="text-align:center; font-size:10px; color:#888; margin-bottom:12px;">3시간 안에 한적한 펫 외출</div>
+
+    <div class="wf-area" style="padding:14px 12px;">
+      <div style="height:6px; background:#ddd; border-radius:3px; position:relative; margin:14px 0 6px;">
+        <div style="position:absolute; left:40%; width:14px; height:14px; background:#f56500; border-radius:50%; top:-4px;"></div>
+      </div>
+      <div style="text-align:center; font-size:11px; color:#f56500; font-weight:bold;">3h</div>
+
+      <div style="background:white; padding:8px; margin-top:10px; border:1px solid #ccc; border-radius:4px; font-size:11px; color:#999;">📍 출발지</div>
+      <div style="background:white; padding:8px; margin-top:6px; border:1px solid #ccc; border-radius:4px; font-size:11px;">🐶 다람이 (5kg) ▾</div>
+      <div style="background:white; padding:8px; margin-top:6px; border:1px solid #ccc; border-radius:4px; font-size:11px;">📅 지금 (18:12) ▾</div>
+
+      <button class="wf-btn-primary" style="width:100%; margin-top:14px; padding:11px; font-size:13px; cursor:pointer;">지금 추천받기 →</button>
+    </div>
+  </div>
+
+  <div class="wf-section" style="padding:12px;">
+    <div style="font-weight:bold; font-size:12px; margin-bottom:8px;">추천 3곳</div>
+
+    <div class="wf-card" style="padding:9px;">
+      <div style="font-weight:bold; font-size:12px;">서산 해미읍성 둘레길</div>
+      <div style="font-size:10px; margin-top:4px; color:#555;">📍 42km · 87점 · 검증(5)</div>
+      <div style="font-size:10px; margin-top:2px; color:#0d6efd;">📅 내일 92점</div>
+    </div>
+    <div class="wf-card" style="padding:9px;">
+      <div style="font-weight:bold; font-size:12px;">아산 신정호 산책로</div>
+      <div style="font-size:10px; margin-top:4px; color:#555;">📍 28km · 79점 · 검증(8)</div>
+    </div>
+    <div class="wf-card" style="padding:9px;">
+      <div style="font-weight:bold; font-size:12px;">공주 무령왕릉 야외</div>
+      <div style="font-size:10px; margin-top:4px; color:#555;">📍 55km · 91점 · 검증(3)</div>
+    </div>
+  </div>
+
+  <div class="wf-section" style="background:#fff8e1; padding:12px;">
+    <div style="font-size:11px; font-weight:bold;">📧 매일 18시 메일로?</div>
+    <button class="wf-btn" style="width:100%; margin-top:8px; border:none; cursor:pointer; padding:7px; font-size:11px;">이메일 알림 켜기</button>
+  </div>
+</div>
+
+<!-- ============ 우측 명세 ============ -->
+<div class="spec">
+
+<h2>1 ■ 메인 검색 영역</h2>
+
+<div class="spec-row">
+  <span class="spec-num">1-1</span> <strong>시간 슬라이더</strong>
+  <ul>
+    <li>범위 <span class="req">1h ~ 6h, 30분 단위 눈금</span></li>
+    <li>디폴트 <span class="req">3h</span> · 사용자 마지막 선택값 쿠키 저장</li>
+    <li>슬라이더 변경 시 <span class="info">API 호출 ✗ (클라이언트 state만)</span></li>
+    <li>키보드 ←/→ : 30분씩 이동 · 모바일 터치 드래그</li>
+  </ul>
+</div>
+
+<div class="spec-row">
+  <span class="spec-num">1-2</span> <strong>출발지 입력</strong>
+  <ul>
+    <li>입력 모드 3종: <span class="req">GPS · 주소 · 우편번호</span></li>
+    <li>"현 위치" 버튼 → <span class="api">navigator.geolocation.getCurrentPosition()</span> + 권한 동의 모달</li>
+    <li>주소 자동완성 → <span class="api">GET kakao.local.keyword/address</span> (디바운스 300ms)</li>
+    <li>좌표 확정 시 client state에 저장 · <span class="info">DB 저장 ✗ (개인정보 최소화 원칙)</span></li>
+    <li>실패 시 inline 에러 메시지 + 수동 입력 권유</li>
+  </ul>
+</div>
+
+<div class="spec-row">
+  <span class="spec-num">1-3</span> <strong>펫 선택 드롭다운</strong>
+  <ul>
+    <li>페이지 진입 시 <span class="api">GET /api/pets</span> → 사용자 등록 펫 목록 캐싱</li>
+    <li>다중 펫 등록자: 1순위 펫 디폴트 · 변경 시 client state만 갱신</li>
+    <li>펫 미등록: <span class="info">"펫 등록하기" CTA 노출 + 추천받기 버튼 비활성</span></li>
+  </ul>
+</div>
+
+<div class="spec-row">
+  <span class="spec-num">1-4</span> <strong>출발 시각 선택</strong>
+  <ul>
+    <li>"지금" 디폴트(서버 시각 자동) · 30분 단위로 +30분 ~ +6h 미래 선택</li>
+    <li>한적도 점수가 시간대별 가변이므로 <span class="req">필수 입력 (NULL 불가)</span></li>
+  </ul>
+</div>
+
+<div class="spec-row">
+  <span class="spec-num">1-5</span> <strong>"지금 추천받기" 버튼 ★ 핵심 액션</strong>
+  <ul>
+    <li><span class="req">미로그인 시</span>: 카카오 로그인 모달 호출 → 로그인 후 입력값 보존하여 자동 재요청</li>
+    <li>클릭 → <span class="api">POST /api/recommendations.search</span></li>
+    <li>Body: <code>{ pet_id, departure: {lat,lng}, time_h, start_at }</code></li>
+    <li>내부 처리: Edge Function <code>time-slider-recommender</code> 호출
+      <ul>
+        <li>① TourAPI4 <code>locationBasedList2</code> + 펫 <code>locationBasedList</code> (반경 후보)</li>
+        <li>② 카카오모빌리티 ETA (24h KV 캐시)</li>
+        <li>③ 데이터랩 <code>locgoVisitorList</code> + <code>poi_forecasts</code> (현재·30일 한적도)</li>
+        <li>④ 펫 <code>detailPetTour</code> + UGC 검증 결합</li>
+        <li>⑤ 점수 정렬 → 상위 3개 + reason_chips</li>
+      </ul>
+    </li>
+    <li>응답: <code>{ recommendation_id, items: [3 POI + reason_chips] }</code></li>
+    <li>로딩: 스켈레톤 카드 3개 (목표 ≤ 5s)</li>
+    <li>실패: 토스트 + 재시도 · Sentry 자동 리포트</li>
+  </ul>
+</div>
+
+<h2>2 ■ 추천 결과 영역</h2>
+
+<div class="spec-row">
+  <span class="spec-num">2-1</span> <strong>POI 카드 (상위 3개)</strong>
+  <ul>
+    <li>이미지 1장 (TourAPI <code>detailImage2</code> 첫 번째)</li>
+    <li>이름·주소·소스 라벨(두루누비 / 펫동반)</li>
+    <li>카드 클릭 → <span class="api">GET /api/pois/:id</span> + 페이지 이동 <code>/poi/:id</code></li>
+  </ul>
+</div>
+
+<div class="spec-row">
+  <span class="spec-num">2-2</span> <strong>3줄 근거 칩 ★ 차별점</strong>
+  <ul>
+    <li>거리: ETA 거리·소요시간 (카카오모빌리티)</li>
+    <li>한적도: 0~100점 (데이터랩 + UGC 결합)</li>
+    <li>검증: 펫동반 검증 배지 + 방문자 N명</li>
+    <li>각 칩 클릭 → 데이터 출처 모달(투명성) — <span class="info">기획 강점 어필</span></li>
+  </ul>
+</div>
+
+<div class="spec-row">
+  <span class="spec-num">2-3</span> <strong>30일 예측 라벨 (파란 톤)</strong>
+  <ul>
+    <li>"내일 같은 시간 N점 · 이번 주 평균 N점"</li>
+    <li>출처: <code>poi_forecasts</code> 테이블 (관광지 집중률 예측 OpenAPI)</li>
+    <li>표본 부족 시 <span class="info">"표본 부족" 라벨로 대체</span></li>
+  </ul>
+</div>
+
+<div class="spec-row">
+  <span class="spec-num">2-4</span> <strong>액션 버튼</strong>
+  <ul>
+    <li>길찾기 → 카카오모빌리티 deep link (앱 미설치 시 카카오맵 웹 fallback)</li>
+    <li>저장 → <span class="api">POST /api/saved-pois</span> (미로그인 시 로그인 모달)</li>
+    <li>공유 → 카카오톡 공유 SDK (코스 URL + 미리보기 카드)</li>
+  </ul>
+</div>
+
+<h2>3 ■ 이메일 알림 CTA</h2>
+
+<div class="spec-row">
+  <span class="spec-num">3</span> <strong>알림 미설정 사용자만 노출</strong>
+  <ul>
+    <li>조건: <code>users.email_notify_enabled === false</code></li>
+    <li>"이메일 알림 켜기" 클릭 → <span class="api">PATCH /api/users/me/notify-settings</span></li>
+    <li>Body: <code>{ enabled: true, time: '18:00', days: ['MON','TUE','WED','THU','FRI'] }</code></li>
+    <li>닫기 시 <span class="info">1일 미노출 (쿠키 저장)</span></li>
+  </ul>
+</div>
+
+<h2>4 ■ 검증 배지 가이드 플로팅</h2>
+
+<div class="spec-row">
+  <span class="spec-num">4</span> <strong>플로팅 배지 (PC 우하단 / 모바일 우하단)</strong>
+  <ul>
+    <li>클릭 → 검증 배지 시스템 설명 모달 (3명 방문 + EXIF 사진 + 6개월)</li>
+    <li>스크롤 시 함께 이동 · "추천 결과" 영역에서는 z-index 낮춤</li>
+    <li>닫기 시 <span class="info">1일 미노출 (쿠키)</span></li>
+  </ul>
+</div>
+
+<h2>● 페이지 진입 초기 호출 시퀀스</h2>
+
+<div class="spec-row">
+  <ol style="margin:4px 0 4px 18px; padding:0;">
+    <li><span class="api">GET /api/auth/session</span> — 로그인 확인 (Auth.js + Supabase)</li>
+    <li>로그인 시 병렬 호출:
+      <ul>
+        <li><span class="api">GET /api/users/me</span> — 알림 설정·기본 출발지·언어</li>
+        <li><span class="api">GET /api/pets</span> — 등록 펫 목록</li>
+      </ul>
+    </li>
+    <li>미로그인 시: 헤더 우상단 "로그인" 버튼 표시 · 추천받기 클릭 시 카카오 로그인 모달</li>
+  </ol>
+</div>
+
+<h2>● 상태 / 에러 핸들링</h2>
+
+<div class="spec-row">
+  <ul>
+    <li><span class="req">로딩</span>: 추천 카드 자리에 스켈레톤 3개 (Tailwind animate-pulse)</li>
+    <li><span class="req">빈 결과</span>: "조건에 맞는 한적한 곳을 찾지 못했어요" + 시간 늘리기·반경 확장 제안</li>
+    <li><span class="req">서버 에러</span>: 토스트 + 재시도 버튼 · Sentry 자동 리포트</li>
+    <li><span class="req">429 Rate Limit</span>: "잠시 후 다시 시도" + 30초 카운트다운</li>
+    <li><span class="info">미로그인 추천 클릭</span>: 입력값 sessionStorage 보존 → 로그인 후 자동 재요청</li>
+  </ul>
+</div>
+
+</div>
+
+</div>
+
+</body>
+</html>
