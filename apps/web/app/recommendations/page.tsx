@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
+import { ArrowRight, Inbox } from 'lucide-react';
 
 // 사용자의 최근 추천 이력 (PRD §7.2 [마이펫타임] — 다녀온 곳)
 
@@ -32,12 +33,13 @@ export default async function RecommendationsPage() {
 
       {recs.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-gray-300 bg-white p-8 text-center">
-          <p className="text-sm text-gray-600">아직 추천 이력이 없어요.</p>
+          <Inbox className="mx-auto h-10 w-10 text-gray-300" aria-hidden />
+          <p className="mt-2 text-sm text-gray-600">아직 추천 이력이 없어요.</p>
           <Link
             href="/"
-            className="mt-3 inline-block rounded-md bg-brand px-4 py-2 text-xs font-bold text-white hover:bg-brand-hover"
+            className="mt-3 inline-flex items-center gap-1 rounded-md bg-brand px-4 py-2 text-xs font-bold text-white hover:bg-brand-hover"
           >
-            지금 추천받기 →
+            지금 추천받기 <ArrowRight className="h-3.5 w-3.5" aria-hidden />
           </Link>
         </div>
       ) : (

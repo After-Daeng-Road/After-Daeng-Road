@@ -1,6 +1,9 @@
 import { signIn, auth } from '@/auth';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
+import { Dog } from 'lucide-react';
+import { RiKakaoTalkFill } from 'react-icons/ri';
+import { SiNaver } from 'react-icons/si';
 
 // PRD §7.1: ① 카카오/네이버 로그인 → ② 펫 프로필 등록
 
@@ -15,8 +18,8 @@ export default async function LoginPage({ searchParams }: { searchParams: Search
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center px-4 py-10">
-      <Link href="/" className="mb-3 text-2xl font-bold text-brand">
-        🐕 댕로드
+      <Link href="/" className="mb-3 flex items-center gap-1.5 text-2xl font-bold text-brand">
+        <Dog className="h-7 w-7" aria-hidden /> 댕로드
       </Link>
       <p className="mb-8 text-sm text-gray-500">퇴근 후 한적한 펫 외출</p>
 
@@ -31,7 +34,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Search
             type="submit"
             className="flex w-full items-center justify-center gap-2 rounded-md bg-[#FEE500] px-4 py-3 text-sm font-medium text-[#191919] hover:opacity-90"
           >
-            <span aria-hidden>💬</span> 카카오로 시작하기
+            <RiKakaoTalkFill className="h-5 w-5" aria-hidden /> 카카오로 시작하기
           </button>
         </form>
 
@@ -45,7 +48,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Search
             type="submit"
             className="flex w-full items-center justify-center gap-2 rounded-md bg-[#03C75A] px-4 py-3 text-sm font-medium text-white hover:opacity-90"
           >
-            <span aria-hidden>N</span> 네이버로 시작하기
+            <SiNaver className="h-3.5 w-3.5" aria-hidden /> 네이버로 시작하기
           </button>
         </form>
       </div>

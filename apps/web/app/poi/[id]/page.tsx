@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation';
 import { getPoiDetail } from '@/lib/actions/pois';
+import { BadgeCheck, Leaf, Navigation, PawPrint, Sprout, TreePine } from 'lucide-react';
 
 // PRD §7.2 [장소 상세] — 사진·소개·펫정책 / 한적도 시간대 차트 / 검증 진행도 / 후기
 
@@ -26,19 +27,23 @@ export default async function PoiDetailPage({ params }: { params: Promise<{ id: 
 
       <div className="mt-3 flex flex-wrap gap-1.5">
         {poi.petAllowed && (
-          <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs text-emerald-700">
-            펫 동반
+          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-xs text-emerald-700">
+            <PawPrint className="h-3 w-3" aria-hidden /> 펫 동반
           </span>
         )}
         {poi.isWellness && (
-          <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs text-blue-700">웰니스</span>
+          <span className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2 py-0.5 text-xs text-blue-700">
+            <Sprout className="h-3 w-3" aria-hidden /> 웰니스
+          </span>
         )}
         {poi.isEco && (
-          <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs text-green-700">생태</span>
+          <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-xs text-green-700">
+            <Leaf className="h-3 w-3" aria-hidden /> 생태
+          </span>
         )}
         {poi.durunubi && (
-          <span className="rounded-full bg-purple-100 px-2 py-0.5 text-xs text-purple-700">
-            두루누비
+          <span className="inline-flex items-center gap-1 rounded-full bg-purple-100 px-2 py-0.5 text-xs text-purple-700">
+            <TreePine className="h-3 w-3" aria-hidden /> 두루누비
           </span>
         )}
       </div>
@@ -79,8 +84,9 @@ export default async function PoiDetailPage({ params }: { params: Promise<{ id: 
       <section className="mt-5 rounded-xl border border-gray-200 bg-white p-4">
         <h2 className="mb-2 text-sm font-semibold">펫동반 검증 진행도</h2>
         <div className="flex items-center justify-between text-xs">
-          <span className="text-gray-600">
-            방문 검증 {verifiedCount}/3명 {verifiedCount >= 3 && '✓ 검증 완료'}
+          <span className="inline-flex items-center gap-1 text-gray-600">
+            방문 검증 {verifiedCount}/3명
+            {verifiedCount >= 3 && <BadgeCheck className="h-3.5 w-3.5 text-pink-500" aria-hidden />}
           </span>
         </div>
         <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-gray-200">
@@ -96,9 +102,9 @@ export default async function PoiDetailPage({ params }: { params: Promise<{ id: 
           href={`https://map.kakao.com/link/to/${encodeURIComponent(poi.name)},${poi.lat},${poi.lng}`}
           target="_blank"
           rel="noreferrer"
-          className="flex-1 rounded-md bg-brand px-4 py-3 text-center text-sm font-bold text-white hover:bg-brand-hover"
+          className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-md bg-brand px-4 py-3 text-center text-sm font-bold text-white hover:bg-brand-hover"
         >
-          카카오 길찾기
+          <Navigation className="h-4 w-4" aria-hidden /> 카카오 길찾기
         </a>
       </div>
     </main>

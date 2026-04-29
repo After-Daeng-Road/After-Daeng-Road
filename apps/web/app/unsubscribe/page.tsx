@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { prisma } from '@/lib/prisma';
 import { verifyUnsubscribeToken } from '@/lib/unsubscribe-token';
+import { AlertTriangle, CheckCircle2 } from 'lucide-react';
 
 // PRD §16.4 — 1탭 수신거부 (HMAC 토큰 검증 → 즉시 OFF)
 
@@ -48,7 +49,11 @@ export default async function UnsubscribePage({ searchParams }: { searchParams: 
 function Result({ title, message, ok }: { title: string; message: string; ok: boolean }) {
   return (
     <main className="mx-auto max-w-md px-4 py-16 text-center">
-      <div className="text-5xl">{ok ? '✅' : '⚠️'}</div>
+      {ok ? (
+        <CheckCircle2 className="mx-auto h-14 w-14 text-emerald-500" aria-hidden />
+      ) : (
+        <AlertTriangle className="mx-auto h-14 w-14 text-amber-500" aria-hidden />
+      )}
       <h1 className="mt-3 text-xl font-bold">{title}</h1>
       <p className="mt-2 text-sm text-gray-600">{message}</p>
       <Link

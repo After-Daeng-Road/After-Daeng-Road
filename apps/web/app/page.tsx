@@ -5,6 +5,22 @@
 
 import { useState, useTransition } from 'react';
 import { z } from 'zod';
+import {
+  ArrowRight,
+  BadgeCheck,
+  Bookmark,
+  Calendar,
+  Clock,
+  Dog,
+  Leaf,
+  Mail,
+  MapPin,
+  Menu,
+  Navigation,
+  PawPrint,
+  Search,
+  Share2,
+} from 'lucide-react';
 
 // ───────── 타입 / 스키마 ─────────
 
@@ -140,7 +156,9 @@ export default function HomePage() {
       {/* ═════ 헤더 ═════ */}
       <header className="border-b border-gray-200 bg-white">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
-          <div className="text-lg font-bold text-[#f56500]">🐕 댕로드</div>
+          <a href="/" className="flex items-center gap-1.5 text-lg font-bold text-brand">
+            <Dog className="h-5 w-5" aria-hidden /> 댕로드
+          </a>
           <nav className="hidden items-center gap-4 text-sm text-gray-600 sm:flex">
             <a href="/" className="hover:text-gray-900">
               홈
@@ -152,12 +170,12 @@ export default function HomePage() {
               마이페이지
             </a>
             <span className="text-gray-300">|</span>
-            <button type="button" className="font-semibold hover:text-gray-900">
+            <a href="/login" className="font-semibold hover:text-gray-900">
               로그인
-            </button>
+            </a>
           </nav>
-          <button type="button" className="text-xl sm:hidden" aria-label="메뉴">
-            ≡
+          <button type="button" className="sm:hidden" aria-label="메뉴">
+            <Menu className="h-5 w-5" />
           </button>
         </div>
       </header>
@@ -200,7 +218,9 @@ export default function HomePage() {
 
             {/* 1-2 출발지 */}
             <div className="mt-4">
-              <label className="mb-1.5 block text-xs font-medium text-gray-700">📍 출발지</label>
+              <label className="mb-1.5 flex items-center gap-1 text-xs font-medium text-gray-700">
+                <MapPin className="h-3.5 w-3.5" aria-hidden /> 출발지
+              </label>
               <div className="flex gap-1.5">
                 <select
                   value={departure.label}
@@ -239,7 +259,9 @@ export default function HomePage() {
 
             {/* 1-3 펫 선택 */}
             <div className="mt-3">
-              <label className="mb-1.5 block text-xs font-medium text-gray-700">🐶 펫</label>
+              <label className="mb-1.5 flex items-center gap-1 text-xs font-medium text-gray-700">
+                <Dog className="h-3.5 w-3.5" aria-hidden /> 펫
+              </label>
               {pets.length === 0 ? (
                 <a
                   href="/me/pets/new"
@@ -264,7 +286,9 @@ export default function HomePage() {
 
             {/* 1-4 출발 시각 */}
             <div className="mt-3">
-              <label className="mb-1.5 block text-xs font-medium text-gray-700">📅 출발 시각</label>
+              <label className="mb-1.5 flex items-center gap-1 text-xs font-medium text-gray-700">
+                <Clock className="h-3.5 w-3.5" aria-hidden /> 출발 시각
+              </label>
               <select
                 value={startAt}
                 onChange={(e) => setStartAt(e.target.value)}
@@ -285,7 +309,13 @@ export default function HomePage() {
               disabled={!canRecommend}
               className="mt-5 w-full rounded bg-[#f56500] py-3 text-sm font-bold text-white transition hover:bg-[#e65a00] disabled:cursor-not-allowed disabled:bg-gray-300"
             >
-              {isPending ? '추천 계산 중…' : '지금 추천받기 →'}
+              {isPending ? (
+                '추천 계산 중…'
+              ) : (
+                <span className="inline-flex items-center justify-center gap-1.5">
+                  지금 추천받기 <ArrowRight className="h-4 w-4" aria-hidden />
+                </span>
+              )}
             </button>
             {!selectedPetId && pets.length === 0 && (
               <p className="mt-2 text-center text-[11px] text-gray-500">
@@ -340,8 +370,9 @@ export default function HomePage() {
           <section className="mt-6 rounded-xl border border-yellow-200 bg-[#fff8e1] p-4">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <div className="text-sm font-bold">
-                  📧 매일 18시 한적도 추천을 메일로 받아볼래요?
+                <div className="flex items-center gap-1.5 text-sm font-bold">
+                  <Mail className="h-4 w-4 text-brand" aria-hidden /> 매일 18시 한적도 추천을 메일로
+                  받아볼래요?
                 </div>
                 <div className="mt-1 text-[11px] text-gray-600">
                   시간·요일 자율 설정 · 1탭 수신거부
@@ -372,12 +403,11 @@ export default function HomePage() {
         <button
           type="button"
           onClick={() => setFloatingDismissed(true)}
-          className="fixed bottom-5 right-5 flex h-16 w-16 flex-col items-center justify-center rounded-full bg-[#f56500] text-[11px] font-bold text-white shadow-lg hover:bg-[#e65a00]"
+          className="fixed bottom-5 right-5 flex h-16 w-16 flex-col items-center justify-center gap-0.5 rounded-full bg-brand text-[10px] font-bold text-white shadow-lg hover:bg-brand-hover"
           aria-label="검증 배지 안내"
         >
-          검증
-          <br />
-          배지
+          <BadgeCheck className="h-5 w-5" aria-hidden />
+          검증 배지
         </button>
       )}
     </div>
@@ -410,20 +440,23 @@ function RecommendCard({ rec }: { rec: Recommendation }) {
 
           {/* 2-2 3줄 근거 칩 */}
           <div className="mt-2 flex flex-wrap gap-1">
-            <Chip>
-              📍 {reason.distanceKm}km · {reason.etaMin}분
+            <Chip icon={<MapPin className="h-3 w-3" />}>
+              {reason.distanceKm}km · {reason.etaMin}분
             </Chip>
-            <Chip variant="green">
-              🌿 한적도 {rec.sampleSufficient ? `${reason.quietnessNow}점` : '표본 부족'}
+            <Chip variant="green" icon={<Leaf className="h-3 w-3" />}>
+              한적도 {rec.sampleSufficient ? `${reason.quietnessNow}점` : '표본 부족'}
             </Chip>
-            <Chip variant="pink">🐕 검증 배지 ({reason.verifiedCount}명)</Chip>
+            <Chip variant="pink" icon={<PawPrint className="h-3 w-3" />}>
+              검증 배지 ({reason.verifiedCount}명)
+            </Chip>
           </div>
 
           {/* 2-3 30일 예측 라벨 */}
           {rec.sampleSufficient && (
-            <div className="mt-1.5 text-[11px] text-blue-600">
-              📅 내일 같은 시간 <strong>{reason.quietnessForecast}점</strong>
-              {forecastUp && <span className="ml-1">↑</span>}
+            <div className="mt-1.5 flex items-center gap-1 text-[11px] text-blue-600">
+              <Calendar className="h-3 w-3" aria-hidden />
+              내일 같은 시간 <strong>{reason.quietnessForecast}점</strong>
+              {forecastUp && <span className="ml-0.5">↑</span>}
               {' · '}
               이번 주 평균 {reason.quietnessWeekAvg}점
             </div>
@@ -435,21 +468,21 @@ function RecommendCard({ rec }: { rec: Recommendation }) {
               href={`https://map.kakao.com/link/to/${encodeURIComponent(rec.name)},${rec.lat},${rec.lng}`}
               target="_blank"
               rel="noreferrer"
-              className="rounded bg-gray-700 px-3 py-1 text-[11px] font-bold text-white hover:bg-gray-800"
+              className="inline-flex items-center gap-1 rounded bg-gray-700 px-3 py-1 text-[11px] font-bold text-white hover:bg-gray-800"
             >
-              길찾기
+              <Navigation className="h-3 w-3" aria-hidden /> 길찾기
             </a>
             <button
               type="button"
-              className="rounded-full bg-gray-100 px-2.5 py-1 text-[11px] hover:bg-gray-200"
+              className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2.5 py-1 text-[11px] hover:bg-gray-200"
             >
-              저장
+              <Bookmark className="h-3 w-3" aria-hidden /> 저장
             </button>
             <button
               type="button"
-              className="rounded-full bg-gray-100 px-2.5 py-1 text-[11px] hover:bg-gray-200"
+              className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2.5 py-1 text-[11px] hover:bg-gray-200"
             >
-              공유
+              <Share2 className="h-3 w-3" aria-hidden /> 공유
             </button>
           </div>
         </div>
@@ -463,9 +496,11 @@ function RecommendCard({ rec }: { rec: Recommendation }) {
 function Chip({
   children,
   variant = 'gray',
+  icon,
 }: {
   children: React.ReactNode;
   variant?: 'gray' | 'green' | 'pink';
+  icon?: React.ReactNode;
 }) {
   const colors = {
     gray: 'bg-gray-100 text-gray-700',
@@ -473,7 +508,10 @@ function Chip({
     pink: 'bg-pink-100 text-pink-700',
   }[variant];
   return (
-    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] ${colors}`}>
+    <span
+      className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] ${colors}`}
+    >
+      {icon}
       {children}
     </span>
   );
@@ -505,12 +543,15 @@ function RecommendSkeleton() {
 function EmptyState({ onRelax }: { onRelax: () => void }) {
   return (
     <div className="rounded-xl border border-dashed border-gray-300 bg-white p-6 text-center">
-      <div className="text-sm font-medium text-gray-700">조건에 맞는 한적한 곳을 찾지 못했어요</div>
+      <Search className="mx-auto h-8 w-8 text-gray-300" aria-hidden />
+      <div className="mt-2 text-sm font-medium text-gray-700">
+        조건에 맞는 한적한 곳을 찾지 못했어요
+      </div>
       <p className="mt-1 text-xs text-gray-500">시간을 늘리거나 다른 출발지로 시도해 보세요</p>
       <button
         type="button"
         onClick={onRelax}
-        className="mt-3 rounded bg-[#f56500] px-3 py-2 text-xs font-bold text-white hover:bg-[#e65a00]"
+        className="mt-3 rounded bg-brand px-3 py-2 text-xs font-bold text-white hover:bg-brand-hover"
       >
         시간 +1시간 늘려서 다시
       </button>

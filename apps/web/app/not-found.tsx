@@ -1,9 +1,10 @@
 import Link from 'next/link';
+import { Dog } from 'lucide-react';
 
 export default function NotFound() {
   return (
     <main className="mx-auto max-w-md px-4 py-16 text-center">
-      <div className="text-6xl">🐕</div>
+      <Dog className="mx-auto h-14 w-14 text-brand" aria-hidden />
       <h1 className="mt-3 text-xl font-bold">길을 잃었어요</h1>
       <p className="mt-2 text-sm text-gray-600">찾으시는 페이지가 없거나 이동되었어요.</p>
       <Link
