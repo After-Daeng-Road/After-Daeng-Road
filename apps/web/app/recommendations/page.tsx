@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { ArrowRight, Clock, History, Inbox, Leaf, MapPin, PawPrint, Sparkles } from 'lucide-react';
+import { Chip } from '@/components/ui/chip';
 import { LoginRequiredCard } from '@/components/ui/login-required-card';
 
 // PRD §7.2 [마이펫타임] — 최근 추천 이력
@@ -98,12 +99,16 @@ export default async function RecommendationsPage() {
                             {it.reason && (
                               <span className="mt-1 flex flex-wrap gap-1">
                                 {it.reason.distanceKm != null && (
-                                  <Chip icon={<MapPin className="h-2.5 w-2.5" aria-hidden />}>
+                                  <Chip
+                                    size="xs"
+                                    icon={<MapPin className="h-2.5 w-2.5" aria-hidden />}
+                                  >
                                     {it.reason.distanceKm}km · {it.reason.etaMin}분
                                   </Chip>
                                 )}
                                 {it.reason.quietnessNow != null && (
                                   <Chip
+                                    size="xs"
                                     variant="green"
                                     icon={<Leaf className="h-2.5 w-2.5" aria-hidden />}
                                   >
@@ -112,6 +117,7 @@ export default async function RecommendationsPage() {
                                 )}
                                 {it.reason.verifiedCount != null && it.reason.verifiedCount > 0 && (
                                   <Chip
+                                    size="xs"
                                     variant="pink"
                                     icon={<PawPrint className="h-2.5 w-2.5" aria-hidden />}
                                   >
@@ -149,30 +155,6 @@ function EmptyState() {
         <ArrowRight className="h-3 w-3" aria-hidden />
       </Link>
     </div>
-  );
-}
-
-function Chip({
-  children,
-  variant = 'gray',
-  icon,
-}: {
-  children: React.ReactNode;
-  variant?: 'gray' | 'green' | 'pink';
-  icon?: React.ReactNode;
-}) {
-  const colors = {
-    gray: 'bg-gray-100 text-gray-700',
-    green: 'bg-green-100 text-green-700',
-    pink: 'bg-pink-100 text-pink-700',
-  }[variant];
-  return (
-    <span
-      className={`inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[10px] ${colors}`}
-    >
-      {icon}
-      {children}
-    </span>
   );
 }
 
