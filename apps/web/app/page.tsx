@@ -12,7 +12,7 @@ import { EmptyResult } from '@/components/recommend/empty-result';
 import { FloatingBadgeGuide } from '@/components/recommend/floating-badge-guide';
 import { RecommendCard } from '@/components/recommend/recommend-card';
 import { RecommendSkeleton } from '@/components/recommend/recommend-skeleton';
-import type { Recommendation } from '@/lib/types/recommendation';
+import type { Pet, Recommendation, RecommendInput } from '@/lib/types/recommendation';
 
 // ───────── 타입 / 스키마 ─────────
 
@@ -26,16 +26,6 @@ const RecommendInputSchema = z.object({
     label: z.string().optional(),
   }),
 });
-
-type RecommendInput = z.infer<typeof RecommendInputSchema>;
-
-type Pet = {
-  id: string;
-  name: string;
-  breed: string;
-  weightKg: number;
-  ageYears: number;
-};
 
 // ───────── 상수 ─────────
 

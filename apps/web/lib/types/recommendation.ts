@@ -22,3 +22,22 @@ export type Recommendation = {
   reason: ReasonChip;
   sampleSufficient: boolean;
 };
+
+export type Pet = {
+  id: string;
+  name: string;
+  breed: string;
+  weightKg: number;
+  ageYears: number;
+};
+
+export type RecommendInput = {
+  petId: string | null;
+  timeHours: number;
+  startAt: string;
+  departure: {
+    lat: number;
+    lng: number;
+    label?: string;
+  };
+};
