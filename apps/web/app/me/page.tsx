@@ -14,6 +14,7 @@ import {
   Shield,
   Star,
 } from 'lucide-react';
+import { NavListItem } from '@/components/ui/nav-list-item';
 import { Stat } from '@/components/ui/stat';
 
 // PRD §7.2 [마이펫타임] — 펫 프로필 / 다녀온 곳 / 후기 / 알림 설정
@@ -111,26 +112,26 @@ export default async function MePage() {
 
       {/* 메뉴 */}
       <nav className="mt-4 space-y-2">
-        <NavItem
+        <NavListItem
           href="/me/settings"
           icon={<Bell className="h-4 w-4" aria-hidden />}
           title="이메일 알림 설정"
           subtitle="시간·요일 자율 설정 · 1탭 수신거부"
         />
-        <NavItem
+        <NavListItem
           href="/recommendations"
           icon={<History className="h-4 w-4" aria-hidden />}
           title="최근 추천 이력"
           subtitle="최근 받은 추천 다시 보기"
         />
-        <NavItem
+        <NavListItem
           href="#"
           icon={<Star className="h-4 w-4" aria-hidden />}
           title="내가 쓴 후기"
           subtitle="작성한 후기 관리"
           disabled
         />
-        <NavItem
+        <NavListItem
           href="#"
           icon={<Heart className="h-4 w-4" aria-hidden />}
           title="저장한 장소"
@@ -174,51 +175,5 @@ function LoggedOutState() {
         <p className="mt-4 text-[11px] text-gray-400">카카오 · 네이버로 5초 안에 시작</p>
       </div>
     </main>
-  );
-}
-
-function NavItem({
-  href,
-  icon,
-  title,
-  subtitle,
-  disabled,
-}: {
-  href: string;
-  icon: React.ReactNode;
-  title: string;
-  subtitle?: string;
-  disabled?: boolean;
-}) {
-  const inner = (
-    <>
-      <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-brand-light text-brand">
-        {icon}
-      </span>
-      <span className="min-w-0 flex-1 text-left">
-        <span className="block text-sm font-medium">{title}</span>
-        {subtitle && <span className="block text-[11px] text-gray-500">{subtitle}</span>}
-      </span>
-      <ChevronRight className="h-4 w-4 flex-shrink-0 text-gray-300" aria-hidden />
-    </>
-  );
-
-  if (disabled) {
-    return (
-      <div
-        aria-disabled="true"
-        className="flex cursor-not-allowed items-center gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3 opacity-50"
-      >
-        {inner}
-      </div>
-    );
-  }
-  return (
-    <Link
-      href={href}
-      className="flex items-center gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3 hover:border-brand"
-    >
-      {inner}
-    </Link>
   );
 }
