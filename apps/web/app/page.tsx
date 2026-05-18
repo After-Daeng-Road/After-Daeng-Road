@@ -5,6 +5,7 @@
 
 import { useState, useTransition } from 'react';
 import { z } from 'zod';
+import { ErrorBanner } from '@/components/ui/error-banner';
 import { EmailCta } from '@/components/recommend/email-cta';
 import { FloatingBadgeGuide } from '@/components/recommend/floating-badge-guide';
 import { RecommendForm } from '@/components/recommend/recommend-form';
@@ -81,18 +82,8 @@ export default function HomePage() {
           onSubmit={handleRecommend}
         />
 
-        {/* ═════ 에러 토스트 ═════ */}
-        {error && (
-          <div
-            role="alert"
-            className="mt-4 flex items-center justify-between gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
-          >
-            <span>{error}</span>
-            <button type="button" onClick={() => setError(null)} className="text-xs underline">
-              닫기
-            </button>
-          </div>
-        )}
+        {/* ═════ 에러 배너 ═════ */}
+        {error && <ErrorBanner message={error} onDismiss={() => setError(null)} />}
 
         {/* ═════ 2. 추천 결과 영역 ═════ */}
         <RecommendResults
