@@ -8,12 +8,12 @@ import {
   FileText,
   Heart,
   History,
-  LogIn,
   LogOut,
   Plus,
   Shield,
   Star,
 } from 'lucide-react';
+import { LoginRequiredCard } from '@/components/ui/login-required-card';
 import { NavListItem } from '@/components/ui/nav-list-item';
 import { Stat } from '@/components/ui/stat';
 
@@ -23,7 +23,16 @@ export default async function MePage() {
   const session = await auth();
 
   if (!session?.user) {
-    return <LoggedOutState />;
+    return (
+      <LoginRequiredCard
+        icon={<Dog className="h-8 w-8 text-brand" aria-hidden />}
+        title="로그인이 필요해요"
+        description="로그인하면 펫 프로필·추천 이력·알림 설정을 볼 수 있어요."
+        callbackUrl="/me"
+        ctaLabel="로그인 / 회원가입"
+        footer="카카오 · 네이버로 5초 안에 시작"
+      />
+    );
   }
 
   const pets = await listPets();
@@ -150,29 +159,6 @@ export default async function MePage() {
         <Link href="/legal/privacy" className="inline-flex items-center gap-1 hover:text-gray-700">
           <Shield className="h-3 w-3" aria-hidden /> 개인정보처리방침
         </Link>
-      </div>
-    </main>
-  );
-}
-
-function LoggedOutState() {
-  return (
-    <main className="mx-auto max-w-md px-4 py-12 sm:py-16">
-      <div className="rounded-2xl border border-gray-200 bg-white p-8 text-center">
-        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-brand-light">
-          <Dog className="h-8 w-8 text-brand" aria-hidden />
-        </div>
-        <h1 className="mt-4 text-lg font-bold">로그인이 필요해요</h1>
-        <p className="mt-1.5 text-sm text-gray-500">
-          로그인하면 펫 프로필·추천 이력·알림 설정을 볼 수 있어요.
-        </p>
-        <Link
-          href="/login?callbackUrl=/me"
-          className="mt-6 inline-flex items-center gap-1.5 rounded-md bg-brand px-6 py-3 text-sm font-bold text-white hover:bg-brand-hover"
-        >
-          <LogIn className="h-4 w-4" aria-hidden /> 로그인 / 회원가입
-        </Link>
-        <p className="mt-4 text-[11px] text-gray-400">카카오 · 네이버로 5초 안에 시작</p>
       </div>
     </main>
   );
