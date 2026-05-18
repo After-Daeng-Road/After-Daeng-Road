@@ -6,8 +6,9 @@
 import { useState, useTransition } from 'react';
 import Link from 'next/link';
 import { z } from 'zod';
-import { ArrowRight, BadgeCheck, ChevronDown, Clock, Dog, Mail, MapPin } from 'lucide-react';
+import { ArrowRight, ChevronDown, Clock, Dog, Mail, MapPin } from 'lucide-react';
 import { EmptyResult } from '@/components/recommend/empty-result';
+import { FloatingBadgeGuide } from '@/components/recommend/floating-badge-guide';
 import { RecommendCard } from '@/components/recommend/recommend-card';
 import { RecommendSkeleton } from '@/components/recommend/recommend-skeleton';
 import type { Recommendation } from '@/lib/types/recommendation';
@@ -81,7 +82,6 @@ export default function HomePage() {
 
   // 알림 / 플로팅 디스미스
   const [emailCtaDismissed, setEmailCtaDismissed] = useState(false);
-  const [floatingDismissed, setFloatingDismissed] = useState(false);
 
   const radiusKm = Math.round((timeHours / 2) * 50);
   const canRecommend = selectedPetId !== null && !isPending;
@@ -357,17 +357,7 @@ export default function HomePage() {
       </main>
 
       {/* ═════ 4. 검증 배지 가이드 플로팅 ═════ */}
-      {!floatingDismissed && (
-        <button
-          type="button"
-          onClick={() => setFloatingDismissed(true)}
-          className="fixed bottom-5 right-5 flex h-16 w-16 flex-col items-center justify-center gap-0.5 rounded-full bg-brand text-[10px] font-bold text-white shadow-lg hover:bg-brand-hover"
-          aria-label="검증 배지 안내"
-        >
-          <BadgeCheck className="h-5 w-5" aria-hidden />
-          검증 배지
-        </button>
-      )}
+      <FloatingBadgeGuide />
     </>
   );
 }
