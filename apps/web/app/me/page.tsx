@@ -14,6 +14,7 @@ import {
   Shield,
   Star,
 } from 'lucide-react';
+import { Stat } from '@/components/ui/stat';
 
 // PRD §7.2 [마이펫타임] — 펫 프로필 / 다녀온 곳 / 후기 / 알림 설정
 
@@ -173,15 +174,6 @@ function LoggedOutState() {
         <p className="mt-4 text-[11px] text-gray-400">카카오 · 네이버로 5초 안에 시작</p>
       </div>
     </main>
-  );
-}
-
-function Stat({ label, value }: { label: string; value: number }) {
-  return (
-    <div>
-      <div className="text-base font-bold text-brand">{value}</div>
-      <div className="text-[11px] text-gray-500">{label}</div>
-    </div>
   );
 }
 
