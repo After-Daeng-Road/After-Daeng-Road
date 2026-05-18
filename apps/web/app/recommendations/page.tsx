@@ -1,17 +1,8 @@
 import Link from 'next/link';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
-import {
-  ArrowRight,
-  Clock,
-  History,
-  Inbox,
-  Leaf,
-  LogIn,
-  MapPin,
-  PawPrint,
-  Sparkles,
-} from 'lucide-react';
+import { ArrowRight, Clock, History, Inbox, Leaf, MapPin, PawPrint, Sparkles } from 'lucide-react';
+import { LoginRequiredCard } from '@/components/ui/login-required-card';
 
 // PRD §7.2 [마이펫타임] — 최근 추천 이력
 
@@ -31,7 +22,16 @@ type ResultPoi = {
 
 export default async function RecommendationsPage() {
   const session = await auth();
-  if (!session?.user?.id) return <LoggedOutState />;
+  if (!session?.user?.id) {
+    return (
+      <LoginRequiredCard
+        icon={<History className="h-8 w-8 text-brand" aria-hidden />}
+        title="로그인하면 추천 이력을 볼 수 있어요"
+        description="한적도가 매시간 갱신돼 같은 곳도 시점에 따라 결과가 달라져요."
+        callbackUrl="/recommendations"
+      />
+    );
+  }
 
   const recs = await prisma.recommendation.findMany({
     where: { userId: session.user.id },
@@ -149,28 +149,6 @@ function EmptyState() {
         <ArrowRight className="h-3 w-3" aria-hidden />
       </Link>
     </div>
-  );
-}
-
-function LoggedOutState() {
-  return (
-    <main className="mx-auto max-w-md px-4 py-12 sm:py-16">
-      <div className="rounded-2xl border border-gray-200 bg-white p-8 text-center">
-        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-brand-light">
-          <History className="h-8 w-8 text-brand" aria-hidden />
-        </div>
-        <h1 className="mt-4 text-lg font-bold">로그인하면 추천 이력을 볼 수 있어요</h1>
-        <p className="mt-1.5 text-sm text-gray-500">
-          한적도가 매시간 갱신돼 같은 곳도 시점에 따라 결과가 달라져요.
-        </p>
-        <Link
-          href="/login?callbackUrl=/recommendations"
-          className="mt-6 inline-flex items-center gap-1.5 rounded-md bg-brand px-6 py-3 text-sm font-bold text-white hover:bg-brand-hover"
-        >
-          <LogIn className="h-4 w-4" aria-hidden /> 로그인
-        </Link>
-      </div>
-    </main>
   );
 }
 
