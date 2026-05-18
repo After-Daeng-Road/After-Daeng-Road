@@ -1,7 +1,8 @@
 import Link from 'next/link';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
-import { ArrowRight, Clock, History, Inbox, Leaf, MapPin, PawPrint, Sparkles } from 'lucide-react';
+import { Clock, History, Leaf, MapPin, PawPrint } from 'lucide-react';
+import { RecommendationsEmpty } from '@/components/recommend/recommendations-empty';
 import { Chip } from '@/components/ui/chip';
 import { LoginRequiredCard } from '@/components/ui/login-required-card';
 import { formatDate, formatRelative } from '@/lib/format';
@@ -58,7 +59,7 @@ export default async function RecommendationsPage() {
       </header>
 
       {recs.length === 0 ? (
-        <EmptyState />
+        <RecommendationsEmpty />
       ) : (
         <ul className="space-y-3">
           {recs.map((r) => {
@@ -139,22 +140,5 @@ export default async function RecommendationsPage() {
         </ul>
       )}
     </main>
-  );
-}
-
-function EmptyState() {
-  return (
-    <div className="rounded-2xl border border-dashed border-gray-300 bg-white p-10 text-center">
-      <Inbox className="mx-auto h-10 w-10 text-gray-300" aria-hidden />
-      <p className="mt-3 text-sm font-medium text-gray-700">아직 추천 이력이 없어요</p>
-      <p className="mt-1 text-xs text-gray-500">메인에서 시간 슬라이더로 첫 추천을 받아보세요</p>
-      <Link
-        href="/"
-        className="mt-5 inline-flex items-center gap-1.5 rounded-md bg-brand px-4 py-2.5 text-xs font-bold text-white hover:bg-brand-hover"
-      >
-        <Sparkles className="h-3.5 w-3.5" aria-hidden /> 지금 추천받기
-        <ArrowRight className="h-3 w-3" aria-hidden />
-      </Link>
-    </div>
   );
 }
