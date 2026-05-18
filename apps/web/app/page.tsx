@@ -4,12 +4,14 @@
 // 참조: daengroad_ui_spec_3.1_main_v0.1.html v0.1 / PRD v1.0.5 §6, §8, §12
 
 import { useState, useTransition } from 'react';
+import Link from 'next/link';
 import { z } from 'zod';
 import {
   ArrowRight,
   BadgeCheck,
   Bookmark,
   Calendar,
+  ChevronDown,
   Clock,
   Dog,
   Leaf,
@@ -156,23 +158,23 @@ export default function HomePage() {
       {/* ═════ 헤더 ═════ */}
       <header className="border-b border-gray-200 bg-white">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
-          <a href="/" className="flex items-center gap-1.5 text-lg font-bold text-brand">
+          <Link href="/" className="flex items-center gap-1.5 text-lg font-bold text-brand">
             <Dog className="h-5 w-5" aria-hidden /> 댕로드
-          </a>
+          </Link>
           <nav className="hidden items-center gap-4 text-sm text-gray-600 sm:flex">
-            <a href="/" className="hover:text-gray-900">
+            <Link href="/" className="hover:text-gray-900">
               홈
-            </a>
-            <a href="/recommendations" className="hover:text-gray-900">
+            </Link>
+            <Link href="/recommendations" className="hover:text-gray-900">
               추천
-            </a>
-            <a href="/me" className="hover:text-gray-900">
+            </Link>
+            <Link href="/me" className="hover:text-gray-900">
               마이페이지
-            </a>
+            </Link>
             <span className="text-gray-300">|</span>
-            <a href="/login" className="font-semibold hover:text-gray-900">
+            <Link href="/login" className="font-semibold hover:text-gray-900">
               로그인
-            </a>
+            </Link>
           </nav>
           <button type="button" className="sm:hidden" aria-label="메뉴">
             <Menu className="h-5 w-5" />
@@ -222,22 +224,28 @@ export default function HomePage() {
                 <MapPin className="h-3.5 w-3.5" aria-hidden /> 출발지
               </label>
               <div className="flex gap-1.5">
-                <select
-                  value={departure.label}
-                  onChange={(e) => {
-                    const next = Object.values(CHUNGNAM_SEED).find(
-                      (c) => c.label === e.target.value,
-                    );
-                    if (next) setDeparture(next);
-                  }}
-                  className="flex-1 rounded border border-gray-300 bg-white px-3 py-2.5 text-sm"
-                >
-                  {Object.values(CHUNGNAM_SEED).map((c) => (
-                    <option key={c.label} value={c.label}>
-                      {c.label} (충남)
-                    </option>
-                  ))}
-                </select>
+                <div className="relative flex-1">
+                  <select
+                    value={departure.label}
+                    onChange={(e) => {
+                      const next = Object.values(CHUNGNAM_SEED).find(
+                        (c) => c.label === e.target.value,
+                      );
+                      if (next) setDeparture(next);
+                    }}
+                    className="w-full appearance-none rounded border border-gray-300 bg-white py-2.5 pl-3 pr-8 text-sm"
+                  >
+                    {Object.values(CHUNGNAM_SEED).map((c) => (
+                      <option key={c.label} value={c.label}>
+                        {c.label} (충남)
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown
+                    className="pointer-events-none absolute right-2 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500"
+                    aria-hidden
+                  />
+                </div>
                 <button
                   type="button"
                   onClick={() => {
@@ -263,24 +271,30 @@ export default function HomePage() {
                 <Dog className="h-3.5 w-3.5" aria-hidden /> 펫
               </label>
               {pets.length === 0 ? (
-                <a
+                <Link
                   href="/me/pets/new"
                   className="block rounded border border-dashed border-gray-300 bg-white px-3 py-2.5 text-center text-xs text-[#f56500] hover:bg-[#fff5f0]"
                 >
                   펫 등록하기 →
-                </a>
+                </Link>
               ) : (
-                <select
-                  value={selectedPetId ?? ''}
-                  onChange={(e) => setSelectedPetId(e.target.value)}
-                  className="w-full rounded border border-gray-300 bg-white px-3 py-2.5 text-sm"
-                >
-                  {pets.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.name} ({p.breed} · {p.weightKg}kg · {p.ageYears}살)
-                    </option>
-                  ))}
-                </select>
+                <div className="relative">
+                  <select
+                    value={selectedPetId ?? ''}
+                    onChange={(e) => setSelectedPetId(e.target.value)}
+                    className="w-full appearance-none rounded border border-gray-300 bg-white py-2.5 pl-3 pr-8 text-sm"
+                  >
+                    {pets.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.name} ({p.breed} · {p.weightKg}kg · {p.ageYears}살)
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown
+                    className="pointer-events-none absolute right-2 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500"
+                    aria-hidden
+                  />
+                </div>
               )}
             </div>
 
@@ -289,17 +303,23 @@ export default function HomePage() {
               <label className="mb-1.5 flex items-center gap-1 text-xs font-medium text-gray-700">
                 <Clock className="h-3.5 w-3.5" aria-hidden /> 출발 시각
               </label>
-              <select
-                value={startAt}
-                onChange={(e) => setStartAt(e.target.value)}
-                className="w-full rounded border border-gray-300 bg-white px-3 py-2.5 text-sm"
-              >
-                {START_AT_OPTIONS.map((o) => (
-                  <option key={o.value} value={o.value}>
-                    {o.label}
-                  </option>
-                ))}
-              </select>
+              <div className="relative">
+                <select
+                  value={startAt}
+                  onChange={(e) => setStartAt(e.target.value)}
+                  className="w-full appearance-none rounded border border-gray-300 bg-white py-2.5 pl-3 pr-8 text-sm"
+                >
+                  {START_AT_OPTIONS.map((o) => (
+                    <option key={o.value} value={o.value}>
+                      {o.label}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown
+                  className="pointer-events-none absolute right-2 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500"
+                  aria-hidden
+                />
+              </div>
             </div>
 
             {/* 1-5 추천받기 버튼 */}
@@ -431,9 +451,9 @@ function RecommendCard({ rec }: { rec: Recommendation }) {
         </div>
 
         <div className="min-w-0 flex-1">
-          <a href={`/poi/${rec.poiId}`} className="block text-sm font-bold hover:underline">
+          <Link href={`/poi/${rec.poiId}`} className="block text-sm font-bold hover:underline">
             {rec.name}
-          </a>
+          </Link>
           <div className="mt-0.5 truncate text-[11px] text-gray-500">
             {rec.address} · {rec.sourceLabel}
           </div>
