@@ -6,11 +6,9 @@
 import { useState, useTransition } from 'react';
 import { z } from 'zod';
 import { EmailCta } from '@/components/recommend/email-cta';
-import { EmptyResult } from '@/components/recommend/empty-result';
 import { FloatingBadgeGuide } from '@/components/recommend/floating-badge-guide';
-import { RecommendCard } from '@/components/recommend/recommend-card';
 import { RecommendForm } from '@/components/recommend/recommend-form';
-import { RecommendSkeleton } from '@/components/recommend/recommend-skeleton';
+import { RecommendResults } from '@/components/recommend/recommend-results';
 import type { Pet, Recommendation, RecommendInput } from '@/lib/types/recommendation';
 
 // ───────── 타입 / 스키마 ─────────
@@ -97,31 +95,12 @@ export default function HomePage() {
         )}
 
         {/* ═════ 2. 추천 결과 영역 ═════ */}
-        {(isPending || results !== null) && (
-          <section className="mt-6">
-            <h2 className="mb-3 font-semibold">
-              {timeHours}시간 안에 다녀올 수 있는 한적한 곳 {results?.length ?? 3}
-            </h2>
-
-            {isPending && <RecommendSkeleton />}
-
-            {!isPending && results !== null && results.length === 0 && (
-              <EmptyResult
-                onRelax={() => {
-                  setTimeHours(Math.min(TIME_MAX, timeHours + 1));
-                }}
-              />
-            )}
-
-            {!isPending && results !== null && results.length > 0 && (
-              <div className="space-y-3">
-                {results.map((rec) => (
-                  <RecommendCard key={rec.poiId} rec={rec} />
-                ))}
-              </div>
-            )}
-          </section>
-        )}
+        <RecommendResults
+          results={results}
+          loading={isPending}
+          timeHours={timeHours}
+          onRelax={() => setTimeHours(Math.min(TIME_MAX, timeHours + 1))}
+        />
 
         {/* ═════ 3. 이메일 알림 CTA ═════ */}
         <EmailCta />
