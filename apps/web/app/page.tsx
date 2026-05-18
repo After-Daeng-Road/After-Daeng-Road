@@ -17,7 +17,6 @@ import {
   Leaf,
   Mail,
   MapPin,
-  Menu,
   Navigation,
   PawPrint,
   Search,
@@ -154,34 +153,7 @@ export default function HomePage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f4f4f6]">
-      {/* ═════ 헤더 ═════ */}
-      <header className="border-b border-gray-200 bg-white">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
-          <Link href="/" className="flex items-center gap-1.5 text-lg font-bold text-brand">
-            <Dog className="h-5 w-5" aria-hidden /> 댕로드
-          </Link>
-          <nav className="hidden items-center gap-4 text-sm text-gray-600 sm:flex">
-            <Link href="/" className="hover:text-gray-900">
-              홈
-            </Link>
-            <Link href="/recommendations" className="hover:text-gray-900">
-              추천
-            </Link>
-            <Link href="/me" className="hover:text-gray-900">
-              마이페이지
-            </Link>
-            <span className="text-gray-300">|</span>
-            <Link href="/login" className="font-semibold hover:text-gray-900">
-              로그인
-            </Link>
-          </nav>
-          <button type="button" className="sm:hidden" aria-label="메뉴">
-            <Menu className="h-5 w-5" />
-          </button>
-        </div>
-      </header>
-
+    <>
       <main className="mx-auto max-w-2xl px-4 py-6 sm:py-10">
         {/* ═════ 1. 메인 검색 영역 ═════ */}
         <section className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm sm:p-7">
@@ -430,7 +402,7 @@ export default function HomePage() {
           검증 배지
         </button>
       )}
-    </div>
+    </>
   );
 }
 

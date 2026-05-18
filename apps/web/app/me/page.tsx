@@ -1,38 +1,70 @@
 import Link from 'next/link';
 import { auth, signOut } from '@/auth';
 import { listPets } from '@/lib/actions/pets';
-import { ChevronRight, Dog, History, LogOut, Mail, Plus } from 'lucide-react';
+import {
+  Bell,
+  ChevronRight,
+  Dog,
+  FileText,
+  Heart,
+  History,
+  LogIn,
+  LogOut,
+  Plus,
+  Shield,
+  Star,
+} from 'lucide-react';
 
 // PRD §7.2 [마이펫타임] — 펫 프로필 / 다녀온 곳 / 후기 / 알림 설정
 
 export default async function MePage() {
   const session = await auth();
-  if (!session?.user) return null; // middleware가 /login 리다이렉트
+
+  if (!session?.user) {
+    return <LoggedOutState />;
+  }
+
   const pets = await listPets();
+  const displayName = session.user.name ?? '댕로드 친구';
+  const email = session.user.email ?? '';
 
   return (
-    <main className="mx-auto max-w-2xl px-4 py-8">
-      <header className="mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-bold">마이펫타임</h1>
-          <p className="mt-1 text-sm text-gray-500">{session.user.email}</p>
-        </div>
-        <form
-          action={async () => {
-            'use server';
-            await signOut({ redirectTo: '/' });
-          }}
-        >
-          <button
-            type="submit"
-            className="inline-flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700"
+    <main className="mx-auto max-w-2xl px-4 py-6 sm:py-8">
+      {/* 프로필 카드 */}
+      <section className="rounded-2xl border border-gray-200 bg-white p-5">
+        <div className="flex items-center gap-4">
+          <div className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-full bg-brand-light">
+            <Dog className="h-7 w-7 text-brand" aria-hidden />
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="truncate text-base font-bold">{displayName}</div>
+            {email && <div className="truncate text-xs text-gray-500">{email}</div>}
+          </div>
+          <form
+            action={async () => {
+              'use server';
+              await signOut({ redirectTo: '/' });
+            }}
           >
-            <LogOut className="h-3.5 w-3.5" aria-hidden /> 로그아웃
-          </button>
-        </form>
-      </header>
+            <button
+              type="submit"
+              className="inline-flex items-center gap-1 rounded-md border border-gray-200 px-2.5 py-1.5 text-[11px] text-gray-600 hover:bg-gray-50"
+            >
+              <LogOut className="h-3 w-3" aria-hidden /> 로그아웃
+            </button>
+          </form>
+        </div>
 
-      <section className="mb-6 rounded-2xl border border-gray-200 bg-white p-5">
+        {/* 활동 요약 */}
+        <div className="mt-5 grid grid-cols-3 gap-2 rounded-xl bg-gray-50 p-3 text-center">
+          <Stat label="다녀온 곳" value={0} />
+          <Stat label="작성한 후기" value={0} />
+          <Stat label="받은 검증" value={0} />
+        </div>
+      </section>
+
+      {/* 내 반려견 */}
+      <section className="mt-4 rounded-2xl border border-gray-200 bg-white p-5">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="font-semibold">내 반려견</h2>
           <Link
@@ -43,56 +75,158 @@ export default async function MePage() {
           </Link>
         </div>
         {pets.length === 0 ? (
-          <p className="text-sm text-gray-500">아직 등록된 반려견이 없어요.</p>
+          <Link
+            href="/me/pets/new"
+            className="flex flex-col items-center gap-1.5 rounded-xl border border-dashed border-gray-300 bg-gray-50 px-4 py-6 text-center hover:bg-gray-100"
+          >
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white">
+              <Plus className="h-5 w-5 text-gray-400" aria-hidden />
+            </div>
+            <span className="text-sm font-medium text-gray-700">첫 반려견을 등록해보세요</span>
+            <span className="text-xs text-gray-500">한 마리 등록하면 맞춤 추천이 시작돼요</span>
+          </Link>
         ) : (
           <ul className="space-y-2">
             {pets.map((p) => (
               <li
                 key={p.id}
-                className="flex items-center gap-3 rounded-lg border border-gray-100 bg-gray-50 px-3 py-2"
+                className="flex items-center gap-3 rounded-xl border border-gray-100 bg-gray-50 px-3 py-3"
               >
-                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gray-200">
-                  <Dog className="h-5 w-5 text-gray-500" aria-hidden />
+                <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-white">
+                  <Dog className="h-5 w-5 text-brand" aria-hidden />
                 </div>
-                <div className="flex-1">
-                  <div className="text-sm font-medium">{p.name}</div>
+                <div className="min-w-0 flex-1">
+                  <div className="truncate text-sm font-medium">{p.name}</div>
                   <div className="text-[11px] text-gray-500">
                     {p.breed} · {String(p.weightKg)}kg · {p.ageYears}살
                   </div>
                 </div>
+                <ChevronRight className="h-4 w-4 text-gray-300" aria-hidden />
               </li>
             ))}
           </ul>
         )}
       </section>
 
-      <nav className="space-y-2">
+      {/* 메뉴 */}
+      <nav className="mt-4 space-y-2">
         <NavItem
           href="/me/settings"
-          icon={<Mail className="h-4 w-4 text-brand" aria-hidden />}
+          icon={<Bell className="h-4 w-4" aria-hidden />}
           title="이메일 알림 설정"
+          subtitle="시간·요일 자율 설정 · 1탭 수신거부"
         />
         <NavItem
           href="/recommendations"
-          icon={<History className="h-4 w-4 text-brand" aria-hidden />}
+          icon={<History className="h-4 w-4" aria-hidden />}
           title="최근 추천 이력"
+          subtitle="최근 받은 추천 다시 보기"
+        />
+        <NavItem
+          href="#"
+          icon={<Star className="h-4 w-4" aria-hidden />}
+          title="내가 쓴 후기"
+          subtitle="작성한 후기 관리"
+          disabled
+        />
+        <NavItem
+          href="#"
+          icon={<Heart className="h-4 w-4" aria-hidden />}
+          title="저장한 장소"
+          subtitle="북마크한 펫 외출 코스"
+          disabled
         />
       </nav>
+
+      <div className="mt-6 flex items-center gap-4 px-1 text-xs text-gray-500">
+        <Link href="/legal/terms" className="inline-flex items-center gap-1 hover:text-gray-700">
+          <FileText className="h-3 w-3" aria-hidden /> 이용약관
+        </Link>
+        <span className="text-gray-300" aria-hidden>
+          ·
+        </span>
+        <Link href="/legal/privacy" className="inline-flex items-center gap-1 hover:text-gray-700">
+          <Shield className="h-3 w-3" aria-hidden /> 개인정보처리방침
+        </Link>
+      </div>
     </main>
   );
 }
 
-function NavItem({ href, icon, title }: { href: string; icon: React.ReactNode; title: string }) {
+function LoggedOutState() {
+  return (
+    <main className="mx-auto max-w-md px-4 py-12 sm:py-16">
+      <div className="rounded-2xl border border-gray-200 bg-white p-8 text-center">
+        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-brand-light">
+          <Dog className="h-8 w-8 text-brand" aria-hidden />
+        </div>
+        <h1 className="mt-4 text-lg font-bold">로그인이 필요해요</h1>
+        <p className="mt-1.5 text-sm text-gray-500">
+          로그인하면 펫 프로필·추천 이력·알림 설정을 볼 수 있어요.
+        </p>
+        <Link
+          href="/login?callbackUrl=/me"
+          className="mt-6 inline-flex items-center gap-1.5 rounded-md bg-brand px-6 py-3 text-sm font-bold text-white hover:bg-brand-hover"
+        >
+          <LogIn className="h-4 w-4" aria-hidden /> 로그인 / 회원가입
+        </Link>
+        <p className="mt-4 text-[11px] text-gray-400">카카오 · 네이버로 5초 안에 시작</p>
+      </div>
+    </main>
+  );
+}
+
+function Stat({ label, value }: { label: string; value: number }) {
+  return (
+    <div>
+      <div className="text-base font-bold text-brand">{value}</div>
+      <div className="text-[11px] text-gray-500">{label}</div>
+    </div>
+  );
+}
+
+function NavItem({
+  href,
+  icon,
+  title,
+  subtitle,
+  disabled,
+}: {
+  href: string;
+  icon: React.ReactNode;
+  title: string;
+  subtitle?: string;
+  disabled?: boolean;
+}) {
+  const inner = (
+    <>
+      <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-brand-light text-brand">
+        {icon}
+      </span>
+      <span className="min-w-0 flex-1 text-left">
+        <span className="block text-sm font-medium">{title}</span>
+        {subtitle && <span className="block text-[11px] text-gray-500">{subtitle}</span>}
+      </span>
+      <ChevronRight className="h-4 w-4 flex-shrink-0 text-gray-300" aria-hidden />
+    </>
+  );
+
+  if (disabled) {
+    return (
+      <div
+        aria-disabled="true"
+        className="flex cursor-not-allowed items-center gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3 opacity-50"
+      >
+        {inner}
+      </div>
+    );
+  }
   return (
     <Link
       href={href}
-      className="flex items-center justify-between rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm hover:border-brand"
+      className="flex items-center gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3 hover:border-brand"
     >
-      <span className="flex items-center gap-2">
-        {icon}
-        {title}
-      </span>
-      <ChevronRight className="h-4 w-4 text-gray-400" aria-hidden />
+      {inner}
     </Link>
   );
 }
