@@ -6,16 +6,8 @@
 import { useState, useTransition } from 'react';
 import Link from 'next/link';
 import { z } from 'zod';
-import {
-  ArrowRight,
-  BadgeCheck,
-  ChevronDown,
-  Clock,
-  Dog,
-  Mail,
-  MapPin,
-  Search,
-} from 'lucide-react';
+import { ArrowRight, BadgeCheck, ChevronDown, Clock, Dog, Mail, MapPin } from 'lucide-react';
+import { EmptyResult } from '@/components/recommend/empty-result';
 import { RecommendCard } from '@/components/recommend/recommend-card';
 import { RecommendSkeleton } from '@/components/recommend/recommend-skeleton';
 import type { Recommendation } from '@/lib/types/recommendation';
@@ -314,7 +306,7 @@ export default function HomePage() {
             {isPending && <RecommendSkeleton />}
 
             {!isPending && results !== null && results.length === 0 && (
-              <EmptyState
+              <EmptyResult
                 onRelax={() => {
                   setTimeHours(Math.min(TIME_MAX, timeHours + 1));
                 }}
@@ -377,27 +369,6 @@ export default function HomePage() {
         </button>
       )}
     </>
-  );
-}
-
-// ───────── 보조 컴포넌트 ─────────
-
-function EmptyState({ onRelax }: { onRelax: () => void }) {
-  return (
-    <div className="rounded-xl border border-dashed border-gray-300 bg-white p-6 text-center">
-      <Search className="mx-auto h-8 w-8 text-gray-300" aria-hidden />
-      <div className="mt-2 text-sm font-medium text-gray-700">
-        조건에 맞는 한적한 곳을 찾지 못했어요
-      </div>
-      <p className="mt-1 text-xs text-gray-500">시간을 늘리거나 다른 출발지로 시도해 보세요</p>
-      <button
-        type="button"
-        onClick={onRelax}
-        className="mt-3 rounded bg-brand px-3 py-2 text-xs font-bold text-white hover:bg-brand-hover"
-      >
-        시간 +1시간 늘려서 다시
-      </button>
-    </div>
   );
 }
 
