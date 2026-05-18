@@ -6,22 +6,9 @@ import { RecommendationsEmpty } from '@/components/recommend/recommendations-emp
 import { Chip } from '@/components/ui/chip';
 import { LoginRequiredCard } from '@/components/ui/login-required-card';
 import { formatDate, formatRelative } from '@/lib/format';
+import type { HistoryResultPoi } from '@/lib/types/recommendation';
 
 // PRD §7.2 [마이펫타임] — 최근 추천 이력
-
-type ResultPoi = {
-  poiId: string;
-  name: string;
-  address?: string;
-  type?: string;
-  badges?: string[];
-  reason?: {
-    distanceKm?: number;
-    etaMin?: number;
-    quietnessNow?: number;
-    verifiedCount?: number;
-  };
-};
 
 export default async function RecommendationsPage() {
   const session = await auth();
@@ -63,7 +50,7 @@ export default async function RecommendationsPage() {
       ) : (
         <ul className="space-y-3">
           {recs.map((r) => {
-            const items = (r.resultsJson as ResultPoi[] | null) ?? [];
+            const items = (r.resultsJson as HistoryResultPoi[] | null) ?? [];
             return (
               <li key={r.id} className="rounded-2xl border border-gray-200 bg-white p-4">
                 <div className="mb-3 flex flex-wrap items-center gap-2 text-xs">

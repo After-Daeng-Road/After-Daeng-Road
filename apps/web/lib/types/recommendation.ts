@@ -41,3 +41,18 @@ export type RecommendInput = {
     label?: string;
   };
 };
+
+// /recommendations 이력 resultsJson 디시리얼라이즈용 — 모든 필드 옵셔널 (구버전 호환)
+export type HistoryResultPoi = {
+  poiId: string;
+  name: string;
+  address?: string;
+  type?: string;
+  badges?: string[];
+  reason?: {
+    distanceKm?: number;
+    etaMin?: number;
+    quietnessNow?: number;
+    verifiedCount?: number;
+  };
+};
