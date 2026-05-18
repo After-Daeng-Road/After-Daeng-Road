@@ -23,6 +23,7 @@ import {
   Share2,
 } from 'lucide-react';
 import { Chip } from '@/components/ui/chip';
+import type { Recommendation } from '@/lib/types/recommendation';
 
 // ───────── 타입 / 스키마 ─────────
 
@@ -38,29 +39,6 @@ const RecommendInputSchema = z.object({
 });
 
 type RecommendInput = z.infer<typeof RecommendInputSchema>;
-
-type ReasonChip = {
-  distanceKm: number;
-  etaMin: number;
-  quietnessNow: number;
-  quietnessForecast: number; // 내일 같은 시간
-  quietnessWeekAvg: number; // 이번 주 평균
-  verifiedCount: number;
-};
-
-type Recommendation = {
-  poiId: string;
-  name: string;
-  address: string;
-  lat: number;
-  lng: number;
-  sourceLabel: '두루누비 코스' | '펫동반 가능' | 'TourAPI';
-  type: 'CAFE' | 'RESTAURANT' | 'TRAIL' | 'PARK' | 'ATTRACTION';
-  imageUrl: string | null;
-  badges: Array<'PET_VERIFIED' | 'WELLNESS' | 'ECO' | 'TRAIL_OFFICIAL'>;
-  reason: ReasonChip;
-  sampleSufficient: boolean;
-};
 
 type Pet = {
   id: string;
