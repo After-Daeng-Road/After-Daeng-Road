@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma';
 import { ArrowRight, Clock, History, Inbox, Leaf, MapPin, PawPrint, Sparkles } from 'lucide-react';
 import { Chip } from '@/components/ui/chip';
 import { LoginRequiredCard } from '@/components/ui/login-required-card';
+import { formatDate, formatRelative } from '@/lib/format';
 
 // PRD §7.2 [마이펫타임] — 최근 추천 이력
 
@@ -156,21 +157,4 @@ function EmptyState() {
       </Link>
     </div>
   );
-}
-
-function formatDate(d: Date): string {
-  return d.toLocaleString('ko-KR', {
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-}
-
-function formatRelative(d: Date): string {
-  const diff = Date.now() - d.getTime();
-  const hours = Math.floor(diff / 3600000);
-  if (hours < 1) return '방금';
-  if (hours < 24) return `${hours}시간 전`;
-  return `${Math.floor(hours / 24)}일 전`;
 }
