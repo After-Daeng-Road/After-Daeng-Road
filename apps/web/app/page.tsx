@@ -22,6 +22,7 @@ import {
   Search,
   Share2,
 } from 'lucide-react';
+import { Chip } from '@/components/ui/chip';
 
 // ───────── 타입 / 스키마 ─────────
 
@@ -484,30 +485,6 @@ function RecommendCard({ rec }: { rec: Recommendation }) {
 }
 
 // ───────── 보조 컴포넌트 ─────────
-
-function Chip({
-  children,
-  variant = 'gray',
-  icon,
-}: {
-  children: React.ReactNode;
-  variant?: 'gray' | 'green' | 'pink';
-  icon?: React.ReactNode;
-}) {
-  const colors = {
-    gray: 'bg-gray-100 text-gray-700',
-    green: 'bg-green-100 text-green-700',
-    pink: 'bg-pink-100 text-pink-700',
-  }[variant];
-  return (
-    <span
-      className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] ${colors}`}
-    >
-      {icon}
-      {children}
-    </span>
-  );
-}
 
 function RecommendSkeleton() {
   return (
