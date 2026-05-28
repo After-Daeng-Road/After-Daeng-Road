@@ -457,8 +457,8 @@ model AuditLog {
   userAgent    String?  @map("user_agent")
   createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
 
-  @@index([resourceType, resourceId])
-  @@index([actorId, createdAt(sort: Desc)])
-  @@index([action, createdAt(sort: Desc)])
+  @@index([resourceType, resourceId], map: "idx_audit_logs_resource")
+  @@index([actorId, createdAt(sort: Desc)], map: "idx_audit_logs_actor")
+  @@index([action, createdAt(sort: Desc)], map: "idx_audit_logs_action")
   @@map("audit_logs")
 }
