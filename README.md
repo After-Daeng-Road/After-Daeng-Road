@@ -23,7 +23,7 @@
 | Frontend | Next.js 15 (App Router) + TypeScript |
 | UI | shadcn/ui + Tailwind |
 | 상태/폼 | TanStack Query + Zustand + react-hook-form + zod |
-| Auth | Auth.js v5 + Supabase Auth (카카오 + 네이버 OAuth) |
+| Auth | Auth.js v5 + Supabase Auth (카카오 + 네이버 + 구글 OAuth) |
 | BFF | Server Actions + Prisma (pg adapter) |
 | Edge | Supabase Edge Functions (Deno) |
 | DB | Supabase Postgres + RLS |
@@ -57,7 +57,7 @@ cp apps/api/.env.example apps/api/.env
 
 - `DATABASE_URL` / `DIRECT_URL` — Supabase Postgres 연결
 - `AUTH_SECRET` — `openssl rand -base64 32`
-- `AUTH_KAKAO_*` / `AUTH_NAVER_*` — 카카오/네이버 OAuth 시크릿
+- `AUTH_KAKAO_*` / `AUTH_NAVER_*` / `AUTH_GOOGLE_*` — 카카오/네이버/구글 OAuth 시크릿
 - `KAKAO_REST_API_KEY` — 카카오 로컬·모빌리티 ETA
 - `UPSTASH_REDIS_REST_*` — Upstash 콘솔에서 발급
 - `TOUR_API_SERVICE_KEY` — data.go.kr 인증키
@@ -107,7 +107,7 @@ npx supabase functions serve --no-verify-jwt
 
 ```
 /                       메인 (시간슬라이더 + 추천 카드)
-/login                  카카오/네이버 OAuth
+/login                  카카오/네이버/구글 OAuth
 /me                     마이펫타임
   /me/settings          이메일 알림 설정
   /me/pets/new          반려견 등록
