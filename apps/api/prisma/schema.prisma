@@ -312,9 +312,13 @@ model Recommendation {
   userId            String          @map("user_id") @db.Uuid
   petId             String?         @map("pet_id") @db.Uuid
   status            RecommendStatus @default(PENDING)
-  departureLat      Float           @map("departure_lat")
-  departureLng      Float           @map("departure_lng")
-  departureGeohash7 String          @map("departure_geohash7")
+  // 평문 좌표 — 사용 후 24h 내 NULL 처리 (PRD §14, 0005 cleanup_recommendation_coords)
+  departureLat      Float?          @map("departure_lat")
+  departureLng      Float?          @map("departure_lng")
+  departureGeohash7 String?         @map("departure_geohash7")
+  // 암호화 좌표 — pgp_sym_encrypt, 90일 후 purge (PRD §14, 0005)
+  departureLatEnc   Bytes?          @map("departure_lat_enc")
+  departureLngEnc   Bytes?          @map("departure_lng_enc")
   timeHours         Int             @map("time_hours")
   startAt           DateTime        @map("start_at")
   resultsJson       Json?           @map("results_json")
