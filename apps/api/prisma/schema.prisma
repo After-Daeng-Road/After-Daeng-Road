@@ -312,9 +312,13 @@ model Recommendation {
   userId            String          @map("user_id") @db.Uuid
   petId             String?         @map("pet_id") @db.Uuid
   status            RecommendStatus @default(PENDING)
-  departureLat      Float           @map("departure_lat")
-  departureLng      Float           @map("departure_lng")
-  departureGeohash7 String          @map("departure_geohash7")
+  // 평문 좌표 — 사용 후 24h 내 NULL 처리 (PRD §14, 0005 cleanup_recommendation_coords)
+  departureLat      Float?          @map("departure_lat")
+  departureLng      Float?          @map("departure_lng")
+  departureGeohash7 String?         @map("departure_geohash7")
+  // 암호화 좌표 — pgp_sym_encrypt, 90일 후 purge (PRD §14, 0005)
+  departureLatEnc   Bytes?          @map("departure_lat_enc")
+  departureLngEnc   Bytes?          @map("departure_lng_enc")
   timeHours         Int             @map("time_hours")
   startAt           DateTime        @map("start_at")
   resultsJson       Json?           @map("results_json")
@@ -437,4 +441,24 @@ model TourApiSyncLog {
 
   @@index([dataset, startedAt])
   @@map("tour_api_sync_logs")
+}
+
+// ═══════════════ 감사 로그 (0006) — PRD §14, §16 ═══════════════
+// badges / vendors / reviews 변경을 트리거가 자동 적재. 운영자만 read.
+
+model AuditLog {
+  id           BigInt   @id @default(autoincrement())
+  actorId      String?  @map("actor_id") @db.Uuid
+  action       String
+  resourceType String   @map("resource_type")
+  resourceId   String   @map("resource_id")
+  metadata     Json?
+  ipAddress    String?  @map("ip_address") @db.Inet
+  userAgent    String?  @map("user_agent")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  @@index([resourceType, resourceId])
+  @@index([actorId, createdAt(sort: Desc)])
+  @@index([action, createdAt(sort: Desc)])
+  @@map("audit_logs")
 }
