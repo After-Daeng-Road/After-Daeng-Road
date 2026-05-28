@@ -60,6 +60,27 @@ PRD 본문은 진실의 원천입니다. 코드와 PRD가 충돌하면:
 2. 코드 잘못이면 코드 수정
 3. PRD 잘못이면 사용자에게 알리고 PRD 업데이트 후 코드 반영
 
+## Git 브랜치 작업 규칙
+
+브랜치 구조: `feature/<task>` → `dev` → `main`
+
+- 작업 시작 전 `dev` 브랜치에서 `git fetch && git pull origin dev`로 최신화
+- 각 작업마다 별도 `feature/<task>` 브랜치 생성, 작업은 feature 브랜치에서만
+- `dev` 머지 직전 다시 `dev`를 fetch & pull → `feature` 브랜치에 `git rebase origin/dev`로 정리 (충돌 사전 방지)
+- Feature → `dev` PR 생성 후 merge, 머지 완료 시 feature 브랜치는 원격·로컬 모두 삭제
+
+### 표준 작업 순서
+
+1. `git checkout dev && git pull origin dev` — dev 최신화
+2. `git checkout -b feature/<task>` — feature 브랜치 생성
+3. Feature 브랜치에서 작업 + atomic 커밋
+4. 머지 직전: `git fetch origin && git rebase origin/dev` — dev 최신 반영, 충돌 해소
+5. `git push origin feature/<task>` → `dev` 대상 PR 생성 → merge
+6. Merge 후 정리:
+   - 원격 feature 브랜치 삭제 (PR merge 시 자동 또는 `git push origin --delete feature/<task>`)
+   - `git checkout dev && git pull origin dev` — 로컬 dev 갱신
+   - `git branch -d feature/<task>` — 로컬 feature 브랜치 삭제
+
 ## 작업 시 필수 체크
 
 - [ ] 환경 변수 추가 시 `lib/env.ts` 스키마 + `.env.example` 양쪽 업데이트
