@@ -117,12 +117,15 @@ npx supabase functions serve --no-verify-jwt
 
 ## 데이터 모델 (PRD §11)
 
-16개 테이블 전 RLS 활성화. 마이그레이션:
+18개 테이블 전 RLS 활성화. 마이그레이션:
 
-1. `0001_init` — 16 테이블 + 9 enum + 인덱스
+1. `0001_init` — 17 테이블 + 9 enum + 인덱스
 2. `0002_rls_policies` — RLS 정책 매트릭스 (PRD §11.5)
-3. `0003_badge_auto_grant` — 검증 배지 자동 grant 트리거
-4. `0004_pg_cron_setup` — pg_cron + 한적도 MV + 좌표 정리
+3. `0003_badge_auto_grant` — 검증 배지 자동 grant 트리거 + 만료 회수 + 카테고리 배지 동기화
+4. `0004_pg_cron_setup` — pg_cron + 한적도 7d rolling MV + 좌표 정리 함수
+5. `0005_coords_encryption` — 출발지 좌표 pgp_sym_encrypt + 24h cleanup + 90d purge (PRD §14)
+6. `0006_audit_log` — audit_logs 테이블 + badges/vendors/reviews 변경 추적 트리거 (1y 보관)
+7. `0007_add_google_oauth` — users.google_id 컬럼 + 유니크 인덱스 (PRD v1.0.6)
 
 ## 라이선스
 
