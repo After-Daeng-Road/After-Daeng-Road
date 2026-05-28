@@ -37,7 +37,7 @@ port = 54324
 enabled = true
 file_size_limit = "50MiB"
 
-# PRD §10.1: Auth.js + Supabase Auth — 카카오 + 네이버 OAuth
+# PRD §10.1: Auth.js + Supabase Auth — 카카오 + 네이버 + 구글 OAuth
 [auth]
 enabled = true
 site_url = "http://localhost:3000"
@@ -58,6 +58,13 @@ enable_confirmations = false
 enabled = true
 client_id = "env(AUTH_KAKAO_ID)"
 secret = "env(AUTH_KAKAO_SECRET)"
+redirect_uri = "http://localhost:54321/auth/v1/callback"
+
+# 구글 OAuth — 시크릿은 Supabase Dashboard 에서 등록 (PRD v1.0.6)
+[auth.external.google]
+enabled = true
+client_id = "env(AUTH_GOOGLE_ID)"
+secret = "env(AUTH_GOOGLE_SECRET)"
 redirect_uri = "http://localhost:54321/auth/v1/callback"
 
 # 네이버는 OIDC 표준 미지원 → Auth.js 측에서 직접 처리
