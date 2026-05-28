@@ -5,7 +5,7 @@
 
 | 항목      | 내용                                                           |
 | --------- | -------------------------------------------------------------- |
-| 문서 버전 | v1.0                                                           |
+| 문서 버전 | v1.0.6                                                         |
 | 작성일    | 2026.04.26                                                     |
 | 작성자    | Hun (taehunkim.builds@gmail.com)                               |
 | 상태      | 초안 (의사결정 통합)                                           |
@@ -22,6 +22,7 @@
 | v1.0.3 | 2026.04.26 | Hun    | 웹 우선 구현 결정에 맞춰 **Web Push / Service Worker / PWA 의존 제거**. 알림은 이메일 P0 + 카카오톡 채널 P1로 단순화                 |
 | v1.0.4 | 2026.04.26 | Hun    | **ORM 변경: Drizzle → Prisma**. Server Actions는 Prisma + pg driver adapter, Edge Function은 Supabase 클라이언트/raw SQL로 분리 운용 |
 | v1.0.5 | 2026.04.26 | Hun    | 11장 데이터 모델 — Prisma `schema.prisma` 초안, ERD, 인덱스 전략, RLS 정책 매트릭스 추가 (총 16개 테이블)                            |
+| v1.0.6 | 2026.05.28 | Hun    | 인증 — Google OAuth 추가 (카카오·네이버에 이어 3번째 provider). `users.google_id` 컬럼 + 0007 마이그레이션 + Auth.js Provider 동시 반영 |
 
 ---
 
@@ -240,7 +241,7 @@
 
 ### 7.1 Happy Path
 
-① 카카오/네이버 로그인 → ② 펫 프로필 등록 → ③ (선택) 이메일 알림 시간 설정(디폴트 18시) → ④ 18:12 퇴근, 직접 접속 또는 이메일 링크 클릭 → ⑤ 시간 슬라이더 3시간 → ⑥ 한적도 87점 양수리 두물머리 표시 → ⑦ 카카오 길찾기 → ⑧ 다녀와서 "한적함" 평가 + 사진 등록 → ⑨ 검증 배지 카운트 +1
+① 카카오/네이버/구글 로그인 → ② 펫 프로필 등록 → ③ (선택) 이메일 알림 시간 설정(디폴트 18시) → ④ 18:12 퇴근, 직접 접속 또는 이메일 링크 클릭 → ⑤ 시간 슬라이더 3시간 → ⑥ 한적도 87점 양수리 두물머리 표시 → ⑦ 카카오 길찾기 → ⑧ 다녀와서 "한적함" 평가 + 사진 등록 → ⑨ 검증 배지 카운트 +1
 
 ### 7.2 정보구조 (4단)
 
@@ -310,7 +311,7 @@
 | 폼            | react-hook-form + zod                                      | 공유                                                                 |
 | BFF           | Next.js Server Actions                                     | 공유                                                                 |
 | DB            | Supabase Postgres + **Prisma ORM**(pg driver adapter)      | Server Actions에서 사용. Edge Function은 Supabase 클라이언트/raw SQL |
-| Auth          | Auth.js + Supabase Auth                                    | **카카오 + 네이버** OAuth                                            |
+| Auth          | Auth.js + Supabase Auth                                    | **카카오 + 네이버 + 구글** OAuth                                            |
 | Edge Compute  | Supabase Edge Functions                                    | 시간슬라이더 추천 알고리즘                                           |
 | 검색          | Postgres FTS + PGroonga                                    | 한국어                                                               |
 | **시간 캐싱** | Vercel KV / Upstash Redis                                  | **카카오모빌리티 ETA 24h TTL**                                       |
@@ -348,7 +349,7 @@
 
 | #   | 테이블                              | 역할                                             | RLS                  |
 | --- | ----------------------------------- | ------------------------------------------------ | -------------------- |
-| 1   | `users`                             | 카카오/네이버 OAuth 계정, 이메일 알림 설정       | 본인                 |
+| 1   | `users`                             | 카카오/네이버/구글 OAuth 계정, 이메일 알림 설정       | 본인                 |
 | 2   | `pets`                              | 반려견 일반 정보(견종·체중·연령·이동제한)        | 본인                 |
 | 3   | `pets_sensitive`                    | **펫 헬스(알레르기·만성질환) — 분리·명시 동의**  | 본인만               |
 | 4   | `pois`                              | TourAPI 미러링 (카페·식당·산책로·관광지·캠핑 등) | 공개 read            |
@@ -872,7 +873,7 @@ model TourApiSyncLog {
 
 | Action                   | 입력                        | 출력                     | 비고                            |
 | ------------------------ | --------------------------- | ------------------------ | ------------------------------- |
-| `auth.signIn`            | provider                    | session                  | 카카오/네이버                   |
+| `auth.signIn`            | provider                    | session                  | 카카오/네이버/구글                   |
 | `pets.createPet`         | PetInput                    | Pet                      | zod                             |
 | `recommendations.search` | RecommendInput              | Recommendation           | Edge Function                   |
 | `verifications.checkIn`  | poi_id, photo, evaluation   | ok                       | EXIF 검증, Turnstile            |
@@ -1056,7 +1057,7 @@ S3 스프린트(6/9~6/22) ETL 1차 시 위 4개 코드로 `areaBasedList2` + 펫
 
 | API                                          | 용도                                |
 | -------------------------------------------- | ----------------------------------- |
-| 카카오 + 네이버 OAuth                        | 인증                                |
+| 카카오 + 네이버 + 구글 OAuth                        | 인증                                |
 | 카카오 로컬 (키워드/카테고리/주소-좌표 변환) | 출발지 주소 → 좌표, 응급 동물병원   |
 | 카카오맵 JS SDK                              | 결과 시각화                         |
 | **카카오모빌리티 길찾기**                    | **F1 시간슬라이더 ETA 계산 (핵심)** |
@@ -1075,7 +1076,7 @@ S3 스프린트(6/9~6/22) ETL 1차 시 위 4개 코드로 `areaBasedList2` + 펫
 
 ## 14. 보안 & 개인정보
 
-- 카카오 + 네이버 OAuth
+- 카카오 + 네이버 + 구글 OAuth
 - JWT 1h / refresh 30d
 - RLS 전 테이블, 펫 헬스는 `pets_sensitive` 분리
 - 봇 방지: Turnstile + Upstash
@@ -1195,7 +1196,7 @@ badge_earned
 
 | 스프린트 | 기간       | 핵심 산출물                                                                                               |
 | -------- | ---------- | --------------------------------------------------------------------------------------------------------- |
-| S1       | 5/12~5/25  | 환경 셋업, 카카오/네이버 OAuth, 기본 레이아웃                                                             |
+| S1       | 5/12~5/25  | 환경 셋업, 카카오/네이버/구글 OAuth, 기본 레이아웃                                                             |
 | S2       | 5/26~6/8   | 펫 프로필 폼, 이메일 알림 구독·설정, Resend/SES 셋업                                                      |
 | S3       | 6/9~6/22   | Prisma 스키마(12개 테이블) + TourAPI ETL(반려동물·지역기반·위치기반·이미지·분류체계, 충남) + 데이터랩 ETL |
 | S4       | 6/23~7/6   | F1 시간슬라이더 1차 + 카카오모빌리티 ETA 캐싱                                                             |
@@ -1267,7 +1268,7 @@ badge_earned
 | F4 UI                     | 3줄 근거 칩(거리·한적도·검증)                                                                                                                                                 |
 | 알림                      | **이메일 P0** (Resend/SES, 디폴트 18:00 KST, 사용자 시간/요일/OFF 자율) + 카카오톡 채널 P1                                                                                    |
 | BM                        | 카페·산책로 입점 광고 + 펫 상품 광고 다층                                                                                                                                     |
-| 인증                      | 카카오 + 네이버 OAuth                                                                                                                                                         |
+| 인증                      | 카카오 + 네이버 + 구글 OAuth                                                                                                                                                         |
 | 기술 스택                 | Next.js + Supabase Postgres + **Prisma ORM** + shadcn/ui + react-kakao-maps-sdk + GA4/Sentry. Edge Function은 Supabase 클라이언트/raw SQL                                     |
 | 데이터 동기화             | 일별 일괄 + 이벤트 증분                                                                                                                                                       |
 | 모더레이션                | 자동 필터 + 신고 + 사장님 답변                                                                                                                                                |
