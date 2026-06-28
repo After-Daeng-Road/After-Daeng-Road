@@ -9,11 +9,11 @@ const withBundleAnalyzer = bundleAnalyzer({
 // HSTS 1년, X-Frame-Options DENY (clickjacking 차단), Permissions-Policy 최소화
 const cspHeader = `
   default-src 'self';
-  script-src 'self' 'unsafe-inline' 'unsafe-eval' https://dapi.kakao.com https://t1.daumcdn.net https://www.googletagmanager.com https://*.sentry.io https://challenges.cloudflare.com;
+  script-src 'self' 'unsafe-inline' 'unsafe-eval' https://dapi.kakao.com https://t1.daumcdn.net https://www.googletagmanager.com https://*.sentry.io https://challenges.cloudflare.com https://va.vercel-scripts.com;
   style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net;
   img-src 'self' blob: data: https://tong.visitkorea.or.kr http://tong.visitkorea.or.kr https://datalab.visitkorea.or.kr https://k.kakaocdn.net https://*.supabase.co https://www.google-analytics.com https://t1.daumcdn.net https://images.unsplash.com;
   font-src 'self' data: https://fonts.gstatic.com https://cdn.jsdelivr.net;
-  connect-src 'self' https://*.supabase.co wss://*.supabase.co https://dapi.kakao.com https://apis-navi.kakaomobility.com https://*.sentry.io https://www.google-analytics.com https://api.resend.com;
+  connect-src 'self' https://*.supabase.co wss://*.supabase.co https://dapi.kakao.com https://apis-navi.kakaomobility.com https://*.sentry.io https://www.google-analytics.com https://api.resend.com https://va.vercel-scripts.com https://cdn.jsdelivr.net;
   frame-src 'self' https://challenges.cloudflare.com;
   frame-ancestors 'none';
   base-uri 'self';
