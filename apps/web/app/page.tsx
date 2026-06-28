@@ -30,6 +30,71 @@ const RecommendInputSchema = z.object({
 const TIME_MAX = 6;
 const TIME_DEFAULT = 3;
 
+// 초기 데모 추천 3곳 (ui_kits 홈 기준) — 실제 "지금 추천받기" 응답이 오면 교체됨.
+// 실데이터 연동 시 이 상수를 제거하고 초기값을 null 로 되돌리면 됨.
+const SAMPLE_RESULTS: Recommendation[] = [
+  {
+    poiId: 'sample-seosan-haemi',
+    name: '서산 해미읍성 둘레길',
+    address: '충남 서산시 해미면',
+    lat: 36.7028,
+    lng: 126.5519,
+    sourceLabel: '두루누비 코스',
+    type: 'TRAIL',
+    imageUrl: '/images/ref/poi-1.jpg',
+    badges: ['TRAIL_OFFICIAL'],
+    sampleSufficient: true,
+    reason: {
+      distanceKm: 42,
+      etaMin: 48,
+      quietnessNow: 87,
+      quietnessForecast: 92,
+      quietnessWeekAvg: 89,
+      verifiedCount: 5,
+    },
+  },
+  {
+    poiId: 'sample-asan-sinjeong',
+    name: '아산 신정호 호수 산책로',
+    address: '충남 아산시',
+    lat: 36.7757,
+    lng: 127.0376,
+    sourceLabel: '두루누비 코스',
+    type: 'TRAIL',
+    imageUrl: '/images/ref/poi-2.jpg',
+    badges: ['TRAIL_OFFICIAL'],
+    sampleSufficient: true,
+    reason: {
+      distanceKm: 28,
+      etaMin: 32,
+      quietnessNow: 79,
+      quietnessForecast: 83,
+      quietnessWeekAvg: 81,
+      verifiedCount: 8,
+    },
+  },
+  {
+    poiId: 'sample-gongju-muryeong',
+    name: '공주 무령왕릉 인근 야외 카페',
+    address: '충남 공주시',
+    lat: 36.4609,
+    lng: 127.1145,
+    sourceLabel: '펫동반 가능',
+    type: 'CAFE',
+    imageUrl: '/images/ref/poi-3.jpg',
+    badges: ['PET_VERIFIED'],
+    sampleSufficient: true,
+    reason: {
+      distanceKm: 55,
+      etaMin: 60,
+      quietnessNow: 91,
+      quietnessForecast: 90,
+      quietnessWeekAvg: 88,
+      verifiedCount: 3,
+    },
+  },
+];
+
 // ───────── 페이지 ─────────
 
 export default function HomePage() {
@@ -39,8 +104,8 @@ export default function HomePage() {
     { id: 'p1', name: '다람이', breed: '푸들', weightKg: 5, ageYears: 3 }, // 데모용 (실제: GET /api/pets)
   ]);
 
-  // 결과 상태
-  const [results, setResults] = useState<Recommendation[] | null>(null);
+  // 결과 상태 — 초기엔 데모 추천 표시, 실제 검색 응답이 오면 교체
+  const [results, setResults] = useState<Recommendation[] | null>(SAMPLE_RESULTS);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
