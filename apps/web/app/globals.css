@@ -98,16 +98,6 @@ html[data-theme='dark'] {
   }
 }
 
-@layer utilities {
-  .scrollbar-hide::-webkit-scrollbar {
-    display: none;
-  }
-  .scrollbar-hide {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-  }
-}
-
 /* ───────── 시간 슬라이더 (시그니처) ───────── */
 input[type='range'].ds-slider {
   -webkit-appearance: none;
