@@ -1,12 +1,15 @@
 // 추천 카드 등에서 사용하는 작은 라벨 — variant 별 배경/문자 색 + size 별 패딩/폰트
 
-type Variant = 'gray' | 'green' | 'pink';
+type Variant = 'gray' | 'green' | 'pink' | 'blue' | 'brand';
 type Size = 'xs' | 'sm';
 
+// 의미 코드 필 — 색이 데이터 종류를 뜻함 (DESIGN_SYSTEM §5 Chip)
 const VARIANT: Record<Variant, string> = {
-  gray: 'bg-gray-100 text-gray-700',
-  green: 'bg-green-100 text-green-700',
-  pink: 'bg-pink-100 text-pink-700',
+  gray: 'bg-surface-2 text-body',
+  green: 'bg-[color-mix(in_srgb,var(--quiet)_15%,transparent)] text-quiet',
+  pink: 'bg-[color-mix(in_srgb,var(--verify)_15%,transparent)] text-verify',
+  blue: 'bg-[color-mix(in_srgb,var(--forecast)_15%,transparent)] text-forecast',
+  brand: 'bg-brand-soft text-brand-ink',
 };
 
 const SIZE: Record<Size, string> = {

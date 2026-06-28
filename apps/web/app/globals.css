@@ -2,12 +2,99 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ───────── 디자인 토큰 (DESIGN_SYSTEM.md · ui_kits 기준) ─────────
+   같은 시맨틱 이름이 라이트/다크에서 다른 값을 가져 컴포넌트가 테마를 자동으로 따릅니다. */
+:root {
+  --serif: 'Newsreader', Georgia, serif;
+  --r-sm: 8px;
+  --r-md: 14px;
+  --r-lg: 22px;
+  --r-pill: 999px;
+  --ease: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+html[data-theme='light'] {
+  --bg: #f4f0e9;
+  --bg-grain: #efe9df;
+  --surface: #fffefb;
+  --surface-2: #faf6ef;
+  --ink: #1d1813;
+  --text: #322b23;
+  --muted: #8a7f6f;
+  --faint: #b6ab99;
+  --line: #e7ded0;
+  --line-soft: #efe8dc;
+  --accent: #ff8a5b;
+  --accent-hover: #ff7338;
+  --accent-ink: #b14a22;
+  --accent-soft: #ffe9dd;
+  --quiet: #5a9f7e;
+  --verify: #c06f84;
+  --forecast: #6480ad;
+  --cta-bg: #fbeede;
+  --scrim: rgba(20, 14, 9, 0.46);
+  --scrim-2: rgba(20, 14, 9, 0.04);
+  --shadow: 0 1px 2px rgba(40, 30, 20, 0.05), 0 12px 34px -16px rgba(40, 30, 20, 0.22);
+  --shadow-lg: 0 2px 6px rgba(40, 30, 20, 0.06), 0 30px 70px -30px rgba(40, 30, 20, 0.4);
+}
+
+html[data-theme='dark'] {
+  --bg: #14110d;
+  --bg-grain: #17130e;
+  --surface: #1d1813;
+  --surface-2: #221c16;
+  --ink: #f4efe6;
+  --text: #e9e1d4;
+  --muted: #9d9484;
+  --faint: #6c6354;
+  --line: rgba(255, 255, 255, 0.09);
+  --line-soft: rgba(255, 255, 255, 0.06);
+  --accent: #ff9b71;
+  --accent-hover: #ffb08c;
+  --accent-ink: #ffb694;
+  --accent-soft: rgba(255, 138, 91, 0.16);
+  --quiet: #79c2a0;
+  --verify: #db93a5;
+  --forecast: #8aa3d2;
+  --cta-bg: #221c16;
+  --scrim: rgba(8, 5, 2, 0.5);
+  --scrim-2: rgba(255, 255, 255, 0.03);
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 14px 38px -18px rgba(0, 0, 0, 0.7);
+  --shadow-lg: 0 2px 8px rgba(0, 0, 0, 0.5), 0 34px 80px -34px rgba(0, 0, 0, 0.85);
+}
+
 @layer base {
   html {
     -webkit-text-size-adjust: 100%;
   }
   body {
-    @apply bg-[#f4f4f6] text-gray-900 antialiased;
+    @apply bg-page text-body antialiased;
+    font-family:
+      'Pretendard',
+      -apple-system,
+      BlinkMacSystemFont,
+      system-ui,
+      sans-serif;
+    text-rendering: optimizeLegibility;
+    transition: background 0.45s var(--ease);
+  }
+  ::selection {
+    background: var(--accent-soft);
+  }
+}
+
+@layer components {
+  /* 데이터는 세리프로 — 한적도/거리/검증 수치를 Newsreader 누메랄로 */
+  .fig {
+    font-family: var(--serif);
+    font-weight: 400;
+    font-feature-settings: 'tnum';
+    letter-spacing: -0.01em;
+  }
+  /* eyebrow — 대문자, 넓은 트래킹 */
+  .eyebrow {
+    @apply text-[11.5px] font-semibold uppercase text-muted;
+    letter-spacing: 0.26em;
   }
 }
 
@@ -19,4 +106,38 @@
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
+}
+
+/* ───────── 시간 슬라이더 (시그니처) ───────── */
+input[type='range'].ds-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 5px;
+  border-radius: var(--r-pill);
+  background: var(--line);
+  outline: none;
+  cursor: pointer;
+}
+input[type='range'].ds-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--surface);
+  border: 2px solid var(--accent);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+  cursor: pointer;
+  transition: transform 0.15s var(--ease);
+}
+input[type='range'].ds-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.12);
+}
+input[type='range'].ds-slider::-moz-range-thumb {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--surface);
+  border: 2px solid var(--accent);
+  cursor: pointer;
 }

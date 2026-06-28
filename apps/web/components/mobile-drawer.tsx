@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import Link from 'next/link';
-import { Dog, X } from 'lucide-react';
+import { PawPrint, X } from 'lucide-react';
 
 // 모바일 햄버거에서 열리는 우측 슬라이드 드로어
 // 관심사: 패널 마크업 + 슬라이드 애니메이션 + scroll lock + Esc 닫기
@@ -55,19 +55,22 @@ export function MobileDrawer({
         role="dialog"
         aria-modal="true"
         aria-label="모바일 메뉴"
-        className={`absolute right-0 top-0 flex h-full w-64 max-w-[80vw] flex-col bg-white shadow-xl transition-transform duration-200 ${
+        className={`absolute right-0 top-0 flex h-full w-64 max-w-[80vw] flex-col bg-surface shadow-lift transition-transform duration-200 ${
           open ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
-        <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3">
-          <span className="flex items-center gap-1.5 text-lg font-bold text-brand">
-            <Dog className="h-5 w-5" aria-hidden /> 댕로드
+        <div className="flex items-center justify-between border-b border-line-soft px-4 py-3.5">
+          <span className="inline-flex items-center gap-2 text-[17px] font-bold text-ink">
+            <span className="grid h-7 w-7 place-items-center rounded-[8px] bg-brand text-white dark:text-ink">
+              <PawPrint className="h-4 w-4" aria-hidden />
+            </span>
+            댕로드
           </span>
           <button
             type="button"
             onClick={onClose}
             aria-label="메뉴 닫기"
-            className="rounded p-1 hover:bg-gray-100"
+            className="rounded-full p-1.5 text-muted hover:bg-surface-2"
           >
             <X className="h-5 w-5" />
           </button>
@@ -80,10 +83,10 @@ export function MobileDrawer({
                 key={item.href}
                 href={item.href}
                 aria-current={active ? 'page' : undefined}
-                className={`rounded-md px-3 py-3 ${
+                className={`rounded-field px-3 py-3 ${
                   active
-                    ? 'bg-brand-light font-semibold text-brand'
-                    : 'text-gray-700 hover:bg-gray-100'
+                    ? 'bg-brand-soft font-semibold text-brand-ink'
+                    : 'text-body hover:bg-surface-2'
                 }`}
               >
                 {item.label}

@@ -5,10 +5,10 @@ import Link from 'next/link';
 import { ArrowRight, ChevronDown, Clock, Dog, MapPin } from 'lucide-react';
 import type { Pet, RecommendInput } from '@/lib/types/recommendation';
 
-// 댕로드 메인 추천 폼 — 시간슬라이더 · 출발지 · 펫 · 출발시각 · 제출 버튼
-// 관심사: 입력값 수집 + onSubmit 으로 부모에 RecommendInput 전달
-// timeHours 만 controlled (부모가 EmptyResult.onRelax 등으로 외부 조작 가능),
-// 나머지 (departure, selectedPetId, startAt) 는 내부 상태.
+// 댕로드 검색 콘솔 — 시간슬라이더 · 출발지 · 펫 · 출발시각 · 제출 (DESIGN_SYSTEM §9.1)
+// 시그니처 TimeSlider: 세리프 누메랄 값 + "{n}시간 · 반경 약 {km}km" 라이브 캡션.
+// timeHours 만 controlled (부모가 EmptyResult.onRelax 등으로 외부 조작),
+// 나머지(departure, selectedPetId, startAt)는 내부 상태.
 
 const TIME_MIN = 1;
 const TIME_MAX = 6;
@@ -16,9 +16,9 @@ const TIME_STEP = 0.5;
 
 // 충남 4시 시드 좌표 (PRD §13.3)
 const CHUNGNAM_SEED: Record<string, { lat: number; lng: number; label: string }> = {
-  GONGJU: { lat: 36.4467, lng: 127.119, label: '공주' },
   CHEONAN: { lat: 36.8151, lng: 127.1135, label: '천안' },
   ASAN: { lat: 36.7898, lng: 127.0019, label: '아산' },
+  GONGJU: { lat: 36.4467, lng: 127.119, label: '공주' },
   SEOSAN: { lat: 36.7848, lng: 126.4503, label: '서산' },
 };
 
@@ -28,17 +28,19 @@ function formatHHmm(d: Date): string {
   return `${hh}:${mm}`;
 }
 
-// 출발 시각 옵션: 지금 + 30분 단위 +6h 미래 (UI 1-4)
+// 출발 시각 옵션: 지금 + 30분 단위 +6h 미래
 const START_AT_OPTIONS = (() => {
   const opts: { value: string; label: string }[] = [
-    { value: 'now', label: `지금 (${formatHHmm(new Date())})` },
+    { value: 'now', label: `지금 · ${formatHHmm(new Date())}` },
   ];
   for (let i = 1; i <= 12; i++) {
     const d = new Date(Date.now() + i * 30 * 60 * 1000);
-    opts.push({ value: d.toISOString(), label: `+${i * 30}분 (${formatHHmm(d)})` });
+    opts.push({ value: d.toISOString(), label: `+${i * 30}분 · ${formatHHmm(d)}` });
   }
   return opts;
 })();
+
+const TICKS = [1, 2, 3, 4, 5, 6];
 
 export function RecommendForm({
   pets,
@@ -59,6 +61,8 @@ export function RecommendForm({
 
   const radiusKm = Math.round((timeHours / 2) * 50);
   const canRecommend = selectedPetId !== null && !loading;
+  // 슬라이더 채움 비율 (브랜드 → 라인)
+  const pct = ((timeHours - TIME_MIN) / (TIME_MAX - TIME_MIN)) * 100;
 
   const handleSubmit = () => {
     onSubmit({
@@ -72,53 +76,57 @@ export function RecommendForm({
   const useCurrentLocation = () => {
     if (!navigator.geolocation) return;
     navigator.geolocation.getCurrentPosition((pos) =>
-      setDeparture({
-        lat: pos.coords.latitude,
-        lng: pos.coords.longitude,
-        label: '현 위치',
-      }),
+      setDeparture({ lat: pos.coords.latitude, lng: pos.coords.longitude, label: '현 위치' }),
     );
   };
 
+  const selectCls =
+    'h-[50px] w-full cursor-pointer appearance-none rounded-field border border-line bg-surface-2 pl-[15px] pr-9 text-[14.5px] font-medium text-body transition-colors hover:border-faint focus:border-brand focus:outline-none';
+
   return (
-    <section className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm sm:p-7">
-      <h1 className="text-center text-xl font-bold sm:text-2xl">오늘 어디 가지?</h1>
-      <p className="mt-1.5 text-center text-xs text-gray-500 sm:text-sm">
-        퇴근 후 한적한 펫 외출 코스를 5초 안에
-      </p>
+    <section className="rounded-card border border-line bg-surface p-6 shadow-lift sm:p-8">
+      {/* ── 시간 슬라이더 ── */}
+      <div className="min-w-[280px]">
+        <div className="mb-3.5 flex items-baseline justify-between">
+          <span className="text-[12.5px] font-semibold tracking-[0.02em] text-muted">
+            외출 가능 시간
+          </span>
+          <span className="text-ink">
+            <span className="fig text-[30px]">{timeHours}</span>
+            <span className="ml-0.5 text-[13px] text-muted">시간</span>
+          </span>
+        </div>
+        <input
+          type="range"
+          min={TIME_MIN}
+          max={TIME_MAX}
+          step={TIME_STEP}
+          value={timeHours}
+          onChange={(e) => onTimeHoursChange(Number(e.target.value))}
+          className="ds-slider"
+          style={{
+            background: `linear-gradient(to right, var(--accent) ${pct}%, var(--line) ${pct}%)`,
+          }}
+          aria-label="외출 가능 시간"
+        />
+        <div className="mt-2.5 flex justify-between text-[11px] text-faint">
+          {TICKS.map((h) => (
+            <span key={h} className={h === Math.round(timeHours) ? 'font-bold text-brand-ink' : ''}>
+              {h}h
+            </span>
+          ))}
+        </div>
+        <div className="mt-3 text-[13px] text-muted">
+          반경 약 <b className="font-semibold text-ink">{radiusKm}</b>km 안에서 찾고 있어요
+        </div>
+      </div>
 
-      <div className="mt-5 rounded-xl border border-dashed border-gray-300 bg-[#fafafa] p-4 sm:p-5">
-        {/* 1-1 시간 슬라이더 */}
-        <fieldset>
-          <div className="mb-1.5 flex justify-between text-[11px] text-gray-500">
-            {[1, 2, 3, 4, 5, 6].map((h) => (
-              <span
-                key={h}
-                className={h === Math.round(timeHours) ? 'font-bold text-[#f56500]' : ''}
-              >
-                {h}h
-              </span>
-            ))}
-          </div>
-          <input
-            type="range"
-            min={TIME_MIN}
-            max={TIME_MAX}
-            step={TIME_STEP}
-            value={timeHours}
-            onChange={(e) => onTimeHoursChange(Number(e.target.value))}
-            className="w-full accent-[#f56500]"
-            aria-label="외출 가능 시간"
-          />
-          <div className="mt-1 text-center text-xs text-gray-500">
-            <strong className="text-[#f56500]">{timeHours}시간</strong> · 반경 약 {radiusKm}km
-          </div>
-        </fieldset>
-
-        {/* 1-2 출발지 */}
-        <div className="mt-4">
-          <label className="mb-1.5 flex items-center gap-1 text-xs font-medium text-gray-700">
-            <MapPin className="h-3.5 w-3.5" aria-hidden /> 출발지
+      {/* ── 필드 그리드 ── */}
+      <div className="mt-6 grid grid-cols-2 items-end gap-3 border-t border-line-soft pt-6 md:grid-cols-[1.2fr_1fr_1fr_auto]">
+        {/* 출발지 */}
+        <div>
+          <label className="mb-2 flex items-center gap-1.5 text-[11.5px] font-semibold tracking-[0.02em] text-muted">
+            <MapPin className="h-[13px] w-[13px]" aria-hidden /> 출발지
           </label>
           <div className="flex gap-1.5">
             <div className="relative flex-1">
@@ -128,7 +136,7 @@ export function RecommendForm({
                   const next = Object.values(CHUNGNAM_SEED).find((c) => c.label === e.target.value);
                   if (next) setDeparture(next);
                 }}
-                className="w-full appearance-none rounded border border-gray-300 bg-white py-2.5 pl-3 pr-8 text-sm"
+                className={selectCls}
               >
                 {Object.values(CHUNGNAM_SEED).map((c) => (
                   <option key={c.label} value={c.label}>
@@ -137,29 +145,29 @@ export function RecommendForm({
                 ))}
               </select>
               <ChevronDown
-                className="pointer-events-none absolute right-2 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500"
+                className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted"
                 aria-hidden
               />
             </div>
             <button
               type="button"
               onClick={useCurrentLocation}
-              className="rounded border border-gray-300 bg-white px-3 py-2.5 text-xs hover:bg-gray-50"
+              className="h-[50px] rounded-field border border-line bg-surface-2 px-3 text-xs font-medium text-body transition-colors hover:border-faint"
             >
               현 위치
             </button>
           </div>
         </div>
 
-        {/* 1-3 펫 선택 */}
-        <div className="mt-3">
-          <label className="mb-1.5 flex items-center gap-1 text-xs font-medium text-gray-700">
-            <Dog className="h-3.5 w-3.5" aria-hidden /> 펫
+        {/* 반려견 */}
+        <div>
+          <label className="mb-2 flex items-center gap-1.5 text-[11.5px] font-semibold tracking-[0.02em] text-muted">
+            <Dog className="h-[13px] w-[13px]" aria-hidden /> 반려견
           </label>
           {pets.length === 0 ? (
             <Link
               href="/me/pets/new"
-              className="block rounded border border-dashed border-gray-300 bg-white px-3 py-2.5 text-center text-xs text-[#f56500] hover:bg-[#fff5f0]"
+              className="flex h-[50px] items-center justify-center rounded-field border border-dashed border-line bg-surface-2 px-3 text-center text-xs font-medium text-brand-ink hover:bg-brand-soft"
             >
               펫 등록하기 →
             </Link>
@@ -168,32 +176,32 @@ export function RecommendForm({
               <select
                 value={selectedPetId ?? ''}
                 onChange={(e) => setSelectedPetId(e.target.value)}
-                className="w-full appearance-none rounded border border-gray-300 bg-white py-2.5 pl-3 pr-8 text-sm"
+                className={selectCls}
               >
                 {pets.map((p) => (
                   <option key={p.id} value={p.id}>
-                    {p.name} ({p.breed} · {p.weightKg}kg · {p.ageYears}살)
+                    {p.name} · {p.breed} · {p.weightKg}kg
                   </option>
                 ))}
               </select>
               <ChevronDown
-                className="pointer-events-none absolute right-2 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500"
+                className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted"
                 aria-hidden
               />
             </div>
           )}
         </div>
 
-        {/* 1-4 출발 시각 */}
-        <div className="mt-3">
-          <label className="mb-1.5 flex items-center gap-1 text-xs font-medium text-gray-700">
-            <Clock className="h-3.5 w-3.5" aria-hidden /> 출발 시각
+        {/* 출발 시각 */}
+        <div>
+          <label className="mb-2 flex items-center gap-1.5 text-[11.5px] font-semibold tracking-[0.02em] text-muted">
+            <Clock className="h-[13px] w-[13px]" aria-hidden /> 출발 시각
           </label>
           <div className="relative">
             <select
               value={startAt}
               onChange={(e) => setStartAt(e.target.value)}
-              className="w-full appearance-none rounded border border-gray-300 bg-white py-2.5 pl-3 pr-8 text-sm"
+              className={selectCls}
             >
               {START_AT_OPTIONS.map((o) => (
                 <option key={o.value} value={o.value}>
@@ -202,33 +210,32 @@ export function RecommendForm({
               ))}
             </select>
             <ChevronDown
-              className="pointer-events-none absolute right-2 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500"
+              className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted"
               aria-hidden
             />
           </div>
         </div>
 
-        {/* 1-5 추천받기 버튼 */}
+        {/* 제출 */}
         <button
           type="button"
           onClick={handleSubmit}
           disabled={!canRecommend}
-          className="mt-5 w-full rounded bg-[#f56500] py-3 text-sm font-bold text-white transition hover:bg-[#e65a00] disabled:cursor-not-allowed disabled:bg-gray-300"
+          className="col-span-2 inline-flex h-[50px] items-center justify-center gap-2 whitespace-nowrap rounded-field bg-brand px-[26px] text-[14.5px] font-bold text-white shadow-[0_8px_20px_-8px_var(--accent)] transition duration-200 ease-ds hover:translate-y-[-1px] hover:brightness-[1.04] disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none dark:text-[#20160f] md:col-span-1"
         >
           {loading ? (
             '추천 계산 중…'
           ) : (
-            <span className="inline-flex items-center justify-center gap-1.5">
+            <>
               지금 추천받기 <ArrowRight className="h-4 w-4" aria-hidden />
-            </span>
+            </>
           )}
         </button>
-        {!selectedPetId && pets.length === 0 && (
-          <p className="mt-2 text-center text-[11px] text-gray-500">
-            펫 등록 후 추천을 받을 수 있어요
-          </p>
-        )}
       </div>
+
+      {!selectedPetId && pets.length === 0 && (
+        <p className="mt-3 text-center text-[11px] text-muted">펫 등록 후 추천을 받을 수 있어요</p>
+      )}
     </section>
   );
 }

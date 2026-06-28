@@ -1,7 +1,7 @@
 'use client';
 
-// 댕로드 — 3.1 메인 화면 (시간슬라이더 · 추천 결과 · 알림 CTA)
-// 참조: daengroad_ui_spec_3.1_main_v0.1.html v0.1 / PRD v1.0.5 §6, §8, §12
+// 댕로드 — 메인 화면 (히어로 · 시간슬라이더 콘솔 · 추천 결과 · 이메일 밴드)
+// 참조: ui_kits/web 홈 (DESIGN_SYSTEM.md §9.1) — 에디토리얼 quiet-luxury
 
 import { useState, useTransition } from 'react';
 import { z } from 'zod';
@@ -72,8 +72,40 @@ export default function HomePage() {
 
   return (
     <>
-      <main className="mx-auto max-w-2xl px-4 py-6 sm:py-10">
-        {/* ═════ 1. 메인 검색 영역 ═════ */}
+      {/* ═════ 히어로 ═════ */}
+      <section className="px-5 pt-14 sm:px-8 sm:pt-20 lg:px-14 lg:pt-24">
+        <div className="relative mx-auto flex min-h-[480px] max-w-[1240px] items-end overflow-hidden rounded-card shadow-lift sm:min-h-[560px]">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/images/ref/hero.jpg"
+            alt="해질 무렵 한적한 충남 근교 길"
+            className="absolute inset-0 h-full w-full object-cover"
+          />
+          <div
+            className="absolute inset-0 bg-gradient-to-b from-black/15 via-black/5 to-[var(--scrim)]"
+            aria-hidden
+          />
+          <div className="relative z-[2] max-w-[760px] p-7 text-white sm:p-12 lg:p-[60px]">
+            <div className="eyebrow !text-white/80">충남 · 공주 · 천안 · 아산 · 서산</div>
+            <h1 className="mt-4 text-[clamp(40px,6.4vw,82px)] font-bold leading-[1.02] tracking-[-0.035em]">
+              퇴근 후,
+              <br />
+              가장{' '}
+              <em className="font-serif font-light italic tracking-[-0.01em] text-[#ffd9c6]">
+                한적한
+              </em>{' '}
+              길로.
+            </h1>
+            <p className="mt-5 max-w-[540px] text-[clamp(15px,1.6vw,18px)] leading-[1.6] text-white/85">
+              시간 슬라이더 하나면 충분해요. 데이터로 검증한 한적도와 펫 동반 코스 3곳을, 퇴근 5초
+              안에.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* ═════ 검색 콘솔 (히어로에 겹쳐 뜸) ═════ */}
+      <div className="relative z-[5] mx-auto -mt-14 max-w-[1080px] px-5 sm:px-8 lg:px-14">
         <RecommendForm
           pets={pets}
           timeHours={timeHours}
@@ -81,11 +113,15 @@ export default function HomePage() {
           loading={isPending}
           onSubmit={handleRecommend}
         />
+        {error && (
+          <div className="mt-4">
+            <ErrorBanner message={error} onDismiss={() => setError(null)} />
+          </div>
+        )}
+      </div>
 
-        {/* ═════ 에러 배너 ═════ */}
-        {error && <ErrorBanner message={error} onDismiss={() => setError(null)} />}
-
-        {/* ═════ 2. 추천 결과 영역 ═════ */}
+      {/* ═════ 추천 결과 ═════ */}
+      <main className="mx-auto max-w-[1080px] px-5 sm:px-8 lg:px-14">
         <RecommendResults
           results={results}
           loading={isPending}
@@ -93,11 +129,11 @@ export default function HomePage() {
           onRelax={() => setTimeHours(Math.min(TIME_MAX, timeHours + 1))}
         />
 
-        {/* ═════ 3. 이메일 알림 CTA ═════ */}
+        {/* ═════ 이메일 밴드 ═════ */}
         <EmailCta />
       </main>
 
-      {/* ═════ 4. 검증 배지 가이드 플로팅 ═════ */}
+      {/* ═════ 검증 배지 가이드 플로팅 ═════ */}
       <FloatingBadgeGuide />
     </>
   );

@@ -14,7 +14,7 @@ export function FloatingBadgeGuide() {
     <button
       type="button"
       onClick={() => setDismissed(true)}
-      className="fixed bottom-5 right-5 flex h-16 w-16 flex-col items-center justify-center gap-0.5 rounded-full bg-brand text-[10px] font-bold text-white shadow-lg hover:bg-brand-hover"
+      className="fixed bottom-5 right-5 z-40 flex h-16 w-16 flex-col items-center justify-center gap-0.5 rounded-full bg-brand text-[10px] font-bold text-white shadow-lift transition duration-200 ease-ds hover:-translate-y-0.5 hover:brightness-[1.04] dark:text-[#20160f]"
       aria-label="검증 배지 안내"
     >
       <BadgeCheck className="h-5 w-5" aria-hidden />
