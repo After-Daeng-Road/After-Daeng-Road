@@ -12,7 +12,12 @@ const serverSchema = z.object({
   AUTH_KAKAO_SECRET: z.string(),
   AUTH_NAVER_ID: z.string(),
   AUTH_NAVER_SECRET: z.string(),
+  AUTH_GOOGLE_ID: z.string(),
+  AUTH_GOOGLE_SECRET: z.string(),
   SUPABASE_SERVICE_ROLE_KEY: z.string(),
+  // Auth.js → Supabase 브리지: 세션 access token 서명용 (Edge 검증과 공유)
+  // 주의: Edge 는 SUPABASE_ 접두사 env 를 막으므로 이름은 SB_JWT_SECRET (값 = Supabase JWT Secret)
+  SB_JWT_SECRET: z.string().min(32),
   KAKAO_REST_API_KEY: z.string(),
   UPSTASH_REDIS_REST_URL: z.string().url(),
   UPSTASH_REDIS_REST_TOKEN: z.string(),
