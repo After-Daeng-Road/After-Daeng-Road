@@ -176,6 +176,26 @@ export const COPY = {
     restrictions: '이동 제한 (해당되는 것)',
     submit: '등록',
     submitting: '등록 중…',
+    backToMe: '마이펫타임',
+    notFound: '반려견을 찾을 수 없어요',
+  },
+
+  // ───────── 펫 민감 건강정보 (PRD §14) ─────────
+  petSensitive: {
+    title: '민감 건강정보',
+    desc: '알러지·만성질환은 별도 동의 후 분리 보관돼요. 본인만 볼 수 있어요.',
+    allergies: '알러지',
+    allergiesPlaceholder: '예: 닭고기',
+    conditions: '만성질환',
+    conditionsPlaceholder: '예: 슬개골 탈구',
+    add: '추가',
+    removeTag: (label: string) => `${label} 삭제`,
+    consentLabel: '위 민감정보의 수집·분리보관에 동의합니다',
+    consentHint: '동의해야 저장할 수 있어요',
+    submit: '동의하고 저장',
+    submitting: '저장 중…',
+    saved: '저장되었어요',
+    forbidden: '본인 반려견만 수정할 수 있어요',
   },
 
   // ───────── 장소 상세 ─────────

@@ -39,6 +39,13 @@ export const DAY_LABELS: Record<DayKey, string> = {
 export const DEFAULT_NOTIFY_DAYS: DayKey[] = ['MON', 'TUE', 'WED', 'THU', 'FRI'];
 export const DEFAULT_NOTIFY_TIME = '18:00';
 
+// 펫 민감정보 동의 버전 (consentPetSensitive.consentVer) — 약관 개정 시 갱신
+export const CONSENT_VERSION = 'pet-health-v1.0.0';
+
+// 민감정보 입력 제약 (액션 zod 와 동일: 항목 최대 20개, 각 40자)
+export const SENSITIVE_MAX_ITEMS = 20;
+export const SENSITIVE_MAX_LEN = 40;
+
 // ───────── 펫 이동 제한 (PRD §6.1) ─────────
 export type RestrictionKey = 'CAR_SICK' | 'HEAT_SENSITIVE' | 'NOISE_SENSITIVE';
 

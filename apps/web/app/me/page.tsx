@@ -100,20 +100,22 @@ export default async function MePage() {
         ) : (
           <ul className="space-y-2">
             {pets.map((p) => (
-              <li
-                key={p.id}
-                className="flex items-center gap-3 rounded-xl border border-line-soft bg-surface-2 px-3 py-3"
-              >
-                <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-surface">
-                  <Dog className="h-5 w-5 text-brand" aria-hidden />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="truncate text-sm font-medium text-ink">{p.name}</div>
-                  <div className="text-[11px] text-muted">
-                    {COPY.me.petMeta(p.breed, String(p.weightKg), p.ageYears)}
+              <li key={p.id}>
+                <Link
+                  href={`/me/pets/${p.id}`}
+                  className="flex items-center gap-3 rounded-xl border border-line-soft bg-surface-2 px-3 py-3 transition-colors hover:border-brand"
+                >
+                  <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-surface">
+                    <Dog className="h-5 w-5 text-brand" aria-hidden />
                   </div>
-                </div>
-                <ChevronRight className="h-4 w-4 text-faint" aria-hidden />
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-sm font-medium text-ink">{p.name}</div>
+                    <div className="text-[11px] text-muted">
+                      {COPY.me.petMeta(p.breed, String(p.weightKg), p.ageYears)}
+                    </div>
+                  </div>
+                  <ChevronRight className="h-4 w-4 text-faint" aria-hidden />
+                </Link>
               </li>
             ))}
           </ul>
