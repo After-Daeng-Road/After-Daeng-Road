@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import { getPoiDetail } from '@/lib/actions/pois';
 import { BadgeCheck, Leaf, Navigation, PawPrint, Sprout, TreePine } from 'lucide-react';
 import { Chip } from '@/components/ui/chip';
+import { ReviewList } from '@/components/poi/review-list';
 import { COPY } from '@/lib/copy';
 import { kakaoDirectionsUrl } from '@/lib/format';
 
@@ -101,6 +102,9 @@ export default async function PoiDetailPage({ params }: { params: Promise<{ id: 
           />
         </div>
       </section>
+
+      {/* 방문 후기 (PRD §7.2) — getPoiDetail 이 반환한 공개 리뷰 */}
+      <ReviewList reviews={poi.reviews} />
 
       <div className="mt-6 flex gap-2">
         <a

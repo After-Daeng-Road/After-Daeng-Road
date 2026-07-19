@@ -192,6 +192,11 @@ export const COPY = {
     verifyTitle: '펫동반 검증 진행도',
     verifyProgress: (n: number) => `방문 검증 ${n}/3명`,
     kakao: '카카오 길찾기',
+    reviewsTitle: '방문 후기',
+    reviewsEmpty: '아직 후기가 없어요',
+    reviewReply: '사장님 답변',
+    ratingAria: (n: number) => `별점 ${n}점`,
+    anonymous: '익명',
   },
 
   // ───────── 추천 이력 ─────────
