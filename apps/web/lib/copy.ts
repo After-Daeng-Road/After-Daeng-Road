@@ -197,6 +197,11 @@ export const COPY = {
     reviewReply: '사장님 답변',
     ratingAria: (n: number) => `별점 ${n}점`,
     anonymous: '익명',
+    report: '신고',
+    reporting: '신고 중…',
+    reported: '신고됨',
+    reportAuth: '로그인 후 신고할 수 있어요',
+    reportFail: '신고 실패',
   },
 
   // ───────── 추천 이력 ─────────

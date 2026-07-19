@@ -1,9 +1,10 @@
 import { MessageSquare, Star } from 'lucide-react';
 import { COPY } from '@/lib/copy';
 import { formatDate } from '@/lib/format';
+import { ReportReviewButton } from './report-review-button';
 
 // POI 상세의 방문 후기 목록 (공개 리뷰). getPoiDetail 이 반환한 poi.reviews 를 렌더.
-// 순수 서버 렌더 — 작성/신고 같은 인터랙션은 별도 클라이언트 컴포넌트에서.
+// 서버 렌더 + 리뷰별 신고 버튼(클라이언트)만 인터랙션.
 
 // getPoiDetail(pois.ts)이 include 로 돌려주는 리뷰 형태의 구조적 타입
 export type PoiReview = {
@@ -92,6 +93,10 @@ export function ReviewList({ reviews }: { reviews: PoiReview[] }) {
                   </p>
                 </div>
               )}
+
+              <div className="mt-2 flex justify-end">
+                <ReportReviewButton reviewId={r.id} />
+              </div>
             </li>
           ))}
         </ul>
