@@ -4,8 +4,9 @@ import Link from 'next/link';
 import { Dog } from 'lucide-react';
 import { RiKakaoTalkFill } from 'react-icons/ri';
 import { SiNaver } from 'react-icons/si';
+import { FcGoogle } from 'react-icons/fc';
 
-// PRD §7.1: ① 카카오/네이버 로그인 → ② 펫 프로필 등록
+// PRD §7.1: ① 구글/카카오/네이버 로그인 → ② 펫 프로필 등록
 
 type SearchParams = Promise<{ callbackUrl?: string; error?: string }>;
 
@@ -24,6 +25,20 @@ export default async function LoginPage({ searchParams }: { searchParams: Search
       <p className="mb-8 text-sm text-gray-500">퇴근 후 한적한 펫 외출</p>
 
       <div className="w-full max-w-xs space-y-2.5">
+        <form
+          action={async () => {
+            'use server';
+            await signIn('google', { redirectTo: callbackUrl });
+          }}
+        >
+          <button
+            type="submit"
+            className="flex w-full items-center justify-center gap-2 rounded-md border border-gray-300 bg-white px-4 py-3 text-sm font-medium text-[#191919] hover:bg-gray-50"
+          >
+            <FcGoogle className="h-5 w-5" aria-hidden /> 구글로 시작하기
+          </button>
+        </form>
+
         <form
           action={async () => {
             'use server';
