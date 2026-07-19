@@ -15,7 +15,7 @@ export function EmptyResult({ onRelax }: { onRelax: () => void }) {
       <button
         type="button"
         onClick={onRelax}
-        className="mt-5 inline-flex items-center gap-2 rounded-full border border-ink bg-ink px-5 py-2.5 text-[13.5px] font-semibold text-page transition-opacity duration-200 ease-ds hover:opacity-85"
+        className="btn-ink mt-5 inline-flex items-center gap-2 px-5 py-2.5 text-[13.5px]"
       >
         {E.relax}
       </button>

@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import Link from 'next/link';
+import { signOut } from 'next-auth/react';
 import { X } from 'lucide-react';
 import { BrandMark } from './brand-mark';
 import { COPY } from '@/lib/copy';
@@ -9,6 +10,7 @@ import { COPY } from '@/lib/copy';
 // 모바일 햄버거에서 열리는 우측 슬라이드 드로어
 // 관심사: 패널 마크업 + 슬라이드 애니메이션 + scroll lock + Esc 닫기
 // open 상태와 NAV 항목은 부모(SiteHeader)에서 주입
+// authed=true 면 '/login' 항목이 로그아웃 버튼으로 바뀐다 (헤더 pill 과 일관).
 
 type NavItem = { href: string; label: string };
 
@@ -17,11 +19,13 @@ export function MobileDrawer({
   onClose,
   pathname,
   nav,
+  authed,
 }: {
   open: boolean;
   onClose: () => void;
   pathname: string | null;
   nav: readonly NavItem[];
+  authed?: boolean;
 }) {
   // body scroll lock + Esc 닫기 — 드로어가 열린 동안만
   useEffect(() => {
@@ -77,6 +81,19 @@ export function MobileDrawer({
         </div>
         <nav className="flex flex-col p-2 text-sm">
           {nav.map((item) => {
+            // 로그인 상태면 '/login' 항목을 로그아웃 버튼으로 대체
+            if (item.href === '/login' && authed) {
+              return (
+                <button
+                  key={item.href}
+                  type="button"
+                  onClick={() => signOut({ callbackUrl: '/' })}
+                  className="cursor-pointer rounded-field px-3 py-3 text-left text-body hover:bg-surface-2"
+                >
+                  {COPY.header.logout}
+                </button>
+              );
+            }
             const active = pathname === item.href;
             return (
               <Link

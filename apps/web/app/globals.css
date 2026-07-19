@@ -100,6 +100,14 @@ html[data-theme='dark'] {
     @apply text-[11.5px] font-semibold uppercase text-muted;
     letter-spacing: 0.26em;
   }
+  /* 잉크 솔리드 pill 버튼 — 로그인/로그아웃·완화 액션 등 (DESIGN_SYSTEM §5 Button/ink)
+     시각만 정의(색·라운드·전환). 크기(px/py)·표시(hidden/inline)는 사용처에서 조합. */
+  .btn-ink {
+    @apply rounded-full border border-ink bg-ink font-semibold text-page transition-opacity duration-200 ease-ds;
+  }
+  .btn-ink:hover {
+    @apply opacity-85;
+  }
 }
 
 /* ───────── 시간 슬라이더 (시그니처) ───────── */

@@ -19,6 +19,7 @@ export const COPY = {
   },
   header: {
     login: '로그인',
+    logout: '로그아웃',
     themeToLight: '라이트 모드로 전환',
     themeToDark: '다크 모드로 전환',
     openMenu: '메뉴 열기',

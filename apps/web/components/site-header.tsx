@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { signOut, useSession } from 'next-auth/react';
 import { Menu } from 'lucide-react';
 import { MobileDrawer } from './mobile-drawer';
 import { ThemeToggle } from './theme-toggle';
@@ -11,11 +12,17 @@ import { COPY } from '@/lib/copy';
 import { NAV_ITEMS } from '@/lib/constants';
 
 // 전역 헤더 — sticky + 블러 반투명 캔버스. PawPrint 라운드 사각형 마크 + 워드마크
-// + 데스크톱 nav + 테마 토글 + 잉크 로그인 pill. 모바일은 햄버거 → MobileDrawer.
+// + 데스크톱 nav + 테마 토글 + 로그인/로그아웃 잉크 pill(.btn-ink). 모바일은 햄버거 → MobileDrawer.
+// 로그인 상태(useSession)면 헤더 pill·드로어 항목이 로그아웃으로 바뀐다 (마이페이지 로그아웃은 별도 유지).
+
+// pill 레이아웃(표시/크기) — 시각은 globals.css .btn-ink
+const PILL_LAYOUT = 'hidden px-5 py-[9px] text-[13.5px] sm:inline-block';
 
 export function SiteHeader() {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
+  const { status } = useSession();
+  const authed = status === 'authenticated';
 
   // 라우트 변경 시 드로어 자동 닫기
   useEffect(() => {
@@ -55,12 +62,19 @@ export function SiteHeader() {
 
         <div className="flex items-center gap-3">
           <ThemeToggle />
-          <Link
-            href="/login"
-            className="hidden rounded-full border border-ink bg-ink px-5 py-[9px] text-[13.5px] font-semibold text-page transition-opacity duration-200 ease-ds hover:opacity-85 sm:inline-block"
-          >
-            {COPY.header.login}
-          </Link>
+          {authed ? (
+            <button
+              type="button"
+              onClick={() => signOut({ callbackUrl: '/' })}
+              className={`btn-ink cursor-pointer ${PILL_LAYOUT}`}
+            >
+              {COPY.header.logout}
+            </button>
+          ) : (
+            <Link href="/login" className={`btn-ink ${PILL_LAYOUT}`}>
+              {COPY.header.login}
+            </Link>
+          )}
           <button
             type="button"
             onClick={() => setOpen(true)}
@@ -79,6 +93,7 @@ export function SiteHeader() {
         onClose={() => setOpen(false)}
         pathname={pathname}
         nav={NAV_ITEMS}
+        authed={authed}
       />
     </>
   );
