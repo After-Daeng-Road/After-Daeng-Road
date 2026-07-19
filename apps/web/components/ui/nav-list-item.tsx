@@ -19,14 +19,14 @@ export function NavListItem({
 }) {
   const inner = (
     <>
-      <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-brand-light text-brand">
+      <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-brand-soft text-brand-ink">
         {icon}
       </span>
       <span className="min-w-0 flex-1 text-left">
-        <span className="block text-sm font-medium">{title}</span>
-        {subtitle && <span className="block text-[11px] text-gray-500">{subtitle}</span>}
+        <span className="block text-sm font-medium text-ink">{title}</span>
+        {subtitle && <span className="block text-[11px] text-muted">{subtitle}</span>}
       </span>
-      <ChevronRight className="h-4 w-4 flex-shrink-0 text-gray-300" aria-hidden />
+      <ChevronRight className="h-4 w-4 flex-shrink-0 text-faint" aria-hidden />
     </>
   );
 
@@ -34,7 +34,7 @@ export function NavListItem({
     return (
       <div
         aria-disabled="true"
-        className="flex cursor-not-allowed items-center gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3 opacity-50"
+        className="flex cursor-not-allowed items-center gap-3 rounded-xl border border-line bg-surface px-4 py-3 opacity-50"
       >
         {inner}
       </div>
@@ -43,7 +43,7 @@ export function NavListItem({
   return (
     <Link
       href={href}
-      className="flex items-center gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3 hover:border-brand"
+      className="flex items-center gap-3 rounded-xl border border-line bg-surface px-4 py-3 transition-colors hover:border-brand"
     >
       {inner}
     </Link>

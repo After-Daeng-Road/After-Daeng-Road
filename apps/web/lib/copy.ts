@@ -120,6 +120,7 @@ export const COPY = {
     login: '로그인',
     save: '저장',
     saving: '저장 중…',
+    close: '닫기',
   },
 
   // ───────── 마이펫타임 ─────────
