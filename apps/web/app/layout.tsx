@@ -4,6 +4,7 @@ import { Analytics } from '@vercel/analytics/next';
 import { GoogleAnalytics } from '@next/third-parties/google';
 import { Providers } from './providers';
 import { SiteHeader } from '@/components/site-header';
+import { COPY } from '@/lib/copy';
 import './globals.css';
 
 // 세리프(누메랄·강조어) — DESIGN_SYSTEM §3. italic 강조어 + tnum 숫자.
@@ -21,16 +22,16 @@ const themeBoot = `(function(){try{var t=localStorage.getItem('daengroad-theme')
 // PRD §1.1 — 댕로드 메타
 export const metadata: Metadata = {
   title: {
-    default: '댕로드 — 퇴근 후 한적한 펫 외출',
-    template: '%s · 댕로드',
+    default: COPY.meta.titleDefault,
+    template: COPY.meta.titleTemplate,
   },
-  description: '퇴근 18:12, 시간 슬라이더 3시간 → 한적도 87점·펫동반 검증된 충남 근교 즉시 추천',
-  applicationName: '댕로드',
-  authors: [{ name: 'Hun' }],
+  description: COPY.meta.description,
+  applicationName: COPY.meta.appName,
+  authors: [{ name: COPY.meta.author }],
   openGraph: {
     type: 'website',
     locale: 'ko_KR',
-    siteName: '댕로드',
+    siteName: COPY.meta.siteName,
   },
   robots: { index: true, follow: true },
 };

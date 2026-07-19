@@ -3,6 +3,9 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { ArrowRight, ChevronDown, Clock, Dog, MapPin } from 'lucide-react';
+import { COPY } from '@/lib/copy';
+import { CHUNGNAM_SEED, TIME_MAX, TIME_MIN, TIME_STEP } from '@/lib/constants';
+import { formatHHmm, radiusFromHours } from '@/lib/format';
 import type { Pet, RecommendInput } from '@/lib/types/recommendation';
 
 // 댕로드 검색 콘솔 — 시간슬라이더 · 출발지 · 펫 · 출발시각 · 제출 (DESIGN_SYSTEM §9.1)
@@ -10,32 +13,16 @@ import type { Pet, RecommendInput } from '@/lib/types/recommendation';
 // timeHours 만 controlled (부모가 EmptyResult.onRelax 등으로 외부 조작),
 // 나머지(departure, selectedPetId, startAt)는 내부 상태.
 
-const TIME_MIN = 1;
-const TIME_MAX = 6;
-const TIME_STEP = 0.5;
-
-// 충남 4시 시드 좌표 (PRD §13.3)
-const CHUNGNAM_SEED: Record<string, { lat: number; lng: number; label: string }> = {
-  CHEONAN: { lat: 36.8151, lng: 127.1135, label: '천안' },
-  ASAN: { lat: 36.7898, lng: 127.0019, label: '아산' },
-  GONGJU: { lat: 36.4467, lng: 127.119, label: '공주' },
-  SEOSAN: { lat: 36.7848, lng: 126.4503, label: '서산' },
-};
-
-function formatHHmm(d: Date): string {
-  const hh = String(d.getHours()).padStart(2, '0');
-  const mm = String(d.getMinutes()).padStart(2, '0');
-  return `${hh}:${mm}`;
-}
+const C = COPY.home.console;
 
 // 출발 시각 옵션: 지금 + 30분 단위 +6h 미래
 const START_AT_OPTIONS = (() => {
   const opts: { value: string; label: string }[] = [
-    { value: 'now', label: `지금 · ${formatHHmm(new Date())}` },
+    { value: 'now', label: C.startNow(formatHHmm(new Date())) },
   ];
   for (let i = 1; i <= 12; i++) {
     const d = new Date(Date.now() + i * 30 * 60 * 1000);
-    opts.push({ value: d.toISOString(), label: `+${i * 30}분 · ${formatHHmm(d)}` });
+    opts.push({ value: d.toISOString(), label: C.startPlus(i * 30, formatHHmm(d)) });
   }
   return opts;
 })();
@@ -59,7 +46,7 @@ export function RecommendForm({
   const [selectedPetId, setSelectedPetId] = useState<string | null>(pets[0]?.id ?? null);
   const [startAt, setStartAt] = useState<string>('now');
 
-  const radiusKm = Math.round((timeHours / 2) * 50);
+  const radiusKm = radiusFromHours(timeHours);
   const canRecommend = selectedPetId !== null && !loading;
   // 슬라이더 채움 비율 (브랜드 → 라인)
   const pct = ((timeHours - TIME_MIN) / (TIME_MAX - TIME_MIN)) * 100;
@@ -76,7 +63,11 @@ export function RecommendForm({
   const useCurrentLocation = () => {
     if (!navigator.geolocation) return;
     navigator.geolocation.getCurrentPosition((pos) =>
-      setDeparture({ lat: pos.coords.latitude, lng: pos.coords.longitude, label: '현 위치' }),
+      setDeparture({
+        lat: pos.coords.latitude,
+        lng: pos.coords.longitude,
+        label: C.currentLocation,
+      }),
     );
   };
 
@@ -89,11 +80,11 @@ export function RecommendForm({
       <div className="min-w-[280px]">
         <div className="mb-3.5 flex items-baseline justify-between">
           <span className="text-[12.5px] font-semibold tracking-[0.02em] text-muted">
-            외출 가능 시간
+            {C.timeLabel}
           </span>
           <span className="text-ink">
             <span className="fig text-[30px]">{timeHours}</span>
-            <span className="ml-0.5 text-[13px] text-muted">시간</span>
+            <span className="ml-0.5 text-[13px] text-muted">{C.hourUnit}</span>
           </span>
         </div>
         <input
@@ -107,7 +98,7 @@ export function RecommendForm({
           style={{
             background: `linear-gradient(to right, var(--accent) ${pct}%, var(--line) ${pct}%)`,
           }}
-          aria-label="외출 가능 시간"
+          aria-label={C.timeLabel}
         />
         <div className="mt-2.5 flex justify-between text-[11px] text-faint">
           {TICKS.map((h) => (
@@ -117,7 +108,9 @@ export function RecommendForm({
           ))}
         </div>
         <div className="mt-3 text-[13px] text-muted">
-          반경 약 <b className="font-semibold text-ink">{radiusKm}</b>km 안에서 찾고 있어요
+          {C.radiusPre}
+          <b className="font-semibold text-ink">{radiusKm}</b>
+          {C.radiusPost}
         </div>
       </div>
 
@@ -126,7 +119,7 @@ export function RecommendForm({
         {/* 출발지 */}
         <div>
           <label className="mb-2 flex items-center gap-1.5 text-[11.5px] font-semibold tracking-[0.02em] text-muted">
-            <MapPin className="h-[13px] w-[13px]" aria-hidden /> 출발지
+            <MapPin className="h-[13px] w-[13px]" aria-hidden /> {C.departure}
           </label>
           <div className="flex gap-1.5">
             <div className="relative flex-1">
@@ -140,7 +133,8 @@ export function RecommendForm({
               >
                 {Object.values(CHUNGNAM_SEED).map((c) => (
                   <option key={c.label} value={c.label}>
-                    {c.label} (충남)
+                    {c.label}
+                    {C.citySuffix}
                   </option>
                 ))}
               </select>
@@ -154,7 +148,7 @@ export function RecommendForm({
               onClick={useCurrentLocation}
               className="h-[50px] rounded-field border border-line bg-surface-2 px-3 text-xs font-medium text-body transition-colors hover:border-faint"
             >
-              현 위치
+              {C.currentLocation}
             </button>
           </div>
         </div>
@@ -162,14 +156,14 @@ export function RecommendForm({
         {/* 반려견 */}
         <div>
           <label className="mb-2 flex items-center gap-1.5 text-[11.5px] font-semibold tracking-[0.02em] text-muted">
-            <Dog className="h-[13px] w-[13px]" aria-hidden /> 반려견
+            <Dog className="h-[13px] w-[13px]" aria-hidden /> {C.pet}
           </label>
           {pets.length === 0 ? (
             <Link
               href="/me/pets/new"
               className="flex h-[50px] items-center justify-center rounded-field border border-dashed border-line bg-surface-2 px-3 text-center text-xs font-medium text-brand-ink hover:bg-brand-soft"
             >
-              펫 등록하기 →
+              {C.registerPet}
             </Link>
           ) : (
             <div className="relative">
@@ -195,7 +189,7 @@ export function RecommendForm({
         {/* 출발 시각 */}
         <div>
           <label className="mb-2 flex items-center gap-1.5 text-[11.5px] font-semibold tracking-[0.02em] text-muted">
-            <Clock className="h-[13px] w-[13px]" aria-hidden /> 출발 시각
+            <Clock className="h-[13px] w-[13px]" aria-hidden /> {C.startAt}
           </label>
           <div className="relative">
             <select
@@ -224,17 +218,17 @@ export function RecommendForm({
           className="col-span-2 inline-flex h-[50px] items-center justify-center gap-2 whitespace-nowrap rounded-field bg-brand px-[26px] text-[14.5px] font-bold text-white shadow-[0_8px_20px_-8px_var(--accent)] transition duration-200 ease-ds hover:translate-y-[-1px] hover:brightness-[1.04] disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none dark:text-[#20160f] md:col-span-1"
         >
           {loading ? (
-            '추천 계산 중…'
+            C.submitting
           ) : (
             <>
-              지금 추천받기 <ArrowRight className="h-4 w-4" aria-hidden />
+              {C.submit} <ArrowRight className="h-4 w-4" aria-hidden />
             </>
           )}
         </button>
       </div>
 
       {!selectedPetId && pets.length === 0 && (
-        <p className="mt-3 text-center text-[11px] text-muted">펫 등록 후 추천을 받을 수 있어요</p>
+        <p className="mt-3 text-center text-[11px] text-muted">{C.needPet}</p>
       )}
     </section>
   );

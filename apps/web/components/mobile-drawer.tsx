@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import Link from 'next/link';
 import { PawPrint, X } from 'lucide-react';
+import { COPY } from '@/lib/copy';
 
 // 모바일 햄버거에서 열리는 우측 슬라이드 드로어
 // 관심사: 패널 마크업 + 슬라이드 애니메이션 + scroll lock + Esc 닫기
@@ -45,7 +46,7 @@ export function MobileDrawer({
         type="button"
         tabIndex={open ? 0 : -1}
         onClick={onClose}
-        aria-label="메뉴 닫기"
+        aria-label={COPY.header.closeMenu}
         className={`absolute inset-0 bg-black/40 transition-opacity duration-200 ${
           open ? 'opacity-100' : 'opacity-0'
         }`}
@@ -64,12 +65,12 @@ export function MobileDrawer({
             <span className="grid h-7 w-7 place-items-center rounded-[8px] bg-brand text-white dark:text-ink">
               <PawPrint className="h-4 w-4" aria-hidden />
             </span>
-            댕로드
+            {COPY.brand.name}
           </span>
           <button
             type="button"
             onClick={onClose}
-            aria-label="메뉴 닫기"
+            aria-label={COPY.header.closeMenu}
             className="rounded-full p-1.5 text-muted hover:bg-surface-2"
           >
             <X className="h-5 w-5" />

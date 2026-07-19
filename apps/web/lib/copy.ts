@@ -30,9 +30,16 @@ export const COPY = {
     hero: {
       eyebrow: '충남 · 공주 · 천안 · 아산 · 서산',
       titleLead: '퇴근 후,',
+      titleMid: '가장',
       titleEmph: '한적한',
       titleTail: '길로.',
       lede: '시간 슬라이더 하나면 충분해요. 데이터로 검증한 한적도와 펫 동반 코스 3곳을, 퇴근 5초 안에.',
+      imageAlt: '해질 무렵 한적한 충남 근교 길',
+    },
+    errors: {
+      rateLimit: '잠시 후 다시 시도해 주세요 (요청이 많습니다)',
+      apiFail: (status: number) => `추천 API 실패 (${status})`,
+      unknown: '알 수 없는 오류',
     },
     console: {
       timeLabel: '외출 가능 시간',
@@ -83,6 +90,7 @@ export const COPY = {
       placeholder: '이메일 주소',
       submit: '구독',
       note: '시간·요일 자율 설정 · 1탭 수신거부',
+      imageAlt: '반려견과의 산책',
     },
     floatingBadge: '검증 배지',
     floatingBadgeAria: '검증 배지 안내',

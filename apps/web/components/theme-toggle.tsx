@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Moon, Sun } from 'lucide-react';
+import { COPY } from '@/lib/copy';
 
 // 라이트/다크 토글 — data-theme 속성 + localStorage 영속.
 // 초기 테마는 layout 의 무플래시 스크립트가 페인트 전에 설정하므로,
@@ -34,7 +35,7 @@ export function ThemeToggle() {
     <button
       type="button"
       onClick={toggle}
-      aria-label={theme === 'dark' ? '라이트 모드로 전환' : '다크 모드로 전환'}
+      aria-label={theme === 'dark' ? COPY.header.themeToLight : COPY.header.themeToDark}
       className="grid h-[38px] w-[38px] place-items-center rounded-full border border-line bg-surface text-body transition duration-200 ease-ds hover:-translate-y-px hover:border-faint"
     >
       {/* mounted 전엔 깜빡임 방지 위해 Moon 고정 (서버 마크업과 동일) */}
