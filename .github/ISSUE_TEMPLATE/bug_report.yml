@@ -1,0 +1,113 @@
+name: 🐛 버그 신고 (QA)
+description: QA 중 발견한 버그를 신고합니다.
+title: '[BUG] '
+labels: ['bug']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        버그를 발견해 주셔서 감사합니다. 아래 항목을 채워주시면 빠르게 고칠 수 있어요.
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: 발생 화면 / 영역
+      options:
+        - 홈 · 추천 (시간 슬라이더 / 결과 카드)
+        - POI 상세 (한적도 차트 / 검증 / 후기)
+        - 로그인 · 회원가입
+        - 마이펫타임 (/me)
+        - 펫 등록 / 펫 상세 (민감정보)
+        - 이메일 알림 설정
+        - 추천 이력
+        - 헤더 · 네비게이션 · 공통
+        - 기타
+    validations:
+      required: true
+
+  - type: dropdown
+    id: severity
+    attributes:
+      label: 심각도
+      options:
+        - Critical (앱 사용 불가 / 데이터 손상)
+        - High (핵심 기능 동작 안 함)
+        - Medium (일부 기능 · 표시 문제)
+        - Low (사소 · 디자인)
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: 버그 설명
+      description: 무슨 문제가 있었나요? 간단명료하게 적어주세요.
+      placeholder: 예) 로그인 후에도 헤더가 계속 '로그인'으로 표시됨
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: 재현 방법
+      description: 버그를 재현하는 단계를 순서대로 적어주세요.
+      value: |
+        1.
+        2.
+        3.
+        4. 버그 발생
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: 예상 동작
+      description: 원래 어떻게 동작해야 하나요?
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: 실제 동작
+      description: 실제로 어떻게 동작했나요? 에러 메시지 · 콘솔 로그가 있으면 함께 붙여주세요.
+
+  - type: input
+    id: env
+    attributes:
+      label: 환경 (기기 / 브라우저 / OS)
+      placeholder: 예) iPhone 15, Safari 17 / MacBook, Chrome 130
+    validations:
+      required: true
+
+  - type: dropdown
+    id: theme
+    attributes:
+      label: 테마
+      options:
+        - 라이트
+        - 다크
+        - 둘 다
+        - 해당 없음
+
+  - type: input
+    id: url
+    attributes:
+      label: 발생 URL / 경로
+      placeholder: 예) /poi/abcd-1234, /me/pets/xxxx
+
+  - type: textarea
+    id: screenshot
+    attributes:
+      label: 스크린샷 / 영상
+      description: 이미지·영상을 이 영역에 드래그해서 첨부하세요.
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: 확인
+      options:
+        - label: 중복된 이슈가 없는지 확인했어요.
+          required: true
+        - label: 새로고침 / 재로그인 후에도 재현돼요.
