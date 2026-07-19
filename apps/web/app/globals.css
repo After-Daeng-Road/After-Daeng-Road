@@ -31,6 +31,8 @@ html[data-theme='light'] {
   --quiet: #5a9f7e;
   --verify: #c06f84;
   --forecast: #6480ad;
+  --danger: #c0523c;
+  --danger-soft: #f7e6e1;
   --cta-bg: #fbeede;
   --scrim: rgba(20, 14, 9, 0.46);
   --scrim-2: rgba(20, 14, 9, 0.04);
@@ -56,6 +58,8 @@ html[data-theme='dark'] {
   --quiet: #79c2a0;
   --verify: #db93a5;
   --forecast: #8aa3d2;
+  --danger: #e08a76;
+  --danger-soft: rgba(224, 138, 118, 0.16);
   --cta-bg: #221c16;
   --scrim: rgba(8, 5, 2, 0.5);
   --scrim-2: rgba(255, 255, 255, 0.03);

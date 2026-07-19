@@ -37,6 +37,11 @@ const config: Config = {
         quiet: 'var(--quiet)',
         verify: 'var(--verify)',
         forecast: 'var(--forecast)',
+        // 상태
+        danger: {
+          DEFAULT: 'var(--danger)',
+          soft: 'var(--danger-soft)',
+        },
         // CTA 밴드(샌드)
         cta: 'var(--cta-bg)',
         // OAuth
