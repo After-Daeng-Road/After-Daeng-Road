@@ -105,6 +105,7 @@ export const COPY = {
   // ───────── 로그인 ─────────
   login: {
     tagline: '퇴근 후 한적한 펫 외출',
+    google: '구글로 시작하기',
     kakao: '카카오로 시작하기',
     naver: '네이버로 시작하기',
     errorPrefix: '로그인 실패: ',
