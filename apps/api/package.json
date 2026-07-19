@@ -10,7 +10,9 @@
     "prisma:studio": "prisma studio",
     "prisma:format": "prisma format",
     "seed": "tsx prisma/seed.ts",
-    "supabase:serve": "supabase functions serve --no-verify-jwt",
+    "seed:tourapi": "tsx prisma/seed-tourapi.ts",
+    "verify:recommend": "tsx scripts/verify-recommend.ts",
+    "supabase:serve": "supabase functions serve --no-verify-jwt --env-file .env",
     "supabase:deploy": "supabase functions deploy time-slider-recommender",
     "typecheck": "tsc --noEmit"
   },
