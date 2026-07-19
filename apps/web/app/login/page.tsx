@@ -1,9 +1,10 @@
-import { signIn, auth } from '@/auth';
-import { redirect } from 'next/navigation';
+import { auth, signIn } from '@/auth';
+import { PawPrint } from 'lucide-react';
 import Link from 'next/link';
-import { Dog } from 'lucide-react';
+import { redirect } from 'next/navigation';
 import { RiKakaoTalkFill } from 'react-icons/ri';
 import { SiNaver } from 'react-icons/si';
+import { COPY } from '@/lib/copy';
 
 // PRD §7.1: ① 카카오/네이버 로그인 → ② 펫 프로필 등록
 
@@ -19,9 +20,9 @@ export default async function LoginPage({ searchParams }: { searchParams: Search
   return (
     <main className="flex min-h-screen flex-col items-center justify-center px-4 py-10">
       <Link href="/" className="mb-3 flex items-center gap-1.5 text-2xl font-bold text-brand">
-        <Dog className="h-7 w-7" aria-hidden /> 댕로드
+        <PawPrint className="h-7 w-7" aria-hidden /> {COPY.brand.name}
       </Link>
-      <p className="mb-8 text-sm text-gray-500">퇴근 후 한적한 펫 외출</p>
+      <p className="mb-8 text-sm text-muted">{COPY.login.tagline}</p>
 
       <div className="w-full max-w-xs space-y-2.5">
         <form
@@ -32,9 +33,9 @@ export default async function LoginPage({ searchParams }: { searchParams: Search
         >
           <button
             type="submit"
-            className="flex w-full items-center justify-center gap-2 rounded-md bg-[#FEE500] px-4 py-3 text-sm font-medium text-[#191919] hover:opacity-90"
+            className="flex w-full items-center justify-center gap-2 rounded-field bg-kakao px-4 py-3 text-sm font-medium text-[#191919] transition-opacity hover:opacity-90"
           >
-            <RiKakaoTalkFill className="h-5 w-5" aria-hidden /> 카카오로 시작하기
+            <RiKakaoTalkFill className="h-5 w-5" aria-hidden /> {COPY.login.kakao}
           </button>
         </form>
 
@@ -46,25 +47,30 @@ export default async function LoginPage({ searchParams }: { searchParams: Search
         >
           <button
             type="submit"
-            className="flex w-full items-center justify-center gap-2 rounded-md bg-[#03C75A] px-4 py-3 text-sm font-medium text-white hover:opacity-90"
+            className="flex w-full items-center justify-center gap-2 rounded-field bg-naver px-4 py-3 text-sm font-medium text-white transition-opacity hover:opacity-90"
           >
-            <SiNaver className="h-3.5 w-3.5" aria-hidden /> 네이버로 시작하기
+            <SiNaver className="h-3.5 w-3.5" aria-hidden /> {COPY.login.naver}
           </button>
         </form>
       </div>
 
-      {params.error && <p className="mt-4 text-xs text-red-600">로그인 실패: {params.error}</p>}
+      {params.error && (
+        <p className="mt-4 text-xs text-danger">
+          {COPY.login.errorPrefix}
+          {params.error}
+        </p>
+      )}
 
-      <p className="mt-8 max-w-xs text-center text-[11px] leading-relaxed text-gray-400">
-        로그인 시{' '}
+      <p className="mt-8 max-w-xs text-center text-[11px] leading-relaxed text-faint">
+        {COPY.login.consentPre}
         <Link href="/legal/terms" className="underline">
-          이용약관
-        </Link>{' '}
-        및{' '}
-        <Link href="/legal/privacy" className="underline">
-          개인정보처리방침
+          {COPY.common.terms}
         </Link>
-        에 동의하게 됩니다.
+        {COPY.login.consentMid}
+        <Link href="/legal/privacy" className="underline">
+          {COPY.common.privacy}
+        </Link>
+        {COPY.login.consentPost}
       </p>
     </main>
   );

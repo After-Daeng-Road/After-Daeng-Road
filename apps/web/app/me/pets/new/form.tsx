@@ -2,16 +2,9 @@
 
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { createPet, type PetInput } from '@/lib/actions/pets';
-
-const RESTRICTIONS: Array<{
-  value: 'CAR_SICK' | 'HEAT_SENSITIVE' | 'NOISE_SENSITIVE';
-  label: string;
-}> = [
-  { value: 'CAR_SICK', label: '차멀미' },
-  { value: 'HEAT_SENSITIVE', label: '더위 민감' },
-  { value: 'NOISE_SENSITIVE', label: '소음 민감' },
-];
+import { createPet } from '@/lib/actions/pets';
+import { COPY } from '@/lib/copy';
+import { PET_RESTRICTIONS, type RestrictionKey } from '@/lib/constants';
 
 export function NewPetForm() {
   const router = useRouter();
@@ -19,11 +12,11 @@ export function NewPetForm() {
   const [breed, setBreed] = useState('');
   const [weightKg, setWeightKg] = useState(5);
   const [ageYears, setAgeYears] = useState(3);
-  const [restrictions, setRestrictions] = useState<PetInput['restrictions']>([]);
+  const [restrictions, setRestrictions] = useState<RestrictionKey[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  const toggle = (v: 'CAR_SICK' | 'HEAT_SENSITIVE' | 'NOISE_SENSITIVE') => {
+  const toggle = (v: RestrictionKey) => {
     setRestrictions((prev) => (prev.includes(v) ? prev.filter((x) => x !== v) : [...prev, v]));
   };
 
@@ -37,11 +30,14 @@ export function NewPetForm() {
     });
   };
 
+  const inputCls =
+    'mt-1 w-full rounded-field border border-line bg-surface-2 px-3 py-2 text-sm text-body';
+
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
-        <label className="block text-sm font-medium" htmlFor="name">
-          이름
+        <label className="block text-sm font-medium text-ink" htmlFor="name">
+          {COPY.pets.name}
         </label>
         <input
           id="name"
@@ -50,14 +46,14 @@ export function NewPetForm() {
           maxLength={20}
           value={name}
           onChange={(e) => setName(e.target.value)}
-          className="mt-1 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm"
-          placeholder="다람이"
+          className={inputCls}
+          placeholder={COPY.pets.namePlaceholder}
         />
       </div>
 
       <div>
-        <label className="block text-sm font-medium" htmlFor="breed">
-          견종
+        <label className="block text-sm font-medium text-ink" htmlFor="breed">
+          {COPY.pets.breed}
         </label>
         <input
           id="breed"
@@ -66,15 +62,15 @@ export function NewPetForm() {
           maxLength={40}
           value={breed}
           onChange={(e) => setBreed(e.target.value)}
-          className="mt-1 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm"
-          placeholder="비숑 / 푸들 / 믹스 등"
+          className={inputCls}
+          placeholder={COPY.pets.breedPlaceholder}
         />
       </div>
 
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-sm font-medium" htmlFor="weight">
-            체중 (kg)
+          <label className="block text-sm font-medium text-ink" htmlFor="weight">
+            {COPY.pets.weight}
           </label>
           <input
             id="weight"
@@ -85,12 +81,12 @@ export function NewPetForm() {
             required
             value={weightKg}
             onChange={(e) => setWeightKg(Number(e.target.value))}
-            className="mt-1 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm"
+            className={inputCls}
           />
         </div>
         <div>
-          <label className="block text-sm font-medium" htmlFor="age">
-            나이 (살)
+          <label className="block text-sm font-medium text-ink" htmlFor="age">
+            {COPY.pets.age}
           </label>
           <input
             id="age"
@@ -100,23 +96,23 @@ export function NewPetForm() {
             required
             value={ageYears}
             onChange={(e) => setAgeYears(Number(e.target.value))}
-            className="mt-1 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm"
+            className={inputCls}
           />
         </div>
       </div>
 
       <fieldset>
-        <legend className="text-sm font-medium">이동 제한 (해당되는 것)</legend>
+        <legend className="text-sm font-medium text-ink">{COPY.pets.restrictions}</legend>
         <div className="mt-2 grid grid-cols-3 gap-2">
-          {RESTRICTIONS.map((r) => (
+          {PET_RESTRICTIONS.map((r) => (
             <button
               key={r.value}
               type="button"
               onClick={() => toggle(r.value)}
-              className={`rounded-md py-2 text-xs font-medium ${
+              className={`rounded-field py-2 text-xs font-medium ${
                 restrictions.includes(r.value)
-                  ? 'bg-brand text-white'
-                  : 'border border-gray-200 bg-white text-gray-600'
+                  ? 'bg-brand text-white dark:text-[#20160f]'
+                  : 'border border-line bg-surface text-muted'
               }`}
             >
               {r.label}
@@ -128,12 +124,12 @@ export function NewPetForm() {
       <button
         type="submit"
         disabled={isPending}
-        className="w-full rounded-md bg-brand py-3 text-sm font-bold text-white hover:bg-brand-hover disabled:bg-gray-300"
+        className="w-full rounded-field bg-brand py-3 text-sm font-bold text-white transition-colors hover:bg-brand-hover disabled:opacity-50 dark:text-[#20160f]"
       >
-        {isPending ? '등록 중…' : '등록'}
+        {isPending ? COPY.pets.submitting : COPY.pets.submit}
       </button>
 
-      {error && <p className="text-center text-xs text-red-600">{error}</p>}
+      {error && <p className="text-center text-xs text-danger">{error}</p>}
     </form>
   );
 }

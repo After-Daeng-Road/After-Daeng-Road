@@ -2,20 +2,8 @@
 
 import { useState, useTransition } from 'react';
 import { updateNotifySettings, type NotifySettings } from '@/lib/actions/notify-settings';
-
-const DAY_LABELS: Record<NotifySettings['days'][number], string> = {
-  MON: '월',
-  TUE: '화',
-  WED: '수',
-  THU: '목',
-  FRI: '금',
-  SAT: '토',
-  SUN: '일',
-};
-
-type DayKey = NotifySettings['days'][number];
-
-const ALL_DAYS: DayKey[] = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
+import { COPY } from '@/lib/copy';
+import { DAY_LABELS, DAY_ORDER, type DayKey } from '@/lib/constants';
 
 export function NotifySettingsForm({ initial }: { initial: NotifySettings }) {
   const [enabled, setEnabled] = useState(initial.enabled);
@@ -34,7 +22,7 @@ export function NotifySettingsForm({ initial }: { initial: NotifySettings }) {
     startTransition(async () => {
       const res = await updateNotifySettings({ enabled, time, days });
       if (res.ok) {
-        setMessage({ type: 'ok', text: '저장되었어요' });
+        setMessage({ type: 'ok', text: COPY.settings.saved });
       } else {
         setMessage({ type: 'err', text: res.error });
       }
@@ -43,8 +31,8 @@ export function NotifySettingsForm({ initial }: { initial: NotifySettings }) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
-      <label className="flex items-center justify-between rounded-xl border border-gray-200 bg-white px-4 py-3">
-        <span className="text-sm font-medium">이메일 알림 받기</span>
+      <label className="flex items-center justify-between rounded-xl border border-line bg-surface px-4 py-3">
+        <span className="text-sm font-medium text-ink">{COPY.settings.enable}</span>
         <input
           type="checkbox"
           checked={enabled}
@@ -54,25 +42,25 @@ export function NotifySettingsForm({ initial }: { initial: NotifySettings }) {
       </label>
 
       <div className={enabled ? '' : 'pointer-events-none opacity-50'}>
-        <label className="block text-sm font-medium">발송 시각</label>
+        <label className="block text-sm font-medium text-ink">{COPY.settings.time}</label>
         <input
           type="time"
           value={time}
           onChange={(e) => setTime(e.target.value)}
-          className="mt-1 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm"
+          className="mt-1 w-full rounded-field border border-line bg-surface-2 px-3 py-2 text-sm text-body"
         />
 
-        <label className="mt-4 block text-sm font-medium">발송 요일</label>
+        <label className="mt-4 block text-sm font-medium text-ink">{COPY.settings.days}</label>
         <div className="mt-2 grid grid-cols-7 gap-1">
-          {ALL_DAYS.map((d) => (
+          {DAY_ORDER.map((d) => (
             <button
               key={d}
               type="button"
               onClick={() => toggleDay(d)}
-              className={`rounded-md py-2 text-xs font-medium ${
+              className={`rounded-field py-2 text-xs font-medium ${
                 days.includes(d)
-                  ? 'bg-brand text-white'
-                  : 'border border-gray-200 bg-white text-gray-600'
+                  ? 'bg-brand text-white dark:text-[#20160f]'
+                  : 'border border-line bg-surface text-muted'
               }`}
             >
               {DAY_LABELS[d]}
@@ -84,16 +72,14 @@ export function NotifySettingsForm({ initial }: { initial: NotifySettings }) {
       <button
         type="submit"
         disabled={isPending}
-        className="w-full rounded-md bg-brand py-3 text-sm font-bold text-white hover:bg-brand-hover disabled:bg-gray-300"
+        className="w-full rounded-field bg-brand py-3 text-sm font-bold text-white transition-colors hover:bg-brand-hover disabled:opacity-50 dark:text-[#20160f]"
       >
-        {isPending ? '저장 중…' : '저장'}
+        {isPending ? COPY.common.saving : COPY.common.save}
       </button>
 
       {message && (
         <p
-          className={`text-center text-xs ${
-            message.type === 'ok' ? 'text-green-600' : 'text-red-600'
-          }`}
+          className={`text-center text-xs ${message.type === 'ok' ? 'text-quiet' : 'text-danger'}`}
         >
           {message.text}
         </p>
