@@ -33,7 +33,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Search
         >
           <button
             type="submit"
-            className="flex w-full items-center justify-center gap-2 rounded-md border border-gray-300 bg-white px-4 py-3 text-sm font-medium text-[#191919] hover:bg-gray-50"
+            className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-md border border-gray-300 bg-white px-4 py-3 text-sm font-medium text-[#191919] hover:bg-gray-50"
           >
             <FcGoogle className="h-5 w-5" aria-hidden /> 구글로 시작하기
           </button>
@@ -47,7 +47,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Search
         >
           <button
             type="submit"
-            className="flex w-full items-center justify-center gap-2 rounded-md bg-[#FEE500] px-4 py-3 text-sm font-medium text-[#191919] hover:opacity-90"
+            className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-md bg-[#FEE500] px-4 py-3 text-sm font-medium text-[#191919] hover:opacity-90"
           >
             <RiKakaoTalkFill className="h-5 w-5" aria-hidden /> 카카오로 시작하기
           </button>
@@ -61,7 +61,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Search
         >
           <button
             type="submit"
-            className="flex w-full items-center justify-center gap-2 rounded-md bg-[#03C75A] px-4 py-3 text-sm font-medium text-white hover:opacity-90"
+            className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-md bg-[#03C75A] px-4 py-3 text-sm font-medium text-white hover:opacity-90"
           >
             <SiNaver className="h-3.5 w-3.5" aria-hidden /> 네이버로 시작하기
           </button>
