@@ -38,6 +38,7 @@ type Recommendation = {
   type: string;
   imageUrl: string | null;
   badges: string[];
+  petAllowed: boolean;
   reason: ReasonChip;
   sampleSufficient: boolean;
 };
@@ -71,6 +72,7 @@ const JWT_KEY = new TextEncoder().encode(SB_JWT_SECRET);
 const KAKAO_REST_KEY = env('KAKAO_REST_API_KEY');
 const UPSTASH_URL = env('UPSTASH_REDIS_REST_URL');
 const UPSTASH_TOKEN = env('UPSTASH_REDIS_REST_TOKEN');
+const UPSTASH_ON = !!(UPSTASH_URL && UPSTASH_TOKEN); // 미설정 시 캐시/레이트리밋 fail-open
 
 // ═══════════════ 상수 ═══════════════
 
@@ -177,15 +179,15 @@ Deno.serve(async (req: Request): Promise<Response> => {
 
     // ─ 시간 예산(왕복 = timeHours/2 시간 = 분) 안에 들어오는 것만 ─
     const budgetMin = (input.timeHours / 2) * 60;
-    const inBudget = enriched.filter((e) => e.eta && e.eta.minutes <= budgetMin);
+    const inBudget = enriched.filter((e) => e.eta.minutes <= budgetMin);
     if (inBudget.length === 0) return j({ recommendations: [] });
 
     // ─ 점수 (PRD §12.2): 0.4*quietness + 0.3*verification + 0.2*dist_inv + 0.1*weather ─
-    const maxDist = Math.max(...inBudget.map((e) => e.eta!.distanceKm), 1);
+    const maxDist = Math.max(...inBudget.map((e) => e.eta.distanceKm), 1);
     const scored = inBudget
       .map((e) => {
         const verifNorm = Math.min(e.verifiedCount / 10, 1);
-        const distInverse = 1 - e.eta!.distanceKm / maxDist;
+        const distInverse = 1 - e.eta.distanceKm / maxDist;
         const weatherIndoor = e.poi.type === 'CAFE' || e.poi.type === 'RESTAURANT' ? 0.7 : 0.3;
         // 카테고리 가산점 (PRD §6.2 웰니스/생태 +5)
         const categoryBonus = (e.poi.is_wellness ? 5 : 0) + (e.poi.is_eco ? 5 : 0);
@@ -194,7 +196,10 @@ Deno.serve(async (req: Request): Promise<Response> => {
           0.4 * (quietnessAdj / 100) + 0.3 * verifNorm + 0.2 * distInverse + 0.1 * weatherIndoor;
         return { ...e, score, quietnessAdj };
       })
-      .sort((a, b) => b.score - a.score)
+      .sort((a, b) => {
+        if (a.poi.pet_allowed !== b.poi.pet_allowed) return a.poi.pet_allowed ? -1 : 1; // 펫 우선
+        return b.score - a.score;
+      })
       .slice(0, TOP_N);
 
     // ─ 배지 일괄 조회 ─
@@ -207,14 +212,19 @@ Deno.serve(async (req: Request): Promise<Response> => {
       address: s.poi.address ?? '',
       lat: s.poi.lat,
       lng: s.poi.lng,
-      sourceLabel: s.poi.type === 'TRAIL' ? '두루누비 코스' : '펫동반 가능',
+      sourceLabel: s.poi.pet_allowed
+        ? '펫 동반 가능'
+        : s.poi.type === 'TRAIL'
+          ? '두루누비 코스'
+          : '한적한 산책지',
       type: s.poi.type,
       imageUrl: s.poi.image_urls?.[0] ?? null,
       badges: badgesByPoi.get(s.poi.id) ?? [],
+      petAllowed: s.poi.pet_allowed,
       sampleSufficient: s.quietness.sampleSufficient,
       reason: {
-        distanceKm: round1(s.eta!.distanceKm),
-        etaMin: Math.round(s.eta!.minutes),
+        distanceKm: round1(s.eta.distanceKm),
+        etaMin: Math.round(s.eta.minutes),
         quietnessNow: Math.round(s.quietnessAdj),
         quietnessForecast: Math.round(s.quietness.forecastTomorrow),
         quietnessWeekAvg: Math.round(s.quietness.weekAvg),
@@ -281,22 +291,35 @@ async function fetchPoiCandidates(
   origin: Coord,
   radiusKm: number,
 ): Promise<PoiCandidate[]> {
-  // lat/lng 박스 1차 필터 → 정밀 거리는 ETA 단계에서 결정
   const latDelta = radiusKm / 111;
   const lngDelta = radiusKm / (111 * Math.cos((origin.lat * Math.PI) / 180));
-  const { data, error } = await supabase
-    .from('pois')
-    .select(
-      'id,name,type,lat,lng,address,image_urls,pet_policy_text,is_wellness,is_eco,pet_allowed,sigungu_code',
-    )
-    .eq('pet_allowed', true)
-    .gte('lat', origin.lat - latDelta)
-    .lte('lat', origin.lat + latDelta)
-    .gte('lng', origin.lng - lngDelta)
-    .lte('lng', origin.lng + lngDelta)
-    .limit(MAX_CANDIDATES);
-  if (error) throw error;
-  return (data ?? []) as PoiCandidate[];
+  const cols =
+    'id,name,type,lat,lng,address,image_urls,pet_policy_text,is_wellness,is_eco,pet_allowed,sigungu_code';
+  const box = (q: any) =>
+    q
+      .gte('lat', origin.lat - latDelta)
+      .lte('lat', origin.lat + latDelta)
+      .gte('lng', origin.lng - lngDelta)
+      .lte('lng', origin.lng + lngDelta);
+
+  // 1) 펫동반 가능 우선
+  const { data: petData, error: petErr } = await box(
+    supabase.from('pois').select(cols).eq('pet_allowed', true),
+  ).limit(MAX_CANDIDATES);
+  if (petErr) throw petErr;
+  const pet = (petData ?? []) as PoiCandidate[];
+
+  // 2) 부족하면 비펫 야외 타입으로 fallback ("한적한 산책지")
+  if (pet.length >= TOP_N) return pet;
+  const { data: walkData } = await box(
+    supabase
+      .from('pois')
+      .select(cols)
+      .eq('pet_allowed', false)
+      .in('type', ['TRAIL', 'PARK', 'ATTRACTION']),
+  ).limit(MAX_CANDIDATES - pet.length);
+  const walk = (walkData ?? []) as PoiCandidate[];
+  return [...pet, ...walk];
 }
 
 // ═══════════════ ETA (카카오모빌리티 + Upstash 24h 캐시) ═══════════════
@@ -304,7 +327,7 @@ async function fetchPoiCandidates(
 async function getEtaCached(
   origin: Coord,
   poi: PoiCandidate,
-): Promise<{ minutes: number; distanceKm: number } | null> {
+): Promise<{ minutes: number; distanceKm: number }> {
   const cacheKey = `mob:eta:${geohash7(origin.lat, origin.lng)}|${poi.id}`;
   const cached = await redisGet(cacheKey);
   if (cached) {
@@ -314,17 +337,21 @@ async function getEtaCached(
       /* ignore */
     }
   }
+  if (!KAKAO_REST_KEY) return fallbackEta(origin, poi); // 키 없음 → 폴백
 
-  const url = `https://apis-navi.kakaomobility.com/v1/directions?origin=${origin.lng},${origin.lat}&destination=${poi.lng},${poi.lat}&priority=RECOMMEND`;
-  const res = await fetch(url, { headers: { Authorization: `KakaoAK ${KAKAO_REST_KEY}` } });
-  if (!res.ok) return null;
-  const data = await res.json();
-  const summary = data.routes?.[0]?.summary;
-  if (!summary) return null;
-
-  const result = { minutes: summary.duration / 60, distanceKm: summary.distance / 1000 };
-  await redisSetEx(cacheKey, ETA_TTL_SEC, JSON.stringify(result));
-  return result;
+  try {
+    const url = `https://apis-navi.kakaomobility.com/v1/directions?origin=${origin.lng},${origin.lat}&destination=${poi.lng},${poi.lat}&priority=RECOMMEND`;
+    const res = await fetch(url, { headers: { Authorization: `KakaoAK ${KAKAO_REST_KEY}` } });
+    if (!res.ok) return fallbackEta(origin, poi);
+    const data = await res.json();
+    const summary = data.routes?.[0]?.summary;
+    if (!summary) return fallbackEta(origin, poi);
+    const result = { minutes: summary.duration / 60, distanceKm: summary.distance / 1000 };
+    await redisSetEx(cacheKey, ETA_TTL_SEC, JSON.stringify(result));
+    return result;
+  } catch {
+    return fallbackEta(origin, poi);
+  }
 }
 
 // ═══════════════ 한적도 (현재 + 30일 예측 + 주간 평균) ═══════════════
@@ -425,6 +452,7 @@ async function fetchBadges(
 // ═══════════════ Rate Limit (Upstash) ═══════════════
 
 async function checkRateLimit(userId: string): Promise<boolean> {
+  if (!UPSTASH_ON) return true; // 개발/미설정: 레이트리밋 skip
   const key = `rl:recommend:${userId}`;
   const count = await redisIncr(key);
   if (count === 1) await redisExpire(key, RATE_LIMIT_WINDOW_SEC);
@@ -434,6 +462,7 @@ async function checkRateLimit(userId: string): Promise<boolean> {
 // ═══════════════ Upstash Redis REST ═══════════════
 
 async function redisGet(key: string): Promise<string | null> {
+  if (!UPSTASH_ON) return null;
   const r = await fetch(`${UPSTASH_URL}/get/${encodeURIComponent(key)}`, {
     headers: { Authorization: `Bearer ${UPSTASH_TOKEN}` },
   });
@@ -443,6 +472,7 @@ async function redisGet(key: string): Promise<string | null> {
 }
 
 async function redisSetEx(key: string, ttl: number, value: string): Promise<void> {
+  if (!UPSTASH_ON) return;
   await fetch(`${UPSTASH_URL}/setex/${encodeURIComponent(key)}/${ttl}`, {
     method: 'POST',
     headers: { Authorization: `Bearer ${UPSTASH_TOKEN}`, 'Content-Type': 'text/plain' },
@@ -506,4 +536,22 @@ function geohash7(lat: number, lng: number): string {
 
 function round1(n: number): number {
   return Math.round(n * 10) / 10;
+}
+
+function haversineKm(a: Coord, b: Coord): number {
+  const R = 6371;
+  const dLat = ((b.lat - a.lat) * Math.PI) / 180;
+  const dLng = ((b.lng - a.lng) * Math.PI) / 180;
+  const s =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((a.lat * Math.PI) / 180) * Math.cos((b.lat * Math.PI) / 180) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(s));
+}
+
+// 카카오 모빌리티 불가 시 근사 ETA: 직선거리 × 1.3(도로계수) / 평균속도
+function fallbackEta(origin: Coord, poi: PoiCandidate): { minutes: number; distanceKm: number } {
+  const straight = haversineKm(origin, { lat: poi.lat, lng: poi.lng });
+  const distanceKm = straight * 1.3;
+  const minutes = (distanceKm / AVG_SPEED_KMH) * 60;
+  return { minutes, distanceKm };
 }

@@ -449,7 +449,7 @@ export const openApiDocument = {
         summary: 'TourAPI 증분 ETL (크론)',
         operationId: 'postTourApiEtl',
         description:
-          '⚠️ pg_cron이 매일 02:00 KST 호출(service_role). 충남 4시(공주 33020·천안 33040·아산 33050·서산 33150) POI를 TourAPI/펫관광 API에서 동기화하여 pois upsert + 배지 갱신.',
+          '⚠️ pg_cron이 매일 02:00 KST 호출(service_role). 충남 4개 시를 법정동코드(시도 44 + 시군구 150/131·133/200/210)로 KorService2/areaBasedList2 조회 + detailPetTour2 펫 오버레이하여 pois upsert (저장 sigunguCode 는 33020/33040/33050/33150).',
         requestBody: {
           required: false,
           content: {
@@ -574,12 +574,17 @@ export const openApiDocument = {
           lng: { type: 'number' },
           sourceLabel: {
             type: 'string',
-            example: '펫동반 가능',
-            description: 'TRAIL이면 "두루누비 코스"',
+            example: '펫 동반 가능',
+            description: "'펫 동반 가능' | '한적한 산책지' | '두루누비 코스'",
           },
           type: { $ref: '#/components/schemas/PoiType' },
           imageUrl: { type: 'string', nullable: true },
           badges: { type: 'array', items: { $ref: '#/components/schemas/BadgeType' } },
+          petAllowed: {
+            type: 'boolean',
+            description:
+              '펫 동반 가능(TourAPI detailPetTour2 등록). FE "펫 동반 가능" 뱃지. PET_VERIFIED(사용자 검증 뱃지)와 별개.',
+          },
           reason: { $ref: '#/components/schemas/RecommendReason' },
           sampleSufficient: { type: 'boolean', description: '한적도 표본이 충분한지' },
         },
@@ -635,7 +640,7 @@ export const openApiDocument = {
           sigunguCode: {
             type: 'integer',
             nullable: true,
-            description: '충남 33020/33040/33050/33150',
+            description: '충남 33020/33040/33050/33150. 조회는 법정동, 저장은 구 코드 33xxx',
           },
           ldongCode: { type: 'string', nullable: true },
           address: { type: 'string', nullable: true },
@@ -646,7 +651,7 @@ export const openApiDocument = {
           intro: { type: 'string', nullable: true },
           homepage: { type: 'string', nullable: true },
           phone: { type: 'string', nullable: true },
-          petAllowed: { type: 'boolean' },
+          petAllowed: { type: 'boolean', description: 'TourAPI detailPetTour2 등록 여부' },
           petSizeMaxKg: { type: 'integer', nullable: true },
           petIndoor: { type: 'boolean', nullable: true },
           petOutdoor: { type: 'boolean', nullable: true },

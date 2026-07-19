@@ -12,12 +12,12 @@ const SUPABASE_URL = env('SUPABASE_URL');
 const SUPABASE_SERVICE_ROLE = env('SUPABASE_SERVICE_ROLE_KEY');
 const TOUR_API_KEY = env('TOUR_API_SERVICE_KEY');
 
-// PRD §13.3 충남 4시 sigunguCode (areaCode 33)
-const CHUNGNAM_SIGUNGU = [
-  { code: 33020, name: '공주' },
-  { code: 33040, name: '천안' },
-  { code: 33050, name: '아산' },
-  { code: 33150, name: '서산' },
+const LDONG_REGN_CD = 44; // 충청남도
+const CHUNGNAM_CITIES = [
+  { name: '공주', signgu: [150], sigunguCode: 33020 },
+  { name: '천안', signgu: [131, 133], sigunguCode: 33040 },
+  { name: '아산', signgu: [200], sigunguCode: 33050 },
+  { name: '서산', signgu: [210], sigunguCode: 33150 },
 ];
 
 const CONTENT_TYPE_MAP: Record<number, string> = {
@@ -47,10 +47,11 @@ Deno.serve(async (req: Request): Promise<Response> => {
   const result: EtlResult = { added: 0, updated: 0, failed: 0 };
 
   try {
-    for (const sgg of CHUNGNAM_SIGUNGU) {
-      const items = await fetchAreaBasedList({ areaCode, sigunguCode: sgg.code });
+    for (const city of CHUNGNAM_CITIES) {
+      const items = (await Promise.all(city.signgu.map((s) => fetchAreaBasedList(s)))).flat();
       for (const item of items) {
         try {
+          if (!item.mapx || !item.mapy) continue;
           const existing = await admin
             .from('pois')
             .select('id')
@@ -58,16 +59,15 @@ Deno.serve(async (req: Request): Promise<Response> => {
             .eq('source_id', String(item.contentid))
             .maybeSingle();
 
-          // 펫 메타 (detailPetTour) 병합
           const pet = await fetchDetailPetTour(item.contentid);
-
+          const zone = String(pet?.acmpyTypeCd ?? '');
           const row = {
             source: 'TOUR_API_KOR',
             source_id: String(item.contentid),
             content_type_id: Number(item.contenttypeid),
             name: item.title,
             type: CONTENT_TYPE_MAP[Number(item.contenttypeid)] ?? 'ATTRACTION',
-            sigungu_code: sgg.code,
+            sigungu_code: city.sigunguCode,
             address: item.addr1 ?? null,
             lat: Number(item.mapy),
             lng: Number(item.mapx),
@@ -75,10 +75,13 @@ Deno.serve(async (req: Request): Promise<Response> => {
             image_urls: item.firstimage ? [item.firstimage] : [],
             phone: item.tel ?? null,
             pet_allowed: !!pet,
-            pet_size_max_kg: pet?.acmpyTypeCd ? parsePetSize(pet.acmpyTypeCd) : null,
-            pet_indoor: pet?.acmpyPsblCpam?.includes('실내') ?? null,
-            pet_outdoor: pet?.acmpyPsblCpam?.includes('실외') ?? null,
-            pet_policy_text: pet?.etcAcmpyInfo ?? null,
+            pet_indoor: pet ? zone.includes('실내') || zone.includes('전구역') : null,
+            pet_outdoor: pet ? zone.includes('실외') || zone.includes('전구역') : null,
+            pet_policy_text: pet
+              ? [pet.acmpyPsblCpam, pet.acmpyNeedMtr, pet.etcAcmpyInfo]
+                  .filter(Boolean)
+                  .join(' / ') || null
+              : null,
             last_synced_at: new Date().toISOString(),
           };
 
@@ -127,40 +130,46 @@ Deno.serve(async (req: Request): Promise<Response> => {
 
 // ═══════════════ TourAPI 호출 ═══════════════
 
-async function fetchAreaBasedList(args: {
-  areaCode: number;
-  sigunguCode: number;
-}): Promise<Array<Record<string, unknown>>> {
-  const url = new URL('https://apis.data.go.kr/B551011/KorService2/areaBasedList2');
-  url.searchParams.set('serviceKey', TOUR_API_KEY);
-  url.searchParams.set('MobileOS', 'ETC');
-  url.searchParams.set('MobileApp', 'daengroad');
-  url.searchParams.set('_type', 'json');
-  url.searchParams.set('areaCode', String(args.areaCode));
-  url.searchParams.set('sigunguCode', String(args.sigunguCode));
-  url.searchParams.set('numOfRows', '500');
-  url.searchParams.set('pageNo', '1');
-
-  const res = await fetch(url.toString());
-  if (!res.ok) throw new Error(`TourAPI ${res.status}`);
-  const json = await res.json();
-  return json.response?.body?.items?.item ?? [];
+async function fetchAreaBasedList(signgu: number): Promise<Array<Record<string, unknown>>> {
+  const out: Array<Record<string, unknown>> = [];
+  for (let pageNo = 1; pageNo <= 20; pageNo++) {
+    const url = new URL('https://apis.data.go.kr/B551011/KorService2/areaBasedList2');
+    url.searchParams.set('serviceKey', TOUR_API_KEY);
+    url.searchParams.set('MobileOS', 'ETC');
+    url.searchParams.set('MobileApp', 'daengroad');
+    url.searchParams.set('_type', 'json');
+    url.searchParams.set('arrange', 'C');
+    url.searchParams.set('lDongRegnCd', String(LDONG_REGN_CD));
+    url.searchParams.set('lDongSignguCd', String(signgu));
+    url.searchParams.set('numOfRows', '100');
+    url.searchParams.set('pageNo', String(pageNo));
+    const res = await fetch(url.toString(), { headers: { 'User-Agent': 'daengroad-etl' } });
+    if (!res.ok) throw new Error(`TourAPI ${res.status}`);
+    const json = await res.json();
+    const items = json.response?.body?.items?.item ?? [];
+    const arr = Array.isArray(items) ? items : items ? [items] : [];
+    out.push(...arr);
+    const total = Number(json.response?.body?.totalCount ?? 0);
+    if (out.length >= total || arr.length < 100) break;
+  }
+  return out;
 }
 
 async function fetchDetailPetTour(
   contentId: string | number,
 ): Promise<Record<string, string> | null> {
-  const url = new URL('https://apis.data.go.kr/B551011/KorPetTourService/detailPetTour');
+  const url = new URL('https://apis.data.go.kr/B551011/KorService2/detailPetTour2');
   url.searchParams.set('serviceKey', TOUR_API_KEY);
   url.searchParams.set('MobileOS', 'ETC');
   url.searchParams.set('MobileApp', 'daengroad');
   url.searchParams.set('_type', 'json');
   url.searchParams.set('contentId', String(contentId));
-
-  const res = await fetch(url.toString());
+  const res = await fetch(url.toString(), { headers: { 'User-Agent': 'daengroad-etl' } });
   if (!res.ok) return null;
   const json = await res.json();
-  return json.response?.body?.items?.item?.[0] ?? null;
+  const item = json.response?.body?.items?.item;
+  const first = Array.isArray(item) ? item[0] : item;
+  return first && typeof first === 'object' && Object.keys(first).length > 1 ? first : null;
 }
 
 // ═══════════════ 유틸 ═══════════════

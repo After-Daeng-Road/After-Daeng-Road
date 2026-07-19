@@ -3,7 +3,7 @@
 // 댕로드 홈 인터랙티브 본문 — 히어로 · 시간슬라이더 콘솔 · 추천 결과 · 이메일 밴드
 // pets 는 서버(page.tsx)에서 listPets() 로 조회해 주입 (하드코딩 데모 제거).
 
-import { useState, useTransition } from 'react';
+import { useEffect, useState, useTransition } from 'react';
 import { z } from 'zod';
 import { COPY } from '@/lib/copy';
 import { DEMO_RECOMMENDATIONS, TIME_DEFAULT, TIME_MAX } from '@/lib/constants';
@@ -38,6 +38,20 @@ export function HomeRecommend({ pets }: { pets: Pet[] }) {
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
+  // 상세보기 이동 후 뒤로 오면 홈이 언마운트→재마운트되며 결과가 데모로 초기화되는 문제 해결.
+  // 마지막 추천 결과·시간을 sessionStorage 에 유지했다가 복원한다 (SSR 하이드레이션 불일치 방지 위해 effect 에서).
+  useEffect(() => {
+    try {
+      const saved = sessionStorage.getItem('daeng:recommend');
+      if (!saved) return;
+      const parsed = JSON.parse(saved) as { results?: Recommendation[]; timeHours?: number };
+      if (parsed.results) setResults(parsed.results);
+      if (typeof parsed.timeHours === 'number') setTimeHours(parsed.timeHours);
+    } catch {
+      /* 손상된 값이면 무시 */
+    }
+  }, []);
+
   const handleRecommend = (input: RecommendInput) => {
     setError(null);
     startTransition(async () => {
@@ -58,6 +72,14 @@ export function HomeRecommend({ pets }: { pets: Pet[] }) {
         }
         const data: { recommendations: Recommendation[] } = await res.json();
         setResults(data.recommendations);
+        try {
+          sessionStorage.setItem(
+            'daeng:recommend',
+            JSON.stringify({ results: data.recommendations, timeHours: input.timeHours }),
+          );
+        } catch {
+          /* 저장 실패는 치명적 아님 */
+        }
       } catch (e) {
         setError(e instanceof Error ? e.message : COPY.home.errors.unknown);
       }
