@@ -16,6 +16,15 @@
   "typescript.enablePromptUseWorkspaceTsdk": true,
   "deno.enable": false,
   "deno.enablePaths": ["apps/api/supabase/functions"],
+  "remote.portsAttributes": {
+    "3000": {
+      "label": "Next.js Web",
+      "onAutoForward": "openBrowser"
+    }
+  },
+  "remote.otherPortsAttributes": {
+    "onAutoForward": "silent"
+  },
   "files.associations": {
     "*.css": "tailwindcss"
   }

@@ -5,6 +5,8 @@
 
 // @ts-expect-error — Deno URL imports는 Node TS 검사기에서 미인식
 import { createClient, type SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
+// @ts-expect-error — Deno URL imports는 Node TS 검사기에서 미인식
+import { jwtVerify } from 'https://esm.sh/jose@6.2.3';
 
 // ═══════════════ 타입 ═══════════════
 
@@ -63,6 +65,9 @@ const env = (k: string): string => Deno.env.get(k) ?? '';
 const SUPABASE_URL = env('SUPABASE_URL');
 const SUPABASE_ANON_KEY = env('SUPABASE_ANON_KEY');
 const SUPABASE_SERVICE_ROLE = env('SUPABASE_SERVICE_ROLE_KEY');
+// 주의: Edge 는 SUPABASE_ 접두사 env 를 예약어로 막음 → 이름은 SB_JWT_SECRET (값 = Supabase JWT Secret)
+const SB_JWT_SECRET = env('SB_JWT_SECRET'); // Auth.js 발급 토큰 검증용 (web 과 공유)
+const JWT_KEY = new TextEncoder().encode(SB_JWT_SECRET);
 const KAKAO_REST_KEY = env('KAKAO_REST_API_KEY');
 const UPSTASH_URL = env('UPSTASH_REDIS_REST_URL');
 const UPSTASH_TOKEN = env('UPSTASH_REDIS_REST_TOKEN');
@@ -95,6 +100,23 @@ function corsHeaders(req: Request): Record<string, string> {
   };
 }
 
+// ═══════════════ 인증 — Supabase 호환 JWT 로컬 검증 ═══════════════
+
+// Auth.js(apps/web/auth.ts)가 SB_JWT_SECRET(=Supabase JWT Secret)으로 서명한 access token 을 검증.
+// GoTrue getUser() 미사용 이유: 유저 정본이 public.users(Prisma)라 auth.users 에 없음 → getUser 는 항상 실패.
+// sub = public.users.id → recommendations.user_id FK 대상. anon/service_role 키는 role 불일치로 거부.
+async function verifyUserToken(authHeader: string | null): Promise<string | null> {
+  const token = authHeader?.replace(/^Bearer\s+/i, '').trim();
+  if (!token) return null;
+  try {
+    const { payload } = await jwtVerify(token, JWT_KEY, { algorithms: ['HS256'] });
+    if (payload.role !== 'authenticated') return null; // anon/service 키 차단
+    return typeof payload.sub === 'string' && payload.sub.length > 0 ? payload.sub : null;
+  } catch {
+    return null;
+  }
+}
+
 // ═══════════════ 핸들러 ═══════════════
 
 // @ts-expect-error — Deno global
@@ -109,14 +131,8 @@ Deno.serve(async (req: Request): Promise<Response> => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: cors });
   if (req.method !== 'POST') return j({ error: 'Method not allowed' }, 405);
 
-  // 1. 사용자 인증 (Auth.js JWT → Supabase JWT)
-  const authHeader = req.headers.get('Authorization');
-  const userClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-    global: { headers: { Authorization: authHeader ?? '' } },
-    auth: { persistSession: false },
-  });
-  const { data: userData } = await userClient.auth.getUser();
-  const userId = userData?.user?.id;
+  // 1. 사용자 인증 — Auth.js 가 발급한 Supabase 호환 JWT 를 로컬 검증 (PRD §10.2)
+  const userId = await verifyUserToken(req.headers.get('Authorization'));
   if (!userId) return j({ error: 'Unauthorized' }, 401);
 
   // 2. Rate Limit (PRD §13.5)

@@ -4,8 +4,9 @@ import Link from 'next/link';
 import { Dog } from 'lucide-react';
 import { RiKakaoTalkFill } from 'react-icons/ri';
 import { SiNaver } from 'react-icons/si';
+import { FcGoogle } from 'react-icons/fc';
 
-// PRD §7.1: ① 카카오/네이버 로그인 → ② 펫 프로필 등록
+// PRD §7.1: ① 구글/카카오/네이버 로그인 → ② 펫 프로필 등록
 
 type SearchParams = Promise<{ callbackUrl?: string; error?: string }>;
 
@@ -27,12 +28,26 @@ export default async function LoginPage({ searchParams }: { searchParams: Search
         <form
           action={async () => {
             'use server';
+            await signIn('google', { redirectTo: callbackUrl });
+          }}
+        >
+          <button
+            type="submit"
+            className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-md border border-gray-300 bg-white px-4 py-3 text-sm font-medium text-[#191919] hover:bg-gray-50"
+          >
+            <FcGoogle className="h-5 w-5" aria-hidden /> 구글로 시작하기
+          </button>
+        </form>
+
+        <form
+          action={async () => {
+            'use server';
             await signIn('kakao', { redirectTo: callbackUrl });
           }}
         >
           <button
             type="submit"
-            className="flex w-full items-center justify-center gap-2 rounded-md bg-[#FEE500] px-4 py-3 text-sm font-medium text-[#191919] hover:opacity-90"
+            className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-md bg-[#FEE500] px-4 py-3 text-sm font-medium text-[#191919] hover:opacity-90"
           >
             <RiKakaoTalkFill className="h-5 w-5" aria-hidden /> 카카오로 시작하기
           </button>
@@ -46,7 +61,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Search
         >
           <button
             type="submit"
-            className="flex w-full items-center justify-center gap-2 rounded-md bg-[#03C75A] px-4 py-3 text-sm font-medium text-white hover:opacity-90"
+            className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-md bg-[#03C75A] px-4 py-3 text-sm font-medium text-white hover:opacity-90"
           >
             <SiNaver className="h-3.5 w-3.5" aria-hidden /> 네이버로 시작하기
           </button>
