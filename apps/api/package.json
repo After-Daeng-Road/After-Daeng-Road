@@ -11,6 +11,7 @@
     "prisma:format": "prisma format",
     "seed": "tsx prisma/seed.ts",
     "seed:tourapi": "tsx prisma/seed-tourapi.ts",
+    "seed:pet-overlay": "tsx prisma/seed-pet-overlay.ts",
     "verify:recommend": "tsx scripts/verify-recommend.ts",
     "supabase:serve": "supabase functions serve --no-verify-jwt --env-file .env",
     "supabase:deploy": "supabase functions deploy time-slider-recommender",
