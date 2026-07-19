@@ -36,6 +36,29 @@ const securityHeaders = [
   { key: 'X-DNS-Prefetch-Control', value: 'on' },
 ];
 
+// /api-docs (Swagger/Scalar) 전용 CSP.
+// Scalar 표준 번들은 jsDelivr CDN에서 로드되므로 이 경로에 한해 cdn.jsdelivr.net 을 허용한다.
+// connect-src 는 스펙 fetch('self')와 추천 Edge Function try-it(*.supabase.co)까지 포함.
+// 그 외 모든 경로는 위의 엄격한 cspHeader 를 그대로 유지한다 (PRD §14).
+const apiDocsCspHeader = `
+  default-src 'self';
+  script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net;
+  style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com;
+  img-src 'self' blob: data: https:;
+  font-src 'self' data: https://cdn.jsdelivr.net https://fonts.gstatic.com;
+  connect-src 'self' https://cdn.jsdelivr.net https://*.supabase.co;
+  worker-src 'self' blob:;
+  frame-ancestors 'none';
+  base-uri 'self';
+`
+  .replace(/\s{2,}/g, ' ')
+  .trim();
+
+const apiDocsHeaders = [
+  { key: 'Content-Security-Policy', value: apiDocsCspHeader },
+  ...securityHeaders.filter((h) => h.key !== 'Content-Security-Policy'),
+];
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
@@ -58,7 +81,12 @@ const nextConfig = {
     ],
   },
   async headers() {
-    return [{ source: '/(.*)', headers: securityHeaders }];
+    return [
+      // /api-docs (Swagger UI) — Scalar 번들(jsDelivr) 허용을 위한 완화된 CSP
+      { source: '/api-docs/:path*', headers: apiDocsHeaders },
+      // 그 외 전 경로 — 엄격 보안 헤더
+      { source: '/((?!api-docs).*)', headers: securityHeaders },
+    ];
   },
 };
 
