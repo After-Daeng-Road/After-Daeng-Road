@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { Clock, Leaf, MapPin, PawPrint } from 'lucide-react';
 import { Chip } from '@/components/ui/chip';
+import { COPY } from '@/lib/copy';
 import { formatDate, formatRelative } from '@/lib/format';
 import type { HistoryResultPoi } from '@/lib/types/recommendation';
 
@@ -19,19 +20,17 @@ export function HistoryCard({
   items: HistoryResultPoi[];
 }) {
   return (
-    <li className="rounded-2xl border border-gray-200 bg-white p-4">
+    <li className="rounded-card border border-line bg-surface p-4">
       <div className="mb-3 flex flex-wrap items-center gap-2 text-xs">
-        <span className="inline-flex items-center gap-1 rounded-full bg-brand-light px-2 py-0.5 font-semibold text-brand">
-          <Clock className="h-3 w-3" aria-hidden /> {timeHours}시간 코스
+        <span className="inline-flex items-center gap-1 rounded-full bg-brand-soft px-2 py-0.5 font-semibold text-brand-ink">
+          <Clock className="h-3 w-3" aria-hidden /> {COPY.recs.courseLabel(timeHours)}
         </span>
-        <span className="text-gray-500">{formatDate(startAt)}</span>
-        <span className="ml-auto text-[11px] text-gray-400">{formatRelative(requestAt)}</span>
+        <span className="text-muted">{formatDate(startAt)}</span>
+        <span className="ml-auto text-[11px] text-faint">{formatRelative(requestAt)}</span>
       </div>
 
       {items.length === 0 ? (
-        <p className="rounded-lg bg-gray-50 px-3 py-2 text-xs text-gray-500">
-          조건에 맞는 한적한 곳을 찾지 못했어요
-        </p>
+        <p className="rounded-lg bg-surface-2 px-3 py-2 text-xs text-muted">{COPY.recs.notFound}</p>
       ) : (
         <ol className="space-y-2">
           {items.slice(0, 3).map((it, i) => (
@@ -49,26 +48,26 @@ function HistoryRow({ rank, item }: { rank: number; item: HistoryResultPoi }) {
   return (
     <Link
       href={`/poi/${item.poiId}`}
-      className="flex items-start gap-2.5 rounded-lg border border-gray-100 bg-gray-50 px-3 py-2.5 hover:border-brand hover:bg-white"
+      className="flex items-start gap-2.5 rounded-lg border border-line-soft bg-surface-2 px-3 py-2.5 transition-colors hover:border-brand hover:bg-surface"
     >
-      <span className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-brand text-[10px] font-bold text-white">
+      <span className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-brand text-[10px] font-bold text-white dark:text-[#20160f]">
         {rank}
       </span>
       <span className="min-w-0 flex-1">
-        <span className="block truncate text-sm font-medium">{item.name}</span>
+        <span className="block truncate text-sm font-medium text-ink">{item.name}</span>
         {item.address && (
-          <span className="block truncate text-[11px] text-gray-500">{item.address}</span>
+          <span className="block truncate text-[11px] text-muted">{item.address}</span>
         )}
         {item.reason && (
           <span className="mt-1 flex flex-wrap gap-1">
             {item.reason.distanceKm != null && (
               <Chip size="xs" icon={<MapPin className="h-2.5 w-2.5" aria-hidden />}>
-                {item.reason.distanceKm}km · {item.reason.etaMin}분
+                {COPY.recs.distChip(item.reason.distanceKm, item.reason.etaMin)}
               </Chip>
             )}
             {item.reason.quietnessNow != null && (
               <Chip size="xs" variant="green" icon={<Leaf className="h-2.5 w-2.5" aria-hidden />}>
-                한적도 {item.reason.quietnessNow}
+                {COPY.recs.quietChip(item.reason.quietnessNow)}
               </Chip>
             )}
             {item.reason.verifiedCount != null && item.reason.verifiedCount > 0 && (
@@ -77,7 +76,7 @@ function HistoryRow({ rank, item }: { rank: number; item: HistoryResultPoi }) {
                 variant="pink"
                 icon={<PawPrint className="h-2.5 w-2.5" aria-hidden />}
               >
-                검증 {item.reason.verifiedCount}명
+                {COPY.recs.verifyChip(item.reason.verifiedCount)}
               </Chip>
             )}
           </span>

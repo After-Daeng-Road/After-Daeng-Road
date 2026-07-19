@@ -1,6 +1,9 @@
 import { notFound } from 'next/navigation';
 import { getPoiDetail } from '@/lib/actions/pois';
 import { BadgeCheck, Leaf, Navigation, PawPrint, Sprout, TreePine } from 'lucide-react';
+import { Chip } from '@/components/ui/chip';
+import { COPY } from '@/lib/copy';
+import { kakaoDirectionsUrl } from '@/lib/format';
 
 // PRD §7.2 [장소 상세] — 사진·소개·펫정책 / 한적도 시간대 차트 / 검증 진행도 / 후기
 
@@ -16,50 +19,50 @@ export default async function PoiDetailPage({ params }: { params: Promise<{ id: 
     <main className="mx-auto max-w-2xl px-4 py-6">
       {poi.imageUrls?.[0] && (
         <div
-          className="mb-4 h-56 w-full rounded-2xl bg-cover bg-center"
+          className="mb-4 h-56 w-full rounded-card bg-cover bg-center"
           style={{ backgroundImage: `url(${poi.imageUrls[0]})` }}
           aria-hidden
         />
       )}
 
-      <h1 className="text-xl font-bold">{poi.name}</h1>
-      <p className="mt-1 text-sm text-gray-500">{poi.address}</p>
+      <h1 className="text-xl font-bold text-ink">{poi.name}</h1>
+      <p className="mt-1 text-sm text-muted">{poi.address}</p>
 
       <div className="mt-3 flex flex-wrap gap-1.5">
         {poi.petAllowed && (
-          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-xs text-emerald-700">
-            <PawPrint className="h-3 w-3" aria-hidden /> 펫 동반
-          </span>
+          <Chip variant="brand" icon={<PawPrint className="h-3 w-3" aria-hidden />}>
+            {COPY.poi.petAllowed}
+          </Chip>
         )}
         {poi.isWellness && (
-          <span className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2 py-0.5 text-xs text-blue-700">
-            <Sprout className="h-3 w-3" aria-hidden /> 웰니스
-          </span>
+          <Chip variant="blue" icon={<Sprout className="h-3 w-3" aria-hidden />}>
+            {COPY.poi.wellness}
+          </Chip>
         )}
         {poi.isEco && (
-          <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-xs text-green-700">
-            <Leaf className="h-3 w-3" aria-hidden /> 생태
-          </span>
+          <Chip variant="green" icon={<Leaf className="h-3 w-3" aria-hidden />}>
+            {COPY.poi.eco}
+          </Chip>
         )}
         {poi.durunubi && (
-          <span className="inline-flex items-center gap-1 rounded-full bg-purple-100 px-2 py-0.5 text-xs text-purple-700">
-            <TreePine className="h-3 w-3" aria-hidden /> 두루누비
-          </span>
+          <Chip variant="gray" icon={<TreePine className="h-3 w-3" aria-hidden />}>
+            {COPY.poi.durunubi}
+          </Chip>
         )}
       </div>
 
       {poi.petPolicyText && (
-        <section className="mt-5 rounded-xl border border-gray-200 bg-white p-4">
-          <h2 className="mb-1 text-sm font-semibold">펫 정책</h2>
-          <p className="text-xs text-gray-600">{poi.petPolicyText}</p>
+        <section className="mt-5 rounded-card border border-line bg-surface p-4">
+          <h2 className="mb-1 text-sm font-semibold text-ink">{COPY.poi.petPolicy}</h2>
+          <p className="text-xs text-muted">{poi.petPolicyText}</p>
         </section>
       )}
 
       {/* 한적도 시간대별 차트 (PRD §7.2) */}
-      <section className="mt-5 rounded-xl border border-gray-200 bg-white p-4">
-        <h2 className="mb-2 text-sm font-semibold">시간대별 한적도 (오늘)</h2>
+      <section className="mt-5 rounded-card border border-line bg-surface p-4">
+        <h2 className="mb-2 text-sm font-semibold text-ink">{COPY.poi.hourlyTitle}</h2>
         {hourly.length === 0 ? (
-          <p className="text-xs text-gray-500">표본 부족 — 데이터 수집 중이에요.</p>
+          <p className="text-xs text-muted">{COPY.poi.hourlyEmpty}</p>
         ) : (
           <div className="flex h-24 items-end gap-0.5">
             {Array.from({ length: 24 }).map((_, h) => {
@@ -68,11 +71,13 @@ export default async function PoiDetailPage({ params }: { params: Promise<{ id: 
               return (
                 <div key={h} className="flex flex-1 flex-col items-center gap-1">
                   <div
-                    className="w-full rounded-t bg-emerald-400"
+                    className="w-full rounded-t bg-quiet"
                     style={{ height: `${height}%`, minHeight: slot ? '2px' : '0' }}
-                    title={slot ? `${h}시 · ${slot.score}점` : `${h}시 · 데이터 없음`}
+                    title={
+                      slot ? COPY.poi.hourTooltip(h, slot.score) : COPY.poi.hourTooltipEmpty(h)
+                    }
                   />
-                  {h % 6 === 0 && <span className="text-[9px] text-gray-400">{h}</span>}
+                  {h % 6 === 0 && <span className="text-[9px] text-faint">{h}</span>}
                 </div>
               );
             })}
@@ -81,17 +86,17 @@ export default async function PoiDetailPage({ params }: { params: Promise<{ id: 
       </section>
 
       {/* 검증 진행도 (PRD §6.3 — 3명 임계값) */}
-      <section className="mt-5 rounded-xl border border-gray-200 bg-white p-4">
-        <h2 className="mb-2 text-sm font-semibold">펫동반 검증 진행도</h2>
+      <section className="mt-5 rounded-card border border-line bg-surface p-4">
+        <h2 className="mb-2 text-sm font-semibold text-ink">{COPY.poi.verifyTitle}</h2>
         <div className="flex items-center justify-between text-xs">
-          <span className="inline-flex items-center gap-1 text-gray-600">
-            방문 검증 {verifiedCount}/3명
-            {verifiedCount >= 3 && <BadgeCheck className="h-3.5 w-3.5 text-pink-500" aria-hidden />}
+          <span className="inline-flex items-center gap-1 text-muted">
+            {COPY.poi.verifyProgress(verifiedCount)}
+            {verifiedCount >= 3 && <BadgeCheck className="h-3.5 w-3.5 text-verify" aria-hidden />}
           </span>
         </div>
-        <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-gray-200">
+        <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-surface-2">
           <div
-            className="h-full bg-pink-500 transition-all"
+            className="h-full bg-verify transition-all"
             style={{ width: `${Math.min(100, (verifiedCount / 3) * 100)}%` }}
           />
         </div>
@@ -99,12 +104,12 @@ export default async function PoiDetailPage({ params }: { params: Promise<{ id: 
 
       <div className="mt-6 flex gap-2">
         <a
-          href={`https://map.kakao.com/link/to/${encodeURIComponent(poi.name)},${poi.lat},${poi.lng}`}
+          href={kakaoDirectionsUrl(poi.name, poi.lat, poi.lng)}
           target="_blank"
           rel="noreferrer"
-          className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-md bg-brand px-4 py-3 text-center text-sm font-bold text-white hover:bg-brand-hover"
+          className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-field bg-brand px-4 py-3 text-center text-sm font-bold text-white transition-colors hover:bg-brand-hover dark:text-[#20160f]"
         >
-          <Navigation className="h-4 w-4" aria-hidden /> 카카오 길찾기
+          <Navigation className="h-4 w-4" aria-hidden /> {COPY.poi.kakao}
         </a>
       </div>
     </main>

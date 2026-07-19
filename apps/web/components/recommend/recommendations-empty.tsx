@@ -1,20 +1,21 @@
 import Link from 'next/link';
 import { ArrowRight, Inbox, Sparkles } from 'lucide-react';
+import { COPY } from '@/lib/copy';
 
 // /recommendations 페이지의 빈 이력 상태 — Inbox 아이콘 + 메인으로 보내는 CTA
 // (home 의 EmptyResult 는 "결과 못 찾음" + 슬라이더 relax — 다른 의미라 별도 컴포넌트)
 
 export function RecommendationsEmpty() {
   return (
-    <div className="rounded-2xl border border-dashed border-gray-300 bg-white p-10 text-center">
-      <Inbox className="mx-auto h-10 w-10 text-gray-300" aria-hidden />
-      <p className="mt-3 text-sm font-medium text-gray-700">아직 추천 이력이 없어요</p>
-      <p className="mt-1 text-xs text-gray-500">메인에서 시간 슬라이더로 첫 추천을 받아보세요</p>
+    <div className="rounded-card border border-dashed border-line bg-surface p-10 text-center">
+      <Inbox className="mx-auto h-10 w-10 text-faint" aria-hidden />
+      <p className="mt-3 text-sm font-medium text-ink">{COPY.recs.emptyTitle}</p>
+      <p className="mt-1 text-xs text-muted">{COPY.recs.emptyDesc}</p>
       <Link
         href="/"
-        className="mt-5 inline-flex items-center gap-1.5 rounded-md bg-brand px-4 py-2.5 text-xs font-bold text-white hover:bg-brand-hover"
+        className="mt-5 inline-flex items-center gap-1.5 rounded-field bg-brand px-4 py-2.5 text-xs font-bold text-white transition-colors hover:bg-brand-hover dark:text-[#20160f]"
       >
-        <Sparkles className="h-3.5 w-3.5" aria-hidden /> 지금 추천받기
+        <Sparkles className="h-3.5 w-3.5" aria-hidden /> {COPY.recs.emptyCta}
         <ArrowRight className="h-3 w-3" aria-hidden />
       </Link>
     </div>
