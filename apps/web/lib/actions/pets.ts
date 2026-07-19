@@ -7,6 +7,14 @@ import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
 
+// Prisma Pet.weightKg 는 Decimal → Server Action 반환/서버→클라이언트 전달 시 직렬화 불가
+// ("Decimal objects are not supported"). number 로 평문화해서 반환한다.
+function toPlainPet<T extends { weightKg: unknown }>(
+  pet: T,
+): Omit<T, 'weightKg'> & { weightKg: number } {
+  return { ...pet, weightKg: Number(pet.weightKg) };
+}
+
 const PetInputSchema = z.object({
   name: z.string().min(1).max(20),
   breed: z.string().min(1).max(40),
@@ -29,16 +37,17 @@ export async function createPet(input: PetInput) {
   });
 
   revalidatePath('/me');
-  return { ok: true as const, pet };
+  return { ok: true as const, pet: toPlainPet(pet) };
 }
 
 export async function listPets() {
   const session = await auth();
   if (!session?.user?.id) return [];
-  return prisma.pet.findMany({
+  const pets = await prisma.pet.findMany({
     where: { userId: session.user.id },
     orderBy: { createdAt: 'asc' },
   });
+  return pets.map(toPlainPet);
 }
 
 // PRD §11.1, §14, §14.2 — 펫 헬스(알레르기·만성질환) 분리 명시 동의
