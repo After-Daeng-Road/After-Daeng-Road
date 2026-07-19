@@ -23,6 +23,7 @@ export const COPY = {
     themeToDark: '다크 모드로 전환',
     openMenu: '메뉴 열기',
     closeMenu: '메뉴 닫기',
+    mobileMenu: '모바일 메뉴',
   },
 
   // ───────── 홈 ─────────

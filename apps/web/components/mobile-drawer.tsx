@@ -55,7 +55,7 @@ export function MobileDrawer({
         id="mobile-drawer"
         role="dialog"
         aria-modal="true"
-        aria-label="모바일 메뉴"
+        aria-label={COPY.header.mobileMenu}
         className={`absolute right-0 top-0 flex h-full w-64 max-w-[80vw] flex-col bg-surface shadow-lift transition-transform duration-200 ${
           open ? 'translate-x-0' : 'translate-x-full'
         }`}
