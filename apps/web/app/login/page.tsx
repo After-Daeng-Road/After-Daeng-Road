@@ -1,9 +1,9 @@
 import { auth, signIn } from '@/auth';
-import { PawPrint } from 'lucide-react';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { RiKakaoTalkFill } from 'react-icons/ri';
 import { SiNaver } from 'react-icons/si';
+import { BrandMark } from '@/components/brand-mark';
 import { COPY } from '@/lib/copy';
 
 // PRD §7.1: ① 카카오/네이버 로그인 → ② 펫 프로필 등록
@@ -19,8 +19,8 @@ export default async function LoginPage({ searchParams }: { searchParams: Search
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center px-4 py-10">
-      <Link href="/" className="mb-3 flex items-center gap-1.5 text-2xl font-bold text-brand">
-        <PawPrint className="h-7 w-7" aria-hidden /> {COPY.brand.name}
+      <Link href="/" className="mb-3 flex items-center gap-2 text-2xl font-bold text-brand">
+        <BrandMark className="h-8 w-8" /> {COPY.brand.name}
       </Link>
       <p className="mb-8 text-sm text-muted">{COPY.login.tagline}</p>
 

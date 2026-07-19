@@ -3,9 +3,10 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Menu, PawPrint } from 'lucide-react';
+import { Menu } from 'lucide-react';
 import { MobileDrawer } from './mobile-drawer';
 import { ThemeToggle } from './theme-toggle';
+import { BrandMark } from './brand-mark';
 import { COPY } from '@/lib/copy';
 import { NAV_ITEMS } from '@/lib/constants';
 
@@ -28,9 +29,7 @@ export function SiteHeader() {
           href="/"
           className="inline-flex items-center gap-2.5 text-[18px] font-bold tracking-[-0.01em] text-ink"
         >
-          <span className="grid h-[30px] w-[30px] place-items-center rounded-[9px] bg-brand text-white dark:text-ink">
-            <PawPrint className="h-[17px] w-[17px]" aria-hidden />
-          </span>
+          <BrandMark className="h-[30px] w-[30px]" />
           {COPY.brand.name}
         </Link>
 

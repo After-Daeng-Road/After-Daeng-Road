@@ -2,7 +2,8 @@
 
 import { useEffect } from 'react';
 import Link from 'next/link';
-import { PawPrint, X } from 'lucide-react';
+import { X } from 'lucide-react';
+import { BrandMark } from './brand-mark';
 import { COPY } from '@/lib/copy';
 
 // 모바일 햄버거에서 열리는 우측 슬라이드 드로어
@@ -62,9 +63,7 @@ export function MobileDrawer({
       >
         <div className="flex items-center justify-between border-b border-line-soft px-4 py-3.5">
           <span className="inline-flex items-center gap-2 text-[17px] font-bold text-ink">
-            <span className="grid h-7 w-7 place-items-center rounded-[8px] bg-brand text-white dark:text-ink">
-              <PawPrint className="h-4 w-4" aria-hidden />
-            </span>
+            <BrandMark className="h-7 w-7" />
             {COPY.brand.name}
           </span>
           <button

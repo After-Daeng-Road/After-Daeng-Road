@@ -34,6 +34,37 @@ export const metadata: Metadata = {
     siteName: COPY.meta.siteName,
   },
   robots: { index: true, follow: true },
+  // 파비콘 — 브라우저 색상 테마별(라이트=ivory / 다크=dark). PNG 우선 + SVG 보강.
+  icons: {
+    icon: [
+      {
+        url: '/brand/daengroad-favicon-ivory-512.png',
+        type: 'image/png',
+        sizes: '512x512',
+        media: '(prefers-color-scheme: light)',
+      },
+      {
+        url: '/brand/daengroad-favicon-dark-512.png',
+        type: 'image/png',
+        sizes: '512x512',
+        media: '(prefers-color-scheme: dark)',
+      },
+      {
+        url: '/brand/daengroad-favicon-ivory.svg',
+        type: 'image/svg+xml',
+        media: '(prefers-color-scheme: light)',
+      },
+      {
+        url: '/brand/daengroad-favicon-dark.svg',
+        type: 'image/svg+xml',
+        media: '(prefers-color-scheme: dark)',
+      },
+    ],
+    apple: [
+      { url: '/brand/daengroad-favicon-ivory-512.png', media: '(prefers-color-scheme: light)' },
+      { url: '/brand/daengroad-favicon-dark-512.png', media: '(prefers-color-scheme: dark)' },
+    ],
+  },
 };
 
 // 모바일 우선 (PRD §8) — 캔버스 색에 맞춰 라이트/다크 테마 컬러
