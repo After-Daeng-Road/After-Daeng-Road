@@ -75,6 +75,11 @@ export const openApiDocument = {
       description:
         '⚠️ 브라우저 직접 호출 대상 아님. 서버 BFF 또는 pg_cron이 호출. 계약 참고용으로만 기재.',
     },
+    {
+      name: 'TourAPI (외부 데이터소스)',
+      description:
+        '한국관광공사 OpenAPI(data.go.kr B551011). 서버(tour-api-etl / seed:tourapi)만 호출하는 원천 데이터 — 충남 4개 시 POI·펫동반 정보의 출처. 프론트 직접 호출 대상 아님(참고용).',
+    },
   ],
   paths: {
     '/api/recommend': {
@@ -491,6 +496,135 @@ export const openApiDocument = {
         },
       },
     },
+
+    // ─── 외부 데이터소스: 한국관광공사 TourAPI (data.go.kr B551011) ───
+    '/KorService2/areaBasedList2': {
+      servers: [
+        { url: 'https://apis.data.go.kr/B551011', description: '공공데이터포탈 (data.go.kr)' },
+      ],
+      get: {
+        tags: ['TourAPI (외부 데이터소스)'],
+        summary: '지역기반 관광정보 조회 (POI 목록)',
+        operationId: 'tourAreaBasedList2',
+        description: [
+          '충남 4개 시의 POI 목록을 **법정동코드**로 조회. `tour-api-etl` / `seed:tourapi` 가 호출한다.',
+          '',
+          '⚠️ `areaCode`/`sigunguCode` 는 **폐기(삭제예정)** — 사용 시 403. **`lDongRegnCd`(시도) + `lDongSignguCd`(시군구 3자리)** 사용.',
+          '충남: `lDongRegnCd=44`, 시군구 = 공주 150 / 천안 131·133(동남·서북구) / 아산 200 / 서산 210.',
+          '`serviceKey` 는 data.go.kr **Decoding** 키. 일일 호출한도 1000/오퍼레이션.',
+        ].join('\n'),
+        parameters: [
+          {
+            name: 'serviceKey',
+            in: 'query',
+            required: true,
+            schema: { type: 'string' },
+            description: 'data.go.kr 인증키(Decoding)',
+          },
+          {
+            name: 'MobileOS',
+            in: 'query',
+            required: true,
+            schema: { type: 'string', example: 'ETC' },
+          },
+          {
+            name: 'MobileApp',
+            in: 'query',
+            required: true,
+            schema: { type: 'string', example: 'daengroad' },
+          },
+          {
+            name: '_type',
+            in: 'query',
+            required: true,
+            schema: { type: 'string', enum: ['json', 'xml'], example: 'json' },
+          },
+          {
+            name: 'lDongRegnCd',
+            in: 'query',
+            required: true,
+            schema: { type: 'integer', example: 44 },
+            description: '법정동 시도코드 (충남 44)',
+          },
+          {
+            name: 'lDongSignguCd',
+            in: 'query',
+            required: true,
+            schema: { type: 'integer', example: 150 },
+            description: '법정동 시군구 3자리 (공주 150 / 천안 131·133 / 아산 200 / 서산 210)',
+          },
+          { name: 'numOfRows', in: 'query', schema: { type: 'integer', example: 100 } },
+          { name: 'pageNo', in: 'query', schema: { type: 'integer', example: 1 } },
+          {
+            name: 'arrange',
+            in: 'query',
+            schema: { type: 'string', example: 'C' },
+            description: 'C=수정일순',
+          },
+        ],
+        responses: {
+          '200': {
+            description: 'POI 목록 (response.body.items.item[])',
+            content: {
+              'application/json': { schema: { $ref: '#/components/schemas/TourAreaItem' } },
+            },
+          },
+        },
+      },
+    },
+
+    '/KorService2/detailPetTour2': {
+      servers: [
+        { url: 'https://apis.data.go.kr/B551011', description: '공공데이터포탈 (data.go.kr)' },
+      ],
+      get: {
+        tags: ['TourAPI (외부 데이터소스)'],
+        summary: '반려동물 동반여행 상세 (펫 오버레이)',
+        operationId: 'tourDetailPetTour2',
+        description: [
+          '`contentId` 로 반려동물 동반 정보를 조회. 데이터가 있으면 그 POI 는 **펫동반 가능**(`pois.petAllowed=true`).',
+          '',
+          '⚠️ 예전 경로 `KorPetTourService/detailPetTour` 는 **404** — **`KorService2/detailPetTour2`** 가 정답.',
+          '충남 4개 시 펫등록률 ≈ 8%. 일일 호출한도 1000.',
+        ].join('\n'),
+        parameters: [
+          { name: 'serviceKey', in: 'query', required: true, schema: { type: 'string' } },
+          {
+            name: 'MobileOS',
+            in: 'query',
+            required: true,
+            schema: { type: 'string', example: 'ETC' },
+          },
+          {
+            name: 'MobileApp',
+            in: 'query',
+            required: true,
+            schema: { type: 'string', example: 'daengroad' },
+          },
+          {
+            name: '_type',
+            in: 'query',
+            required: true,
+            schema: { type: 'string', example: 'json' },
+          },
+          {
+            name: 'contentId',
+            in: 'query',
+            required: true,
+            schema: { type: 'string', example: '2736822' },
+          },
+        ],
+        responses: {
+          '200': {
+            description:
+              '펫 상세(없으면 items 빈값) → pois.petIndoor/petOutdoor/petPolicyText 로 매핑',
+            content: {
+              'application/json': { schema: { $ref: '#/components/schemas/TourPetDetail' } },
+            },
+          },
+        },
+      },
+    },
   },
 
   components: {
@@ -810,6 +944,45 @@ export const openApiDocument = {
           'GO_CAMPING',
           'USER_UGC',
         ],
+      },
+
+      // ─── TourAPI(외부 데이터소스) 응답 참조 스키마 ───
+      TourAreaItem: {
+        type: 'object',
+        description:
+          'areaBasedList2 응답 item (response.body.items.item[]). mapx=경도(lng), mapy=위도(lat).',
+        properties: {
+          contentid: { type: 'string', example: '2736822' },
+          contenttypeid: {
+            type: 'string',
+            description: '12관광지·14문화·15축제·25여행코스·28레포츠·32숙박·38쇼핑·39음식점',
+          },
+          title: { type: 'string', example: '유구색동수국정원' },
+          addr1: { type: 'string', nullable: true },
+          mapx: { type: 'string', description: '경도(lng)' },
+          mapy: { type: 'string', description: '위도(lat)' },
+          firstimage: { type: 'string', nullable: true },
+          tel: { type: 'string', nullable: true },
+        },
+      },
+      TourPetDetail: {
+        type: 'object',
+        description: 'detailPetTour2 응답 item. 존재하면 펫동반 가능 → pois 펫 필드로 매핑.',
+        properties: {
+          acmpyTypeCd: {
+            type: 'string',
+            example: '전구역 동반가능',
+            description: '동반 구역 → petIndoor/petOutdoor',
+          },
+          acmpyPsblCpam: {
+            type: 'string',
+            example: '전 견종 동반 가능',
+            description: '동반 가능 견종',
+          },
+          acmpyNeedMtr: { type: 'string', example: '목줄 착용', description: '필요 준비물' },
+          etcAcmpyInfo: { type: 'string', description: '기타 동반 정보 → petPolicyText' },
+          relaAcdntRiskMtr: { type: 'string', description: '관련 위험/견종' },
+        },
       },
     },
   },
