@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { ArrowRight, ChevronDown, Clock, Dog, MapPin } from 'lucide-react';
 import { COPY } from '@/lib/copy';
@@ -15,17 +15,21 @@ import type { Pet, RecommendInput } from '@/lib/types/recommendation';
 
 const C = COPY.home.console;
 
-// 출발 시각 옵션: 지금 + 30분 단위 +6h 미래
-const START_AT_OPTIONS = (() => {
-  const opts: { value: string; label: string }[] = [
-    { value: 'now', label: C.startNow(formatHHmm(new Date())) },
-  ];
+type StartOption = { value: string; label: string };
+
+// 출발 시각 옵션: 지금 + 30분 단위 +6h 미래.
+// ⚠️ 현재 시각 기반이라 SSR/클라이언트가 다르면 하이드레이션 미스매치 → 마운트 후 클라이언트에서만 생성.
+function buildStartAtOptions(): StartOption[] {
+  const opts: StartOption[] = [{ value: 'now', label: C.startNow(formatHHmm(new Date())) }];
   for (let i = 1; i <= 12; i++) {
     const d = new Date(Date.now() + i * 30 * 60 * 1000);
     opts.push({ value: d.toISOString(), label: C.startPlus(i * 30, formatHHmm(d)) });
   }
   return opts;
-})();
+}
+
+// 초기 렌더(SSR=클라이언트 첫 렌더)는 시간 없는 결정적 값 → 미스매치 방지
+const INITIAL_START_OPTIONS: StartOption[] = [{ value: 'now', label: C.startNowPlain }];
 
 const TICKS = [1, 2, 3, 4, 5, 6];
 
@@ -45,6 +49,11 @@ export function RecommendForm({
   const [departure, setDeparture] = useState(CHUNGNAM_SEED.CHEONAN);
   const [selectedPetId, setSelectedPetId] = useState<string | null>(pets[0]?.id ?? null);
   const [startAt, setStartAt] = useState<string>('now');
+  // 출발 시각 옵션은 마운트 후 현재 시각 기반으로 채운다 (하이드레이션 안전)
+  const [startAtOptions, setStartAtOptions] = useState<StartOption[]>(INITIAL_START_OPTIONS);
+  useEffect(() => {
+    setStartAtOptions(buildStartAtOptions());
+  }, []);
 
   const radiusKm = radiusFromHours(timeHours);
   const canRecommend = selectedPetId !== null && !loading;
@@ -197,7 +206,7 @@ export function RecommendForm({
               onChange={(e) => setStartAt(e.target.value)}
               className={selectCls}
             >
-              {START_AT_OPTIONS.map((o) => (
+              {startAtOptions.map((o) => (
                 <option key={o.value} value={o.value}>
                   {o.label}
                 </option>

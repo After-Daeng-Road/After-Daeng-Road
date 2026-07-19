@@ -57,6 +57,7 @@ export const COPY = {
       submitting: '추천 계산 중…',
       registerPet: '펫 등록하기 →',
       needPet: '펫 등록 후 추천을 받을 수 있어요',
+      startNowPlain: '지금', // 하이드레이션 안전 초기 라벨(시간 없음). 마운트 후 startNow 로 교체
       startNow: (hhmm: string) => `지금 · ${hhmm}`,
       startPlus: (min: number, hhmm: string) => `+${min}분 · ${hhmm}`,
     },

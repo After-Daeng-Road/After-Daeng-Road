@@ -1,6 +1,6 @@
 import { COPY } from '@/lib/copy';
-import { formatHHmm } from '@/lib/format';
 import { EmptyResult } from './empty-result';
+import { NowLabel } from './now-label';
 import { RecommendCard } from './recommend-card';
 import { RecommendSkeleton } from './recommend-skeleton';
 import type { Recommendation } from '@/lib/types/recommendation';
@@ -39,7 +39,7 @@ export function RecommendResults({
         </div>
         <div className="flex-shrink-0 text-right text-[13px] text-muted">
           <span className="fig block text-[22px] text-ink">{String(count).padStart(2, '0')}</span>
-          {R.placeUnit} · {formatHHmm(new Date())}
+          {R.placeUnit} · <NowLabel />
           {R.metaSuffix}
         </div>
       </div>
