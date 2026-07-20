@@ -26,7 +26,8 @@ export function NewPetForm() {
     startTransition(async () => {
       const res = await createPet({ name, breed, weightKg, ageYears, restrictions });
       if (res.ok) router.push('/me');
-      else setError(res.error);
+      // 게이트 우회 등으로 세션이 없을 때 raw 'Unauthorized' 대신 친절한 안내
+      else setError(res.error === 'Unauthorized' ? COPY.pets.loginError : res.error);
     });
   };
 

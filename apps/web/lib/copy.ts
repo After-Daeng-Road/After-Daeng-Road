@@ -179,6 +179,9 @@ export const COPY = {
     submitting: '등록 중…',
     backToMe: '마이펫타임',
     notFound: '반려견을 찾을 수 없어요',
+    loginTitle: '로그인이 필요해요',
+    loginDesc: '반려견을 등록하고 맞춤 추천을 받으려면 로그인해주세요.',
+    loginError: '로그인이 필요해요. 다시 로그인 후 시도해주세요.',
   },
 
   // ───────── 펫 민감 건강정보 (PRD §14) ─────────
