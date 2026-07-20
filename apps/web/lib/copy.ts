@@ -184,6 +184,18 @@ export const COPY = {
     loginError: '로그인이 필요해요. 다시 로그인 후 시도해주세요.',
   },
 
+  // ───────── 사진 업로드 (리뷰·방문인증 공통) ─────────
+  upload: {
+    add: '사진 추가',
+    uploading: '업로드 중…',
+    remove: '사진 삭제',
+    invalidType: 'JPG · PNG · WEBP 이미지만 올릴 수 있어요.',
+    tooLarge: '5MB 이하 이미지만 올릴 수 있어요.',
+    failed: '업로드에 실패했어요. 잠시 후 다시 시도해주세요.',
+    loginRequired: '로그인 후 사진을 올릴 수 있어요.',
+    maxReached: (n: number) => `사진은 최대 ${n}장까지 올릴 수 있어요.`,
+  },
+
   // ───────── 펫 민감 건강정보 (PRD §14) ─────────
   petSensitive: {
     title: '민감 건강정보',
