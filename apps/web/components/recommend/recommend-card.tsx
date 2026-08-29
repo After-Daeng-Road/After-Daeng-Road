@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { ArrowUpRight, Bookmark, Navigation, TrendingUp } from 'lucide-react';
 import { COPY } from '@/lib/copy';
-import { kakaoDirectionsUrl } from '@/lib/format';
+import { kakaoDirectionsUrl, type DeparturePoint } from '@/lib/format';
 import type { Recommendation } from '@/lib/types/recommendation';
 
 // 추천 결과 — 사진-좌 / 본문-우 매거진 카드 (DESIGN_SYSTEM §9.1)
@@ -11,10 +11,22 @@ import type { Recommendation } from '@/lib/types/recommendation';
 const RANK = ['01', '02', '03', '04', '05'] as const;
 const C = COPY.home.card;
 
-export function RecommendCard({ rec, rank }: { rec: Recommendation; rank: number }) {
+// 데모 초기 추천의 가짜 poiId('sample-*')는 UUID가 아니므로 상세 링크를 걸지 않는다 (QA #6).
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+export function RecommendCard({
+  rec,
+  rank,
+  departure,
+}: {
+  rec: Recommendation;
+  rank: number;
+  departure?: DeparturePoint;
+}) {
   const { reason } = rec;
   const forecastUp = reason.quietnessForecast > reason.quietnessNow;
-  const kakaoUrl = kakaoDirectionsUrl(rec.name, rec.lat, rec.lng);
+  const kakaoUrl = kakaoDirectionsUrl(rec.name, rec.lat, rec.lng, departure);
+  const hasDetail = UUID_RE.test(rec.poiId);
 
   return (
     <article className="group mb-[22px] grid grid-cols-1 overflow-hidden rounded-card border border-line bg-surface transition duration-300 ease-ds hover:-translate-y-[3px] hover:shadow-lift sm:grid-cols-[340px_1fr]">
@@ -48,12 +60,18 @@ export function RecommendCard({ rec, rank }: { rec: Recommendation; rank: number
 
       {/* ── 본문 ── */}
       <div className="flex flex-col p-6 sm:p-8">
-        <Link
-          href={`/poi/${rec.poiId}`}
-          className="text-[clamp(19px,2vw,23px)] font-bold tracking-[-0.02em] text-ink hover:underline"
-        >
-          {rec.name}
-        </Link>
+        {hasDetail ? (
+          <Link
+            href={`/poi/${rec.poiId}`}
+            className="text-[clamp(19px,2vw,23px)] font-bold tracking-[-0.02em] text-ink hover:underline"
+          >
+            {rec.name}
+          </Link>
+        ) : (
+          <span className="text-[clamp(19px,2vw,23px)] font-bold tracking-[-0.02em] text-ink">
+            {rec.name}
+          </span>
+        )}
         <div className="mt-1.5 flex items-center gap-1.5 text-[13px] text-muted">
           {rec.address}
           <span className="h-[3px] w-[3px] rounded-full bg-faint" aria-hidden />
@@ -115,12 +133,14 @@ export function RecommendCard({ rec, rank }: { rec: Recommendation; rank: number
           >
             <Navigation className="h-3.5 w-3.5" aria-hidden /> {C.kakao}
           </a>
-          <Link
-            href={`/poi/${rec.poiId}`}
-            className="inline-flex items-center gap-1 text-[13px] text-muted transition-colors hover:text-ink"
-          >
-            {C.detail} <ArrowUpRight className="h-[13px] w-[13px]" aria-hidden />
-          </Link>
+          {hasDetail && (
+            <Link
+              href={`/poi/${rec.poiId}`}
+              className="inline-flex items-center gap-1 text-[13px] text-muted transition-colors hover:text-ink"
+            >
+              {C.detail} <ArrowUpRight className="h-[13px] w-[13px]" aria-hidden />
+            </Link>
+          )}
         </div>
       </div>
     </article>

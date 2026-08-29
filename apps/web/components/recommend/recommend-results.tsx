@@ -3,6 +3,7 @@ import { EmptyResult } from './empty-result';
 import { NowLabel } from './now-label';
 import { RecommendCard } from './recommend-card';
 import { RecommendSkeleton } from './recommend-skeleton';
+import type { DeparturePoint } from '@/lib/format';
 import type { Recommendation } from '@/lib/types/recommendation';
 
 // 추천 결과 영역 — 에디토리얼 헤딩 + 로딩/빈/카드 리스트 분기 (DESIGN_SYSTEM §9.1)
@@ -15,11 +16,13 @@ export function RecommendResults({
   loading,
   timeHours,
   onRelax,
+  departure,
 }: {
   results: Recommendation[] | null;
   loading: boolean;
   timeHours: number;
   onRelax: () => void;
+  departure?: DeparturePoint;
 }) {
   if (!loading && results === null) return null;
 
@@ -51,7 +54,9 @@ export function RecommendResults({
       {!loading &&
         results !== null &&
         results.length > 0 &&
-        results.map((rec, i) => <RecommendCard key={rec.poiId} rec={rec} rank={i} />)}
+        results.map((rec, i) => (
+          <RecommendCard key={rec.poiId} rec={rec} rank={i} departure={departure} />
+        ))}
     </section>
   );
 }

@@ -1,10 +1,10 @@
 import { notFound } from 'next/navigation';
 import { getPoiDetail } from '@/lib/actions/pois';
-import { BadgeCheck, Leaf, Navigation, PawPrint, Sprout, TreePine } from 'lucide-react';
+import { BadgeCheck, Leaf, PawPrint, Sprout, TreePine } from 'lucide-react';
 import { Chip } from '@/components/ui/chip';
 import { ReviewList } from '@/components/poi/review-list';
+import { KakaoDirectionsButton } from '@/components/poi/kakao-directions-button';
 import { COPY } from '@/lib/copy';
-import { kakaoDirectionsUrl } from '@/lib/format';
 
 // PRD §7.2 [장소 상세] — 사진·소개·펫정책 / 한적도 시간대 차트 / 검증 진행도 / 후기
 
@@ -107,14 +107,7 @@ export default async function PoiDetailPage({ params }: { params: Promise<{ id: 
       <ReviewList reviews={poi.reviews} />
 
       <div className="mt-6 flex gap-2">
-        <a
-          href={kakaoDirectionsUrl(poi.name, poi.lat, poi.lng)}
-          target="_blank"
-          rel="noreferrer"
-          className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-field bg-brand px-4 py-3 text-center text-sm font-bold text-white transition-colors hover:bg-brand-hover dark:text-[#20160f]"
-        >
-          <Navigation className="h-4 w-4" aria-hidden /> {COPY.poi.kakao}
-        </a>
+        <KakaoDirectionsButton name={poi.name} lat={poi.lat} lng={poi.lng} />
       </div>
     </main>
   );
