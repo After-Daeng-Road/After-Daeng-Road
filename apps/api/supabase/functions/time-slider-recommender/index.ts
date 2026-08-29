@@ -165,17 +165,31 @@ Deno.serve(async (req: Request): Promise<Response> => {
     const candidates = await fetchPoiCandidates(admin, origin, radiusKm);
     if (candidates.length === 0) return j({ recommendations: [] });
 
-    // ─ ETA + 한적도 + 검증 수 병렬 조회 ─
-    const enriched = await Promise.all(
-      candidates.slice(0, MAX_CANDIDATES).map(async (poi) => {
-        const [eta, quietness, verifiedCount] = await Promise.all([
-          getEtaCached(origin, poi),
-          getQuietness(admin, poi, startAt),
-          getVerifiedCount(admin, poi.id),
-        ]);
-        return { poi, eta, quietness, verifiedCount };
-      }),
-    );
+    // ─ ETA + 한적도 + 검증 수 조회 (배치: POI별 개별쿼리 대신 slice 전체를 몇 개 쿼리로) ─
+    const slice = candidates.slice(0, MAX_CANDIDATES);
+    const poiIds = slice.map((p) => p.id);
+    const sigungus = [...new Set(slice.map((p) => p.sigungu_code))];
+    const weekday = startAt.getDay();
+    const hourSlot = startAt.getHours();
+
+    const [verifiedMap, quietnessBySigungu, forecastsByPoi, etas] = await Promise.all([
+      fetchVerifiedCounts(admin, poiIds), // 1 query
+      fetchQuietnessNow(admin, sigungus, weekday, hourSlot), // 1 query
+      fetchForecasts(admin, poiIds, startAt), // 1 query
+      Promise.all(slice.map((poi) => getEtaCached(origin, poi))), // haversine 폴백, DB 조회 없음
+    ]);
+
+    const enriched = slice.map((poi, i) => ({
+      poi,
+      eta: etas[i],
+      quietness: computeQuietness(
+        poi,
+        quietnessBySigungu,
+        forecastsByPoi.get(poi.id) ?? [],
+        startAt,
+      ),
+      verifiedCount: verifiedMap.get(poi.id) ?? 0,
+    }));
 
     // ─ 시간 예산(왕복 = timeHours/2 시간 = 분) 안에 들어오는 것만 ─
     const budgetMin = (input.timeHours / 2) * 60;
@@ -203,8 +217,8 @@ Deno.serve(async (req: Request): Promise<Response> => {
       .slice(0, TOP_N);
 
     // ─ 배지 일괄 조회 ─
-    const poiIds = scored.map((s) => s.poi.id);
-    const badgesByPoi = await fetchBadges(admin, poiIds);
+    const topPoiIds = scored.map((s) => s.poi.id);
+    const badgesByPoi = await fetchBadges(admin, topPoiIds);
 
     const recommendations: Recommendation[] = scored.map((s) => ({
       poiId: s.poi.id,
@@ -366,63 +380,107 @@ function hash32(s: string): number {
   return h >>> 0;
 }
 
-async function getQuietness(
+type QuietnessNowRow = { sigungu_code: number; score: number; sample_size: number | null };
+type ForecastRow = { poi_id: string; forecast_date: string; expected_score: number };
+type SigunguNowInfo = { nowScore: number; sampleSufficient: boolean };
+
+// ── 배치 1/3: 시군구별 "현재" 한적도 (slice 내 distinct sigungu_code 만) ──
+async function fetchQuietnessNow(
   supabase: SupabaseClient,
-  poi: PoiCandidate,
+  sigungus: number[],
+  weekday: number,
+  hourSlot: number,
+): Promise<Map<number, SigunguNowInfo>> {
+  const map = new Map<number, SigunguNowInfo>();
+  if (sigungus.length === 0) return map;
+
+  const { data } = await supabase
+    .from('quietness_scores')
+    .select('sigungu_code, score, sample_size')
+    .in('sigungu_code', sigungus)
+    .eq('weekday', weekday)
+    .eq('hour_slot', hourSlot);
+
+  const rowsBySigungu = new Map<number, QuietnessNowRow[]>();
+  for (const r of (data ?? []) as QuietnessNowRow[]) {
+    const list = rowsBySigungu.get(r.sigungu_code) ?? [];
+    list.push(r);
+    rowsBySigungu.set(r.sigungu_code, list);
+  }
+
+  for (const sigungu of sigungus) {
+    const rows = rowsBySigungu.get(sigungu) ?? [];
+    const sampleSufficient = rows.length > 0;
+    let nowScore = 60; // 표본 없을 때 중립값
+    if (sampleSufficient) {
+      const totalW = rows.reduce((s: number, r: QuietnessNowRow) => s + (r.sample_size ?? 1), 0);
+      nowScore =
+        rows.reduce((s: number, r: QuietnessNowRow) => s + r.score * (r.sample_size ?? 1), 0) /
+        totalW;
+    }
+    map.set(sigungu, { nowScore, sampleSufficient });
+  }
+  return map;
+}
+
+// ── 배치 2/3: POI별 예측 (내일 + 향후 7일) — 단일 range 쿼리로 tomorrow/week 모두 커버 ──
+// startAt~startAt+7일 range 는 tomorrow(=startAt+1일)를 항상 포함하므로 쿼리를 분리할 필요가 없다.
+async function fetchForecasts(
+  supabase: SupabaseClient,
+  poiIds: string[],
   startAt: Date,
-): Promise<{
+): Promise<Map<string, ForecastRow[]>> {
+  const map = new Map<string, ForecastRow[]>();
+  if (poiIds.length === 0) return map;
+
+  const weekFromNow = new Date(startAt);
+  weekFromNow.setDate(weekFromNow.getDate() + 7);
+
+  const { data } = await supabase
+    .from('poi_forecasts')
+    .select('poi_id, forecast_date, expected_score')
+    .in('poi_id', poiIds)
+    .gte('forecast_date', startAt.toISOString().slice(0, 10))
+    .lte('forecast_date', weekFromNow.toISOString().slice(0, 10));
+
+  for (const r of (data ?? []) as ForecastRow[]) {
+    const list = map.get(r.poi_id) ?? [];
+    list.push(r);
+    map.set(r.poi_id, list);
+  }
+  return map;
+}
+
+// ── 순수 함수: 배치로 가져온 데이터 + 결정적 오프셋으로 POI별 한적도 산출 ──
+// (구 getQuietness 와 출력 동일 — QA #2 임시 편차 블록 그대로 보존)
+function computeQuietness(
+  poi: PoiCandidate,
+  quietnessBySigungu: Map<number, SigunguNowInfo>,
+  forecastRows: ForecastRow[],
+  startAt: Date,
+): {
   now: number;
   forecastTomorrow: number;
   weekAvg: number;
   sampleSufficient: boolean;
-}> {
-  const weekday = startAt.getDay();
-  const hourSlot = startAt.getHours();
+} {
   const tomorrow = new Date(startAt);
   tomorrow.setDate(tomorrow.getDate() + 1);
   const tomorrowDate = tomorrow.toISOString().slice(0, 10);
-  const weekFromNow = new Date(startAt);
-  weekFromNow.setDate(weekFromNow.getDate() + 7);
 
-  const [{ data: nowRows }, { data: forecastRow }, { data: weekRows }] = await Promise.all([
-    supabase
-      .from('quietness_scores')
-      .select('score, sample_size')
-      .eq('sigungu_code', poi.sigungu_code)
-      .eq('weekday', weekday)
-      .eq('hour_slot', hourSlot),
-    supabase
-      .from('poi_forecasts')
-      .select('expected_score')
-      .eq('poi_id', poi.id)
-      .eq('forecast_date', tomorrowDate)
-      .maybeSingle(),
-    supabase
-      .from('poi_forecasts')
-      .select('expected_score')
-      .eq('poi_id', poi.id)
-      .gte('forecast_date', startAt.toISOString().slice(0, 10))
-      .lte('forecast_date', weekFromNow.toISOString().slice(0, 10)),
-  ]);
+  const { nowScore, sampleSufficient } = quietnessBySigungu.get(poi.sigungu_code) ?? {
+    nowScore: 60,
+    sampleSufficient: false,
+  };
 
-  type QuietnessRow = { score: number; sample_size: number | null };
-  type ForecastRow = { expected_score: number };
-
-  const rows = (nowRows ?? []) as QuietnessRow[];
-  const sampleSufficient = rows.length > 0;
-  let nowScore = 60; // 표본 없을 때 중립값
-  if (sampleSufficient) {
-    const totalW = rows.reduce((s: number, r: QuietnessRow) => s + (r.sample_size ?? 1), 0);
-    nowScore =
-      rows.reduce((s: number, r: QuietnessRow) => s + r.score * (r.sample_size ?? 1), 0) / totalW;
-  }
-
+  const forecastRow = forecastRows.find((r) => r.forecast_date === tomorrowDate);
   const hadForecast = !!forecastRow;
-  const rawForecast = (forecastRow as ForecastRow | null)?.expected_score ?? nowScore;
-  const week = (weekRows ?? []) as ForecastRow[];
-  const hadWeek = week.length > 0;
+  const rawForecast = forecastRow?.expected_score ?? nowScore;
+
+  const hadWeek = forecastRows.length > 0;
   const rawWeekAvg = hadWeek
-    ? week.reduce((s: number, r: ForecastRow) => s + r.expected_score, 0) / week.length
+    ? forecastRows.reduce((s: number, r: ForecastRow) => s + r.expected_score, 0) /
+      forecastRows.length
     : nowScore;
 
   // ── 임시(Phase 1): POI별 결정적 한적도 편차 (QA #2) ──────────────────
@@ -444,19 +502,29 @@ async function getQuietness(
   return { now, forecastTomorrow, weekAvg, sampleSufficient };
 }
 
-// ═══════════════ 검증 수 (PRD §6.3: 6개월 + isValid + 사진) ═══════════════
+// ═══════════════ 검증 수 (PRD §6.3: 6개월 + isValid + 사진) — 배치 3/3 ═══════════════
 
-async function getVerifiedCount(supabase: SupabaseClient, poiId: string): Promise<number> {
+async function fetchVerifiedCounts(
+  supabase: SupabaseClient,
+  poiIds: string[],
+): Promise<Map<string, number>> {
+  const map = new Map<string, number>();
+  if (poiIds.length === 0) return map;
+
   const sixMonthsAgo = new Date();
   sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
-  const { count } = await supabase
+  const { data } = await supabase
     .from('verifications')
-    .select('id', { count: 'exact', head: true })
-    .eq('poi_id', poiId)
+    .select('poi_id')
+    .in('poi_id', poiIds)
     .eq('is_valid', true)
     .not('photo_url', 'is', null)
     .gte('visited_at', sixMonthsAgo.toISOString());
-  return count ?? 0;
+
+  for (const r of (data ?? []) as { poi_id: string }[]) {
+    map.set(r.poi_id, (map.get(r.poi_id) ?? 0) + 1);
+  }
+  return map;
 }
 
 // ═══════════════ 배지 일괄 조회 ═══════════════
