@@ -1,5 +1,6 @@
 import Link from 'next/link';
-import { ArrowUpRight, Bookmark, Navigation, TrendingUp } from 'lucide-react';
+import { ArrowUpRight, Navigation, TrendingUp } from 'lucide-react';
+import { BookmarkButton } from '@/components/poi/bookmark-button';
 import { COPY } from '@/lib/copy';
 import { kakaoDirectionsUrl, type DeparturePoint } from '@/lib/format';
 import type { Recommendation } from '@/lib/types/recommendation';
@@ -49,13 +50,13 @@ export function RecommendCard({
             {C.rankLabel}
           </span>
         </span>
-        <button
-          type="button"
-          aria-label={C.save}
-          className="absolute right-3.5 top-3.5 z-[2] grid h-[38px] w-[38px] place-items-center rounded-full bg-white/90 text-[#1d1813] backdrop-blur-sm transition hover:scale-105 hover:bg-white"
-        >
-          <Bookmark className="h-4 w-4" aria-hidden />
-        </button>
+        {hasDetail && (
+          <BookmarkButton
+            poiId={rec.poiId}
+            initialBookmarked={false}
+            className="absolute right-3.5 top-3.5 z-[2] grid h-[38px] w-[38px] place-items-center rounded-full bg-white/90 text-[#1d1813] backdrop-blur-sm transition hover:scale-105 hover:bg-white disabled:cursor-default disabled:opacity-60"
+          />
+        )}
       </div>
 
       {/* ── 본문 ── */}

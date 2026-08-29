@@ -226,6 +226,17 @@ export const COPY = {
     reported: '신고됨',
     reportAuth: '로그인 후 신고할 수 있어요',
     reportFail: '신고 실패',
+    bookmarkAdd: '저장하기',
+    bookmarkRemove: '저장 취소',
+    reviewForm: {
+      title: '방문 후기 남기기',
+      ratingLabel: '별점',
+      ratingRequired: '별점을 선택해주세요',
+      bodyLabel: '후기 내용',
+      bodyPlaceholder: '다녀온 소감을 남겨주세요 (선택)',
+      submit: '후기 등록',
+      submitting: '등록 중…',
+    },
   },
 
   // ───────── 추천 이력 ─────────
@@ -242,6 +253,16 @@ export const COPY = {
     distChip: (km: number, eta: number | undefined) => `${km}km · ${eta}분`,
     quietChip: (n: number) => `한적도 ${n}`,
     verifyChip: (n: number) => `검증 ${n}명`,
+  },
+
+  // ───────── 저장한 장소(북마크) ─────────
+  saved: {
+    loginTitle: '로그인이 필요해요',
+    loginDesc: '로그인하면 저장한 장소를 볼 수 있어요.',
+    headTitle: '저장한 곳',
+    headDesc: '북마크한 펫 외출 코스예요.',
+    emptyTitle: '아직 저장한 곳이 없어요',
+    emptyDesc: '마음에 드는 장소를 북마크해보세요',
   },
 
   // ───────── 시스템 상태 ─────────

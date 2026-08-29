@@ -1,9 +1,12 @@
 import { notFound } from 'next/navigation';
 import { getPoiDetail } from '@/lib/actions/pois';
+import { isBookmarked } from '@/lib/actions/bookmarks';
 import { BadgeCheck, Leaf, PawPrint, Sprout, TreePine } from 'lucide-react';
 import { Chip } from '@/components/ui/chip';
 import { ReviewList } from '@/components/poi/review-list';
+import { ReviewForm } from '@/components/poi/review-form';
 import { KakaoDirectionsButton } from '@/components/poi/kakao-directions-button';
+import { BookmarkButton } from '@/components/poi/bookmark-button';
 import { COPY } from '@/lib/copy';
 
 // PRD §7.2 [장소 상세] — 사진·소개·펫정책 / 한적도 시간대 차트 / 검증 진행도 / 후기
@@ -15,6 +18,7 @@ export default async function PoiDetailPage({ params }: { params: Promise<{ id: 
 
   const { poi, hourly, verifiedCount } = detail;
   const maxScore = Math.max(...hourly.map((h) => h.score), 100);
+  const bookmarked = await isBookmarked(poi.id);
 
   return (
     <main className="mx-auto max-w-2xl px-4 py-6">
@@ -106,8 +110,16 @@ export default async function PoiDetailPage({ params }: { params: Promise<{ id: 
       {/* 방문 후기 (PRD §7.2) — getPoiDetail 이 반환한 공개 리뷰 */}
       <ReviewList reviews={poi.reviews} />
 
+      {/* 후기 작성 (QA #5) */}
+      <ReviewForm poiId={poi.id} />
+
       <div className="mt-6 flex gap-2">
         <KakaoDirectionsButton name={poi.name} lat={poi.lat} lng={poi.lng} />
+        <BookmarkButton
+          poiId={poi.id}
+          initialBookmarked={bookmarked}
+          className="inline-flex w-14 flex-shrink-0 items-center justify-center rounded-field border border-line bg-surface text-ink transition-colors hover:border-brand disabled:cursor-default disabled:opacity-60"
+        />
       </div>
     </main>
   );

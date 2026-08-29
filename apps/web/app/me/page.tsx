@@ -144,11 +144,10 @@ export default async function MePage() {
           disabled
         />
         <NavListItem
-          href="#"
+          href="/me/saved"
           icon={<Heart className="h-4 w-4" aria-hidden />}
           title={COPY.me.menuSaved}
           subtitle={COPY.me.menuSavedSub}
-          disabled
         />
       </nav>
 
