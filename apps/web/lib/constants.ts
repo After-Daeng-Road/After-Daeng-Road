@@ -42,6 +42,20 @@ export const DEFAULT_NOTIFY_TIME = '18:00';
 // 펫 민감정보 동의 버전 (consentPetSensitive.consentVer) — 약관 개정 시 갱신
 export const CONSENT_VERSION = 'pet-health-v1.0.0';
 
+// 계정 단위 동의 버전 (user_consents.version) — 약관 개정 시 버전을 올리면 재동의 유도
+export type ConsentKind = 'TERMS' | 'PRIVACY' | 'LOCATION' | 'MARKETING_EMAIL' | 'PET_HEALTH';
+
+export const CONSENT_VERSIONS: Record<ConsentKind, string> = {
+  TERMS: 'terms-v1.0.0',
+  PRIVACY: 'privacy-v1.0.0',
+  LOCATION: 'location-v1.0.0',
+  MARKETING_EMAIL: 'marketing-email-v1.0.0',
+  PET_HEALTH: CONSENT_VERSION, // 기존 'pet-health-v1.0.0' 과 정렬
+};
+
+// 온보딩 시 반드시 받아야 하는 필수 동의 (마케팅·위치는 선택)
+export const REQUIRED_CONSENTS: ConsentKind[] = ['TERMS', 'PRIVACY'];
+
 // 민감정보 입력 제약 (액션 zod 와 동일: 항목 최대 20개, 각 40자)
 export const SENSITIVE_MAX_ITEMS = 20;
 export const SENSITIVE_MAX_LEN = 40;

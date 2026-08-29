@@ -35,6 +35,7 @@ export function HomeRecommend({ pets }: { pets: Pet[] }) {
 
   // 결과 상태 — 초기엔 데모 추천 표시, 실제 검색 응답이 오면 교체
   const [results, setResults] = useState<Recommendation[] | null>(DEMO_RECOMMENDATIONS);
+  const [departure, setDeparture] = useState<RecommendInput['departure'] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -44,9 +45,14 @@ export function HomeRecommend({ pets }: { pets: Pet[] }) {
     try {
       const saved = sessionStorage.getItem('daeng:recommend');
       if (!saved) return;
-      const parsed = JSON.parse(saved) as { results?: Recommendation[]; timeHours?: number };
+      const parsed = JSON.parse(saved) as {
+        results?: Recommendation[];
+        timeHours?: number;
+        departure?: RecommendInput['departure'];
+      };
       if (parsed.results) setResults(parsed.results);
       if (typeof parsed.timeHours === 'number') setTimeHours(parsed.timeHours);
+      if (parsed.departure) setDeparture(parsed.departure);
     } catch {
       /* 손상된 값이면 무시 */
     }
@@ -54,6 +60,7 @@ export function HomeRecommend({ pets }: { pets: Pet[] }) {
 
   const handleRecommend = (input: RecommendInput) => {
     setError(null);
+    setDeparture(input.departure);
     startTransition(async () => {
       try {
         RecommendInputSchema.parse(input);
@@ -75,7 +82,11 @@ export function HomeRecommend({ pets }: { pets: Pet[] }) {
         try {
           sessionStorage.setItem(
             'daeng:recommend',
-            JSON.stringify({ results: data.recommendations, timeHours: input.timeHours }),
+            JSON.stringify({
+              results: data.recommendations,
+              timeHours: input.timeHours,
+              departure: input.departure,
+            }),
           );
         } catch {
           /* 저장 실패는 치명적 아님 */
@@ -141,6 +152,7 @@ export function HomeRecommend({ pets }: { pets: Pet[] }) {
           results={results}
           loading={isPending}
           timeHours={timeHours}
+          departure={departure ?? undefined}
           onRelax={() => setTimeHours(Math.min(TIME_MAX, timeHours + 1))}
         />
 

@@ -112,7 +112,7 @@ export const openApiDocument = {
                   value: {
                     timeHours: 3,
                     petId: '7b2c...uuid',
-                    startAt: '2026-07-19T18:00:00.000Z',
+                    startAt: '2026-08-29T18:00:00.000Z',
                     departure: { lat: 36.815, lng: 127.114 },
                   },
                 },

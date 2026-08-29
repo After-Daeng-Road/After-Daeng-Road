@@ -3,7 +3,13 @@ import { Ratelimit } from '@upstash/ratelimit';
 import { headers } from 'next/headers';
 
 // PRD §13.5, §14: Upstash Rate Limit — 사용자별 분당 30회, IP 분당 60회
-// 모든 Server Actions / Route Handlers 진입점에 적용
+// 모든 Server Actions / Route Handlers 진입점에 적용.
+// UPSTASH 미설정(로컬/개발) 시 fail-open — 레이트리밋을 건너뛴다. 설정 안 하면
+// @upstash/ratelimit 이 빈 URL('/pipeline')로 fetch 해 "Invalid URL" 로 크래시하므로 반드시 가드.
+
+const UPSTASH_ON = !!(process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN);
+
+export type LimiterKind = 'user' | 'ip' | 'daily';
 
 let redis: Redis | null = null;
 function getRedis(): Redis {
@@ -16,29 +22,34 @@ function getRedis(): Redis {
   return redis;
 }
 
-const limiters = {
-  user: new Ratelimit({
-    redis: getRedis(),
-    limiter: Ratelimit.slidingWindow(30, '1 m'),
-    prefix: 'rl:user',
-    analytics: false,
-  }),
-  ip: new Ratelimit({
-    redis: getRedis(),
-    limiter: Ratelimit.slidingWindow(60, '1 m'),
-    prefix: 'rl:ip',
-    analytics: false,
-  }),
-  // 후기/체크인 등 abuse-prone 액션 — 하루 50회
-  daily: new Ratelimit({
-    redis: getRedis(),
-    limiter: Ratelimit.slidingWindow(50, '1 d'),
-    prefix: 'rl:daily',
-    analytics: false,
-  }),
-};
-
-export type LimiterKind = keyof typeof limiters;
+// 지연 생성 — UPSTASH 설정된 경우에만 인스턴스화 (빈 URL 로 Redis 만드는 것 회피)
+let _limiters: Record<LimiterKind, Ratelimit> | null = null;
+function getLimiters(): Record<LimiterKind, Ratelimit> {
+  if (!_limiters) {
+    _limiters = {
+      user: new Ratelimit({
+        redis: getRedis(),
+        limiter: Ratelimit.slidingWindow(30, '1 m'),
+        prefix: 'rl:user',
+        analytics: false,
+      }),
+      ip: new Ratelimit({
+        redis: getRedis(),
+        limiter: Ratelimit.slidingWindow(60, '1 m'),
+        prefix: 'rl:ip',
+        analytics: false,
+      }),
+      // 후기/체크인 등 abuse-prone 액션 — 하루 50회
+      daily: new Ratelimit({
+        redis: getRedis(),
+        limiter: Ratelimit.slidingWindow(50, '1 d'),
+        prefix: 'rl:daily',
+        analytics: false,
+      }),
+    };
+  }
+  return _limiters;
+}
 
 export class RateLimitError extends Error {
   constructor(
@@ -54,7 +65,8 @@ export async function rateLimit(opts: {
   kind: LimiterKind;
   identifier: string;
 }): Promise<{ success: boolean; remaining: number; reset: number }> {
-  const { success, remaining, reset } = await limiters[opts.kind].limit(opts.identifier);
+  if (!UPSTASH_ON) return { success: true, remaining: 999, reset: 0 }; // fail-open
+  const { success, remaining, reset } = await getLimiters()[opts.kind].limit(opts.identifier);
   return { success, remaining, reset };
 }
 
@@ -74,6 +86,8 @@ export async function enforceRateLimit(args: {
   action: string;
   daily?: boolean;
 }): Promise<void> {
+  if (!UPSTASH_ON) return; // Upstash 미설정 → 레이트리밋 생략 (fail-open)
+
   const ip = await getClientIp();
   const ipKey = `${args.action}:${ip}`;
   const userKey = args.userId ? `${args.action}:${args.userId}` : null;

@@ -82,6 +82,14 @@ enum VendorApproval {
   REJECTED
 }
 
+enum ConsentKind {
+  TERMS // 이용약관
+  PRIVACY // 개인정보처리방침
+  LOCATION // 위치 정보 처리 동의 (PRD §14 분리 동의)
+  MARKETING_EMAIL // 이메일 마케팅/알림 동의
+  PET_HEALTH // 펫 헬스 민감정보(계정 단위 이력 — pets_sensitive 와 별개)
+}
+
 // ═══════════════ Core ═══════════════
 
 model User {
@@ -107,9 +115,32 @@ model User {
   reviews         Review[]
   vendor          Vendor?
   emailLogs       EmailLog[]
+  consents        UserConsent[]
+  bookmarks       Bookmark[]
 
   @@index([baseGeohash7])
   @@map("users")
+}
+
+// ═══════════════ 동의 이력 (0010) — PRD §14, §14.2 ═══════════════
+// 이용약관/개인정보/위치/마케팅/펫헬스 동의를 append-only 로 적재.
+// (user_id, kind) 별 최신 recorded_at 행이 현재 상태 — pets_sensitive(펫 단위)와 별개로 계정 단위 이력을 남긴다.
+
+model UserConsent {
+  id         String      @id @default(uuid()) @db.Uuid
+  userId     String      @map("user_id") @db.Uuid
+  kind       ConsentKind
+  version    String // 동의 시점의 약관 버전 (예: 'terms-v1.0.0')
+  agreed     Boolean     @default(true) // true=동의, false=철회
+  recordedAt DateTime    @default(now()) @map("recorded_at")
+  ipAddress  String?     @map("ip_address") @db.Inet
+  userAgent  String?     @map("user_agent")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // (userId, kind) 별 최신 recordedAt 행이 현재 상태 — append-only 이력
+  @@index([userId, kind, recordedAt(sort: Desc)])
+  @@map("user_consents")
 }
 
 model Pet {
@@ -189,6 +220,7 @@ model Poi {
   reviews         Review[]
   durunubi        DurunubiCourse?
   vendors         Vendor[]
+  bookmarks       Bookmark[]
 
   @@unique([source, sourceId])
   @@index([sigunguCode, type])
@@ -353,6 +385,24 @@ model Review {
   @@index([poiId])
   @@index([userId])
   @@map("reviews")
+}
+
+// ═══════════════ 북마크 (0011) — PRD §7.2 [마이펫타임] 저장한 장소 ═══════════════
+// 저장 단위: Poi(poiId). (userId, poiId) unique — 토글 시 존재하면 delete, 없으면 create.
+
+model Bookmark {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  poiId     String   @map("poi_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  poi  Poi  @relation(fields: [poiId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, poiId])
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([poiId])
+  @@map("bookmarks")
 }
 
 model VendorReply {

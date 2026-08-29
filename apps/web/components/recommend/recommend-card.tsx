@@ -1,7 +1,8 @@
 import Link from 'next/link';
-import { ArrowUpRight, Bookmark, Navigation, TrendingUp } from 'lucide-react';
+import { ArrowUpRight, Navigation, TrendingUp } from 'lucide-react';
+import { BookmarkButton } from '@/components/poi/bookmark-button';
 import { COPY } from '@/lib/copy';
-import { kakaoDirectionsUrl } from '@/lib/format';
+import { kakaoDirectionsUrl, type DeparturePoint } from '@/lib/format';
 import type { Recommendation } from '@/lib/types/recommendation';
 
 // 추천 결과 — 사진-좌 / 본문-우 매거진 카드 (DESIGN_SYSTEM §9.1)
@@ -11,10 +12,22 @@ import type { Recommendation } from '@/lib/types/recommendation';
 const RANK = ['01', '02', '03', '04', '05'] as const;
 const C = COPY.home.card;
 
-export function RecommendCard({ rec, rank }: { rec: Recommendation; rank: number }) {
+// 데모 초기 추천의 가짜 poiId('sample-*')는 UUID가 아니므로 상세 링크를 걸지 않는다 (QA #6).
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+export function RecommendCard({
+  rec,
+  rank,
+  departure,
+}: {
+  rec: Recommendation;
+  rank: number;
+  departure?: DeparturePoint;
+}) {
   const { reason } = rec;
   const forecastUp = reason.quietnessForecast > reason.quietnessNow;
-  const kakaoUrl = kakaoDirectionsUrl(rec.name, rec.lat, rec.lng);
+  const kakaoUrl = kakaoDirectionsUrl(rec.name, rec.lat, rec.lng, departure);
+  const hasDetail = UUID_RE.test(rec.poiId);
 
   return (
     <article className="group mb-[22px] grid grid-cols-1 overflow-hidden rounded-card border border-line bg-surface transition duration-300 ease-ds hover:-translate-y-[3px] hover:shadow-lift sm:grid-cols-[340px_1fr]">
@@ -37,23 +50,28 @@ export function RecommendCard({ rec, rank }: { rec: Recommendation; rank: number
             {C.rankLabel}
           </span>
         </span>
-        <button
-          type="button"
-          aria-label={C.save}
-          className="absolute right-3.5 top-3.5 z-[2] grid h-[38px] w-[38px] place-items-center rounded-full bg-white/90 text-[#1d1813] backdrop-blur-sm transition hover:scale-105 hover:bg-white"
-        >
-          <Bookmark className="h-4 w-4" aria-hidden />
-        </button>
+        {hasDetail && (
+          <BookmarkButton
+            poiId={rec.poiId}
+            className="absolute right-3.5 top-3.5 z-[2] grid h-[38px] w-[38px] place-items-center rounded-full bg-white/90 text-[#1d1813] backdrop-blur-sm transition hover:scale-105 hover:bg-white disabled:cursor-default disabled:opacity-60"
+          />
+        )}
       </div>
 
       {/* ── 본문 ── */}
       <div className="flex flex-col p-6 sm:p-8">
-        <Link
-          href={`/poi/${rec.poiId}`}
-          className="text-[clamp(19px,2vw,23px)] font-bold tracking-[-0.02em] text-ink hover:underline"
-        >
-          {rec.name}
-        </Link>
+        {hasDetail ? (
+          <Link
+            href={`/poi/${rec.poiId}`}
+            className="text-[clamp(19px,2vw,23px)] font-bold tracking-[-0.02em] text-ink hover:underline"
+          >
+            {rec.name}
+          </Link>
+        ) : (
+          <span className="text-[clamp(19px,2vw,23px)] font-bold tracking-[-0.02em] text-ink">
+            {rec.name}
+          </span>
+        )}
         <div className="mt-1.5 flex items-center gap-1.5 text-[13px] text-muted">
           {rec.address}
           <span className="h-[3px] w-[3px] rounded-full bg-faint" aria-hidden />
@@ -105,22 +123,27 @@ export function RecommendCard({ rec, rank }: { rec: Recommendation; rank: number
           </div>
         )}
 
-        {/* 액션 */}
+        {/* 액션 — 길찾기는 출발지(검색 시 입력)가 있을 때만. 초기 데모 카드(출발지 없음)에선
+            출발지 없는 이상한 경로가 뜨는 걸 막는다 (QA #1). */}
         <div className="mt-auto flex items-center gap-2.5 pt-5">
-          <a
-            href={kakaoUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex items-center gap-[7px] rounded-full border border-ink bg-transparent px-5 py-[11px] text-[13.5px] font-semibold text-ink transition duration-200 ease-ds hover:bg-ink hover:text-page"
-          >
-            <Navigation className="h-3.5 w-3.5" aria-hidden /> {C.kakao}
-          </a>
-          <Link
-            href={`/poi/${rec.poiId}`}
-            className="inline-flex items-center gap-1 text-[13px] text-muted transition-colors hover:text-ink"
-          >
-            {C.detail} <ArrowUpRight className="h-[13px] w-[13px]" aria-hidden />
-          </Link>
+          {departure && (
+            <a
+              href={kakaoUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-[7px] rounded-full border border-ink bg-transparent px-5 py-[11px] text-[13.5px] font-semibold text-ink transition duration-200 ease-ds hover:bg-ink hover:text-page"
+            >
+              <Navigation className="h-3.5 w-3.5" aria-hidden /> {C.kakao}
+            </a>
+          )}
+          {hasDetail && (
+            <Link
+              href={`/poi/${rec.poiId}`}
+              className="inline-flex items-center gap-1 text-[13px] text-muted transition-colors hover:text-ink"
+            >
+              {C.detail} <ArrowUpRight className="h-[13px] w-[13px]" aria-hidden />
+            </Link>
+          )}
         </div>
       </div>
     </article>

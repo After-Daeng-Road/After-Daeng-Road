@@ -33,7 +33,7 @@ export interface ServerActionDoc {
   /** 주의사항 (선택) */
   gotcha?: string;
   /** 분류 */
-  group: '반려동물' | '리뷰·검증' | '추천' | '알림' | '장소' | '인증';
+  group: '반려동물' | '리뷰·검증' | '추천' | '알림' | '장소' | '인증' | '동의' | '북마크';
 }
 
 export const serverActions: ServerActionDoc[] = [
@@ -225,6 +225,117 @@ if (!res.ok) setError(res.error); // 소유자 아니면 'Forbidden'`,
     group: '반려동물',
   },
 
+  // ---------------- 동의 ----------------
+  {
+    name: 'recordConsent',
+    importPath: '@/lib/actions/consent',
+    file: 'apps/web/lib/actions/consent.ts',
+    signature:
+      'recordConsent(input: RecordConsentInput): Promise<{ ok: true } | { ok: false; error: string }>',
+    what: '이용약관·개인정보·위치·마케팅·펫헬스 동의(또는 철회) 이벤트를 append-only 로 적재한다. 버전 문자열은 클라이언트를 신뢰하지 않고 서버 상수(CONSENT_VERSIONS)를 사용해 변조를 막는다.',
+    usedIn:
+      '로그인/온보딩 화면의 동의 체크박스 제출, 마이/설정 화면의 마케팅·위치 동의 토글 (FE 배선 예정).',
+    authRequired: true,
+    input:
+      "z.object({ consents: { kind: 'TERMS'|'PRIVACY'|'LOCATION'|'MARKETING_EMAIL'|'PET_HEALTH'; agreed: boolean = true }[].min(1).max(5) })",
+    returns: '성공 { ok: true }. 실패 { ok: false, error } — "Unauthorized" | zod 메시지',
+    revalidates: "revalidatePath('/me')",
+    sideEffects:
+      'IP(getClientIp)·User-Agent 헤더 기록 + userConsent.createMany(버전=서버 상수, ipAddress/userAgent 포함)',
+    example: `import { recordConsent } from '@/lib/actions/consent';
+
+const res = await recordConsent({
+  consents: [{ kind: 'TERMS', agreed: true }, { kind: 'PRIVACY', agreed: true }],
+});
+if (!res.ok) setError(res.error);`,
+    gotcha:
+      '이력 테이블이라 UPDATE 없이 새 행만 append 된다 — 최신 상태는 getConsentStatus() 로 조회.',
+    group: '동의',
+  },
+  {
+    name: 'getConsentStatus',
+    importPath: '@/lib/actions/consent',
+    file: 'apps/web/lib/actions/consent.ts',
+    signature:
+      'getConsentStatus(): Promise<Partial<Record<ConsentKind, { agreed: boolean; version: string; recordedAt: Date }>>>',
+    what: '(userId, kind) 별 최신 동의 상태를 반환한다. 온보딩/설정 화면에서 "이미 동의했는지" 판단용 데이터 로더.',
+    usedIn: '마이/설정 화면의 동의 현황 표시, 온보딩 화면의 기동의 항목 스킵 판단.',
+    authRequired: true,
+    input: null,
+    returns: 'kind→상태 맵({ ok } envelope 아님). 비로그인 시 빈 객체 {}(soft-fail).',
+    revalidates: '없음',
+    sideEffects: '읽기 전용: userConsent.findMany(where userId, orderBy recordedAt desc)',
+    example: `import { getConsentStatus } from '@/lib/actions/consent';
+
+const status = await getConsentStatus();
+if (!status.PRIVACY?.agreed) promptPrivacyConsent();`,
+    gotcha: '비로그인이면 {} — kind별 옵셔널 체이닝으로 접근할 것.',
+    group: '동의',
+  },
+
+  // ---------------- 북마크 ----------------
+  {
+    name: 'toggleBookmark',
+    importPath: '@/lib/actions/bookmarks',
+    file: 'apps/web/lib/actions/bookmarks.ts',
+    signature:
+      'toggleBookmark(input: { poiId: string }): Promise<{ ok: true; bookmarked: boolean } | { ok: false; error: string }>',
+    what: '북마크(저장한 장소)를 토글한다. 존재하면 삭제, 없으면 생성. 저장 단위는 Poi(poiId).',
+    usedIn: 'POI 상세와 추천 카드(recommend-card)의 북마크 버튼 (FE 배선 예정).',
+    authRequired: true,
+    input: 'z.object({ poiId: string.uuid() })',
+    returns:
+      '성공 { ok: true, bookmarked }(토글 후 상태). 실패 { ok: false, error } — "Unauthorized" | zod 메시지',
+    revalidates: "revalidatePath('/me/saved') + revalidatePath(`/poi/${poiId}`)",
+    sideEffects: 'bookmark.findUnique(userId_poiId) → 존재 시 delete, 없으면 create',
+    example: `import { toggleBookmark } from '@/lib/actions/bookmarks';
+
+const res = await toggleBookmark({ poiId });
+if (res.ok) setBookmarked(res.bookmarked);
+else setError(res.error);`,
+    gotcha:
+      '(userId, poiId) unique — 동시 중복 클릭 시 두 번째 요청은 delete 로 귀결되어 에러 없음.',
+    group: '북마크',
+  },
+  {
+    name: 'isBookmarked',
+    importPath: '@/lib/actions/bookmarks',
+    file: 'apps/web/lib/actions/bookmarks.ts',
+    signature: 'isBookmarked(poiId: string): Promise<boolean>',
+    what: '현재 사용자가 해당 POI를 북마크했는지 여부만 반환한다. POI 상세(서버 컴포넌트)에서 BookmarkButton의 초기값 주입용.',
+    usedIn: 'POI 상세 화면(/poi/[id]) 서버 컴포넌트 — BookmarkButton initialBookmarked prop.',
+    authRequired: false,
+    input: 'poiId: string(UUID) 단일 인자 — zod 검증 실패/비로그인 시 false',
+    returns: 'boolean({ ok } envelope 아님). 비로그인·잘못된 uuid 는 false(soft-fail).',
+    revalidates: '없음',
+    sideEffects: '읽기 전용: bookmark.findUnique(userId_poiId)',
+    example: `import { isBookmarked } from '@/lib/actions/bookmarks';
+
+const initialBookmarked = await isBookmarked(poi.id);
+return <BookmarkButton poiId={poi.id} initialBookmarked={initialBookmarked} />;`,
+    group: '북마크',
+  },
+  {
+    name: 'listBookmarks',
+    importPath: '@/lib/actions/bookmarks',
+    file: 'apps/web/lib/actions/bookmarks.ts',
+    signature:
+      'listBookmarks(): Promise<{ bookmarkId: string; createdAt: Date; poi: PoiSummary }[]>',
+    what: '현재 사용자가 저장한 장소 목록을 최신순으로 반환한다. 각 항목에 Poi 요약(이름·타입·주소·이미지·펫허용/웰니스/에코 배지 여부)을 포함한다.',
+    usedIn: '마이/저장한 장소 목록 화면 (/me/saved) 의 메인 데이터 로더 (FE 배선 예정).',
+    authRequired: true,
+    input: null,
+    returns: '배열을 그대로 반환({ ok } envelope 아님). 비로그인 시 빈 배열 [](soft-fail).',
+    revalidates: '없음',
+    sideEffects:
+      '읽기 전용: bookmark.findMany(where userId, orderBy createdAt desc, include poi 요약)',
+    example: `import { listBookmarks } from '@/lib/actions/bookmarks';
+
+const bookmarks = await listBookmarks(); // 로그아웃이면 []
+return bookmarks.map((b) => <SavedPoiCard key={b.bookmarkId} poi={b.poi} />);`,
+    group: '북마크',
+  },
+
   // ---------------- 알림 ----------------
   {
     name: 'updateNotifySettings',
@@ -296,6 +407,8 @@ export const serverActionGroups: ServerActionDoc['group'][] = [
   '장소',
   '리뷰·검증',
   '반려동물',
+  '북마크',
+  '동의',
   '알림',
   '인증',
 ];

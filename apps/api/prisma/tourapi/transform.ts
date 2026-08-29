@@ -1,5 +1,5 @@
 // 댕로드 TourAPI 순수 변환 헬퍼 (Node/tsx). 네트워크·Prisma 의존 없음 → 단위테스트 대상.
-// 근거: 2026-07-19 실데이터 프로브 (KorService2/areaBasedList2 + detailPetTour2)
+// 근거: 2026-08-29 실데이터 프로브 (KorService2/areaBasedList2 + detailPetTour2)
 
 export type PoiTypeStr =
   | 'CAFE'
