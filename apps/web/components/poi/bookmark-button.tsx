@@ -1,13 +1,15 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useEffect, useState, useTransition } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { Bookmark, BookmarkCheck } from 'lucide-react';
-import { toggleBookmark } from '@/lib/actions/bookmarks';
+import { isBookmarked as fetchBookmarked, toggleBookmark } from '@/lib/actions/bookmarks';
 import { COPY } from '@/lib/copy';
 
 // POI 상세 · 추천 카드에서 재사용하는 북마크 토글 버튼 (QA #5).
 // 낙관적 업데이트 후 서버 응답으로 확정 — 미로그인(Unauthorized)이면 롤백하고 로그인 페이지로 이동.
+// initialBookmarked 미제공(추천 카드)이면 마운트 시 서버에서 실제 상태를 조회한다
+// → 새로고침해도 저장된 북마크가 카드에 반영됨(QA: 홈에서 북마크 풀려 보이던 문제).
 
 export function BookmarkButton({
   poiId,
@@ -15,13 +17,25 @@ export function BookmarkButton({
   className,
 }: {
   poiId: string;
-  initialBookmarked: boolean;
+  initialBookmarked?: boolean;
   className?: string;
 }) {
-  const [bookmarked, setBookmarked] = useState(initialBookmarked);
+  const [bookmarked, setBookmarked] = useState(initialBookmarked ?? false);
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
   const pathname = usePathname();
+
+  // 서버가 초기값을 주입하지 않은 경우(추천 카드)만 실제 상태를 조회
+  useEffect(() => {
+    if (initialBookmarked !== undefined) return;
+    let active = true;
+    fetchBookmarked(poiId).then((b) => {
+      if (active) setBookmarked(b);
+    });
+    return () => {
+      active = false;
+    };
+  }, [poiId, initialBookmarked]);
 
   const handleClick = () => {
     if (isPending) return;

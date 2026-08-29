@@ -53,7 +53,6 @@ export function RecommendCard({
         {hasDetail && (
           <BookmarkButton
             poiId={rec.poiId}
-            initialBookmarked={false}
             className="absolute right-3.5 top-3.5 z-[2] grid h-[38px] w-[38px] place-items-center rounded-full bg-white/90 text-[#1d1813] backdrop-blur-sm transition hover:scale-105 hover:bg-white disabled:cursor-default disabled:opacity-60"
           />
         )}
