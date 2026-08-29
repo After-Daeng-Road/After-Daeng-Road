@@ -380,7 +380,12 @@ function hash32(s: string): number {
   return h >>> 0;
 }
 
-type QuietnessNowRow = { sigungu_code: number; score: number; sample_size: number | null };
+type QuietnessNowRow = {
+  sigungu_code: number;
+  hour_slot: number;
+  score: number;
+  sample_size: number | null;
+};
 type ForecastRow = { poi_id: string; forecast_date: string; expected_score: number };
 type SigunguNowInfo = { nowScore: number; sampleSufficient: boolean };
 
@@ -394,12 +399,14 @@ async function fetchQuietnessNow(
   const map = new Map<number, SigunguNowInfo>();
   if (sigungus.length === 0) return map;
 
+  // 시드는 3시간 간격(hour_slot 9·12·15·18·21)이라 정확한 시각이 없을 수 있다.
+  // hour_slot 필터 없이 요일 전체를 받아, 시군구별로 요청 시각과 "가장 가까운" hour_slot 을
+  // 매칭한다 → 어느 시각에 검색해도 표본이 잡혀 "표본 부족"이 뜨지 않는다.
   const { data } = await supabase
     .from('quietness_scores')
-    .select('sigungu_code, score, sample_size')
+    .select('sigungu_code, hour_slot, score, sample_size')
     .in('sigungu_code', sigungus)
-    .eq('weekday', weekday)
-    .eq('hour_slot', hourSlot);
+    .eq('weekday', weekday);
 
   const rowsBySigungu = new Map<number, QuietnessNowRow[]>();
   for (const r of (data ?? []) as QuietnessNowRow[]) {
@@ -409,10 +416,15 @@ async function fetchQuietnessNow(
   }
 
   for (const sigungu of sigungus) {
-    const rows = rowsBySigungu.get(sigungu) ?? [];
-    const sampleSufficient = rows.length > 0;
+    const all = rowsBySigungu.get(sigungu) ?? [];
+    const sampleSufficient = all.length > 0;
     let nowScore = 60; // 표본 없을 때 중립값
     if (sampleSufficient) {
+      // 요청 시각과 가장 가까운 hour_slot 선택 (동률이면 먼저 오는 것)
+      const nearestHour = all.reduce((best, r) =>
+        Math.abs(r.hour_slot - hourSlot) < Math.abs(best.hour_slot - hourSlot) ? r : best,
+      ).hour_slot;
+      const rows = all.filter((r) => r.hour_slot === nearestHour);
       const totalW = rows.reduce((s: number, r: QuietnessNowRow) => s + (r.sample_size ?? 1), 0);
       nowScore =
         rows.reduce((s: number, r: QuietnessNowRow) => s + r.score * (r.sample_size ?? 1), 0) /
