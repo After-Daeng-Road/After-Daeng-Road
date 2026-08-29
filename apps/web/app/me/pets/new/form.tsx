@@ -10,8 +10,10 @@ export function NewPetForm() {
   const router = useRouter();
   const [name, setName] = useState('');
   const [breed, setBreed] = useState('');
-  const [weightKg, setWeightKg] = useState(5);
-  const [ageYears, setAgeYears] = useState(3);
+  // 숫자 입력은 문자열 상태로 다룬다 — value={number} + Number(onChange) 는 controlled
+  // number input 에서 커서 튐·앞자리 0(예: "010") 문제를 일으킴. 제출 시 Number 로 변환.
+  const [weightKg, setWeightKg] = useState('5');
+  const [ageYears, setAgeYears] = useState('3');
   const [restrictions, setRestrictions] = useState<RestrictionKey[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -24,7 +26,13 @@ export function NewPetForm() {
     e.preventDefault();
     setError(null);
     startTransition(async () => {
-      const res = await createPet({ name, breed, weightKg, ageYears, restrictions });
+      const res = await createPet({
+        name,
+        breed,
+        weightKg: Number(weightKg),
+        ageYears: Number(ageYears),
+        restrictions,
+      });
       if (res.ok) router.push('/me');
       // 게이트 우회 등으로 세션이 없을 때 raw 'Unauthorized' 대신 친절한 안내
       else setError(res.error === 'Unauthorized' ? COPY.pets.loginError : res.error);
@@ -81,7 +89,7 @@ export function NewPetForm() {
             max={80}
             required
             value={weightKg}
-            onChange={(e) => setWeightKg(Number(e.target.value))}
+            onChange={(e) => setWeightKg(e.target.value)}
             className={inputCls}
           />
         </div>
@@ -96,7 +104,7 @@ export function NewPetForm() {
             max={30}
             required
             value={ageYears}
-            onChange={(e) => setAgeYears(Number(e.target.value))}
+            onChange={(e) => setAgeYears(e.target.value)}
             className={inputCls}
           />
         </div>

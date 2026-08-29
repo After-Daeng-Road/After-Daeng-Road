@@ -124,16 +124,19 @@ export function RecommendCard({
           </div>
         )}
 
-        {/* 액션 */}
+        {/* 액션 — 길찾기는 출발지(검색 시 입력)가 있을 때만. 초기 데모 카드(출발지 없음)에선
+            출발지 없는 이상한 경로가 뜨는 걸 막는다 (QA #1). */}
         <div className="mt-auto flex items-center gap-2.5 pt-5">
-          <a
-            href={kakaoUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex items-center gap-[7px] rounded-full border border-ink bg-transparent px-5 py-[11px] text-[13.5px] font-semibold text-ink transition duration-200 ease-ds hover:bg-ink hover:text-page"
-          >
-            <Navigation className="h-3.5 w-3.5" aria-hidden /> {C.kakao}
-          </a>
+          {departure && (
+            <a
+              href={kakaoUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-[7px] rounded-full border border-ink bg-transparent px-5 py-[11px] text-[13.5px] font-semibold text-ink transition duration-200 ease-ds hover:bg-ink hover:text-page"
+            >
+              <Navigation className="h-3.5 w-3.5" aria-hidden /> {C.kakao}
+            </a>
+          )}
           {hasDetail && (
             <Link
               href={`/poi/${rec.poiId}`}
