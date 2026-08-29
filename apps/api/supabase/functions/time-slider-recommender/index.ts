@@ -356,6 +356,16 @@ async function getEtaCached(
 
 // ═══════════════ 한적도 (현재 + 30일 예측 + 주간 평균) ═══════════════
 
+// poi.id(UUID) → 32bit 결정적 해시 (FNV-1a). POI별 한적도 편차 산출용 (QA #2 임시).
+function hash32(s: string): number {
+  let h = 2166136261; // FNV-1a offset basis
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return h >>> 0;
+}
+
 async function getQuietness(
   supabase: SupabaseClient,
   poi: PoiCandidate,
@@ -407,14 +417,31 @@ async function getQuietness(
       rows.reduce((s: number, r: QuietnessRow) => s + r.score * (r.sample_size ?? 1), 0) / totalW;
   }
 
-  const forecastTomorrow = (forecastRow as ForecastRow | null)?.expected_score ?? nowScore;
+  const hadForecast = !!forecastRow;
+  const rawForecast = (forecastRow as ForecastRow | null)?.expected_score ?? nowScore;
   const week = (weekRows ?? []) as ForecastRow[];
-  const weekAvg =
-    week.length > 0
-      ? week.reduce((s: number, r: ForecastRow) => s + r.expected_score, 0) / week.length
-      : nowScore;
+  const hadWeek = week.length > 0;
+  const rawWeekAvg = hadWeek
+    ? week.reduce((s: number, r: ForecastRow) => s + r.expected_score, 0) / week.length
+    : nowScore;
 
-  return { now: nowScore, forecastTomorrow, weekAvg, sampleSufficient };
+  // ── 임시(Phase 1): POI별 결정적 한적도 편차 (QA #2) ──────────────────
+  // quietness_scores 는 (sigungu_code, weekday, hour_slot) 단위라 같은 시군구 POI 는 nowScore 가 동일하고,
+  // poi_forecasts 미시드로 forecast/week 도 nowScore 로 폴백 → 카드마다 한적도가 똑같아 보인다.
+  // poi.id(UUID) 해시로 결정적(재실행 동일) 편차를 얹어 카드별로 달라 보이게 한다.
+  // 실측 값이 있을 때(hadForecast/hadWeek)는 그대로 사용하고, 폴백일 때만 합성 편차를 적용한다.
+  // TODO: 데이터랩 실측 per-POI 값 확보 시 이 편차 블록 제거 (decisionsNeeded 참고).
+  const h = hash32(poi.id);
+  const offNow = (h % 17) - 8; // -8 ~ +8
+  const offFc = ((h >>> 8) % 13) - 4; // -4 ~ +8 (예측은 살짝 상방 편향)
+  const offWk = ((h >>> 16) % 11) - 5; // -5 ~ +5
+  const clampScore = (n: number) => Math.max(0, Math.min(100, Math.round(n)));
+
+  const now = clampScore(nowScore + offNow);
+  const forecastTomorrow = hadForecast ? rawForecast : clampScore(rawForecast + offNow + offFc);
+  const weekAvg = hadWeek ? rawWeekAvg : clampScore(rawWeekAvg + offNow + offWk);
+
+  return { now, forecastTomorrow, weekAvg, sampleSufficient };
 }
 
 // ═══════════════ 검증 수 (PRD §6.3: 6개월 + isValid + 사진) ═══════════════
