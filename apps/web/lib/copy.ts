@@ -70,6 +70,7 @@ export const COPY = {
       metaSuffix: ' 기준',
     },
     card: {
+      demoTag: '예시 코스',
       rankLabel: '한적',
       quietness: '한적도',
       distance: '거리',
