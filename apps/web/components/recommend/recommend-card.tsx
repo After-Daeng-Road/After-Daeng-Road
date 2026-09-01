@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { ArrowUpRight, Navigation, TrendingUp } from 'lucide-react';
 import { BookmarkButton } from '@/components/poi/bookmark-button';
+import { PoiImageFallback } from '@/components/poi/poi-image-fallback';
 import { COPY } from '@/lib/copy';
 import { kakaoDirectionsUrl, type DeparturePoint } from '@/lib/format';
 import type { Recommendation } from '@/lib/types/recommendation';
@@ -42,7 +43,7 @@ export function RecommendCard({
             className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 ease-ds group-hover:scale-105"
           />
         ) : (
-          <div className="absolute inset-0 bg-surface-2" aria-hidden />
+          <PoiImageFallback type={rec.type} />
         )}
         <span className="absolute left-4 top-4 z-[2] inline-flex items-center gap-[7px] rounded-full bg-white/90 px-3 py-1.5 pl-2.5 text-[#1d1813] backdrop-blur-sm">
           <span className="fig text-[15px] font-medium">{RANK[rank] ?? rank + 1}</span>
@@ -50,11 +51,16 @@ export function RecommendCard({
             {C.rankLabel}
           </span>
         </span>
-        {hasDetail && (
+        {hasDetail ? (
           <BookmarkButton
             poiId={rec.poiId}
             className="absolute right-3.5 top-3.5 z-[2] grid h-[38px] w-[38px] place-items-center rounded-full bg-white/90 text-[#1d1813] backdrop-blur-sm transition hover:scale-105 hover:bg-white disabled:cursor-default disabled:opacity-60"
           />
+        ) : (
+          // 데모 카드 — 상세·북마크·길찾기가 없는 이유를 라벨로 드러낸다
+          <span className="absolute right-3.5 top-3.5 z-[2] rounded-full bg-white/90 px-2.5 py-1 text-[10.5px] font-bold uppercase tracking-[0.1em] text-[#8a7f6f] backdrop-blur-sm">
+            {C.demoTag}
+          </span>
         )}
       </div>
 

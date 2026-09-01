@@ -4,6 +4,7 @@ import { listBookmarks } from '@/lib/actions/bookmarks';
 import { Heart, Leaf, PawPrint, Sprout } from 'lucide-react';
 import { Chip } from '@/components/ui/chip';
 import { LoginRequiredCard } from '@/components/ui/login-required-card';
+import { PoiImageFallback } from '@/components/poi/poi-image-fallback';
 import { COPY } from '@/lib/copy';
 
 // PRD §7.2 [마이펫타임] — 저장한 장소(북마크) 목록 (QA #5)
@@ -54,8 +55,8 @@ export default async function SavedPage() {
                     className="h-12 w-12 flex-shrink-0 rounded-lg object-cover"
                   />
                 ) : (
-                  <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-lg bg-surface-2">
-                    <PawPrint className="h-5 w-5 text-faint" aria-hidden />
+                  <div className="relative h-12 w-12 flex-shrink-0 overflow-hidden rounded-lg">
+                    <PoiImageFallback type={poi.type} iconClassName="h-5 w-5" />
                   </div>
                 )}
                 <div className="min-w-0 flex-1">

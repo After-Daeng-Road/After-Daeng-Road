@@ -70,6 +70,7 @@ export const COPY = {
       metaSuffix: ' 기준',
     },
     card: {
+      demoTag: '예시 코스',
       rankLabel: '한적',
       quietness: '한적도',
       distance: '거리',
@@ -125,6 +126,29 @@ export const COPY = {
     save: '저장',
     saving: '저장 중…',
     close: '닫기',
+  },
+
+  // ───────── 서비스 이용 동의 (PRD §14) ─────────
+  consent: {
+    title: '서비스 이용 동의',
+    desc: '댕로드를 이용하려면 아래 약관에 동의해주세요.',
+    agreeAll: '전체 동의',
+    requiredTag: '필수',
+    optionalTag: '선택',
+    terms: '이용약관 동의',
+    privacy: '개인정보 수집·이용 동의',
+    marketing: '추천 이메일 수신 동의',
+    marketingDesc: '퇴근 후 한적한 펫 외출 코스를 이메일로 받아요.',
+    view: '보기',
+    submit: '동의하고 시작하기',
+    submitting: '저장 중…',
+    requiredError: '필수 항목에 동의해주세요.',
+    saveError: '저장에 실패했어요. 잠시 후 다시 시도해주세요.',
+    signOut: '동의하지 않고 로그아웃',
+    locationTitle: '위치 정보 이용 동의',
+    locationDesc:
+      '현 위치 기반 추천을 위해 위치 정보를 이용해요. 위치는 추천 계산에만 쓰이고 원본 좌표는 저장하지 않아요.',
+    locationAgree: '동의하고 사용',
   },
 
   // ───────── 마이펫타임 ─────────

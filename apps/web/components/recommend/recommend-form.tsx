@@ -1,8 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
+import { useSession } from 'next-auth/react';
 import { ArrowRight, ChevronDown, Clock, Dog, MapPin } from 'lucide-react';
+import { getConsentStatus, recordConsent } from '@/lib/actions/consent';
 import { COPY } from '@/lib/copy';
 import { CHUNGNAM_SEED, TIME_MAX, TIME_MIN, TIME_STEP } from '@/lib/constants';
 import { formatHHmm, radiusFromHours } from '@/lib/format';
@@ -46,7 +48,10 @@ export function RecommendForm({
   loading: boolean;
   onSubmit: (input: RecommendInput) => void;
 }) {
+  const { data: session } = useSession();
   const [departure, setDeparture] = useState(CHUNGNAM_SEED.CHEONAN);
+  const [showLocationConsent, setShowLocationConsent] = useState(false);
+  const locationOk = useRef(false);
   const [selectedPetId, setSelectedPetId] = useState<string | null>(pets[0]?.id ?? null);
   const [startAt, setStartAt] = useState<string>('now');
   // 출발 시각 옵션은 마운트 후 현재 시각 기반으로 채운다 (하이드레이션 안전)
@@ -69,8 +74,7 @@ export function RecommendForm({
     });
   };
 
-  const useCurrentLocation = () => {
-    if (!navigator.geolocation) return;
+  const doGeolocate = () => {
     navigator.geolocation.getCurrentPosition((pos) =>
       setDeparture({
         lat: pos.coords.latitude,
@@ -78,6 +82,30 @@ export function RecommendForm({
         label: C.currentLocation,
       }),
     );
+  };
+
+  // PRD §14 분리 동의 — 로그인 유저는 위치 사용 전 LOCATION 동의 이력을 확인하고,
+  // 없으면 1회 동의 레이어를 띄운다. locationOk 는 세션 내 재조회 방지 캐시.
+  const useCurrentLocation = async () => {
+    if (!navigator.geolocation) return;
+    if (session?.user && !locationOk.current) {
+      const latest = await getConsentStatus();
+      if (!latest.LOCATION?.agreed) {
+        setShowLocationConsent(true);
+        return;
+      }
+      locationOk.current = true;
+    }
+    doGeolocate();
+  };
+
+  const agreeLocation = async () => {
+    const res = await recordConsent({ consents: [{ kind: 'LOCATION', agreed: true }] });
+    if (res.ok) {
+      locationOk.current = true;
+      setShowLocationConsent(false);
+      doGeolocate();
+    }
   };
 
   const selectCls =
@@ -161,6 +189,50 @@ export function RecommendForm({
             </button>
           </div>
         </div>
+
+        {/* 위치 정보 이용 동의 레이어 (PRD §14 분리 동의) — 로그인 유저 최초 1회 */}
+        {showLocationConsent && (
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="location-consent-title"
+            className="fixed inset-0 z-50 grid place-items-center px-4"
+          >
+            <button
+              type="button"
+              aria-label={COPY.common.close}
+              onClick={() => setShowLocationConsent(false)}
+              className="absolute inset-0 bg-black/40"
+            />
+            <div className="relative w-full max-w-sm rounded-card border border-line bg-surface p-5 shadow-lift">
+              <h3
+                id="location-consent-title"
+                className="flex items-center gap-2 text-sm font-bold text-ink"
+              >
+                <MapPin className="h-4 w-4 text-brand" aria-hidden /> {COPY.consent.locationTitle}
+              </h3>
+              <p className="mt-2 text-[13px] leading-relaxed text-muted">
+                {COPY.consent.locationDesc}
+              </p>
+              <div className="mt-4 flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowLocationConsent(false)}
+                  className="flex-1 rounded-field border border-line bg-surface-2 py-2.5 text-xs font-medium text-body"
+                >
+                  {COPY.common.close}
+                </button>
+                <button
+                  type="button"
+                  onClick={agreeLocation}
+                  className="flex-1 rounded-field bg-brand py-2.5 text-xs font-bold text-white transition-colors hover:bg-brand-hover dark:text-[#20160f]"
+                >
+                  {COPY.consent.locationAgree}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* 반려견 */}
         <div>
