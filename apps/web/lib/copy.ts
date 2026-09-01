@@ -184,6 +184,18 @@ export const COPY = {
     loginError: '로그인이 필요해요. 다시 로그인 후 시도해주세요.',
   },
 
+  // ───────── 사진 업로드 (리뷰·방문인증 공통) ─────────
+  upload: {
+    add: '사진 추가',
+    uploading: '업로드 중…',
+    remove: '사진 삭제',
+    invalidType: 'JPG · PNG · WEBP 이미지만 올릴 수 있어요.',
+    tooLarge: '5MB 이하 이미지만 올릴 수 있어요.',
+    failed: '업로드에 실패했어요. 잠시 후 다시 시도해주세요.',
+    loginRequired: '로그인 후 사진을 올릴 수 있어요.',
+    maxReached: (n: number) => `사진은 최대 ${n}장까지 올릴 수 있어요.`,
+  },
+
   // ───────── 펫 민감 건강정보 (PRD §14) ─────────
   petSensitive: {
     title: '민감 건강정보',
@@ -228,15 +240,17 @@ export const COPY = {
     reportFail: '신고 실패',
     bookmarkAdd: '저장하기',
     bookmarkRemove: '저장 취소',
-    reviewForm: {
-      title: '방문 후기 남기기',
-      ratingLabel: '별점',
-      ratingRequired: '별점을 선택해주세요',
-      bodyLabel: '후기 내용',
-      bodyPlaceholder: '다녀온 소감을 남겨주세요 (선택)',
-      submit: '후기 등록',
-      submitting: '등록 중…',
-    },
+    reviewFormTitle: '후기 쓰기',
+    ratingLabel: '별점',
+    ratingRequired: '별점을 선택해주세요',
+    reviewBodyLabel: '후기',
+    reviewBodyPlaceholder: '방문 경험을 자유롭게 남겨주세요 (선택)',
+    reviewPhotosLabel: '사진 (선택)',
+    reviewSubmit: '후기 등록',
+    reviewSubmitting: '등록 중…',
+    reviewSaved: '후기가 등록됐어요',
+    reviewLoginCta: '로그인하고 후기 쓰기',
+    reviewLoginError: '로그인이 필요해요',
   },
 
   // ───────── 추천 이력 ─────────

@@ -3,8 +3,8 @@ import { getPoiDetail } from '@/lib/actions/pois';
 import { isBookmarked } from '@/lib/actions/bookmarks';
 import { BadgeCheck, Leaf, PawPrint, Sprout, TreePine } from 'lucide-react';
 import { Chip } from '@/components/ui/chip';
-import { ReviewList } from '@/components/poi/review-list';
 import { ReviewForm } from '@/components/poi/review-form';
+import { ReviewList } from '@/components/poi/review-list';
 import { KakaoDirectionsButton } from '@/components/poi/kakao-directions-button';
 import { BookmarkButton } from '@/components/poi/bookmark-button';
 import { COPY } from '@/lib/copy';
@@ -107,11 +107,9 @@ export default async function PoiDetailPage({ params }: { params: Promise<{ id: 
         </div>
       </section>
 
-      {/* 방문 후기 (PRD §7.2) — getPoiDetail 이 반환한 공개 리뷰 */}
-      <ReviewList reviews={poi.reviews} />
-
-      {/* 후기 작성 (QA #5) */}
+      {/* 방문 후기 (PRD §7.2) — 작성 폼(createReview) + 공개 리뷰 목록 */}
       <ReviewForm poiId={poi.id} />
+      <ReviewList reviews={poi.reviews} />
 
       <div className="mt-6 flex gap-2">
         <KakaoDirectionsButton name={poi.name} lat={poi.lat} lng={poi.lng} />
