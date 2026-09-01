@@ -4,6 +4,7 @@ import { Analytics } from '@vercel/analytics/next';
 import { GoogleAnalytics } from '@next/third-parties/google';
 import { Providers } from './providers';
 import { SiteHeader } from '@/components/site-header';
+import { ConsentGate } from '@/components/consent-gate';
 import { COPY } from '@/lib/copy';
 import './globals.css';
 
@@ -93,6 +94,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <Providers>
           <SiteHeader />
           {children}
+          {/* PRD §14 — 로그인 유저 필수 동의(TERMS·PRIVACY) 게이트 (QA #4 후속) */}
+          <ConsentGate />
         </Providers>
         <Analytics />
         {process.env.NEXT_PUBLIC_GA_ID && <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_ID} />}
