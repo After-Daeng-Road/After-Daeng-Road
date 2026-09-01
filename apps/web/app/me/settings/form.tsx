@@ -2,11 +2,14 @@
 
 import { useState, useTransition } from 'react';
 import { updateNotifySettings, type NotifySettings } from '@/lib/actions/notify-settings';
+import { recordConsent } from '@/lib/actions/consent';
 import { COPY } from '@/lib/copy';
 import { DAY_LABELS, DAY_ORDER, type DayKey } from '@/lib/constants';
 
 export function NotifySettingsForm({ initial }: { initial: NotifySettings }) {
   const [enabled, setEnabled] = useState(initial.enabled);
+  // 동의 이력(user_consents)엔 수신 여부가 "바뀐" 저장만 기록 — append-only 노이즈 방지 (PRD §14)
+  const [lastSavedEnabled, setLastSavedEnabled] = useState(initial.enabled);
   const [time, setTime] = useState(initial.time);
   const [days, setDays] = useState<DayKey[]>(initial.days as DayKey[]);
   const [message, setMessage] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
@@ -22,6 +25,10 @@ export function NotifySettingsForm({ initial }: { initial: NotifySettings }) {
     startTransition(async () => {
       const res = await updateNotifySettings({ enabled, time, days });
       if (res.ok) {
+        if (enabled !== lastSavedEnabled) {
+          await recordConsent({ consents: [{ kind: 'MARKETING_EMAIL', agreed: enabled }] });
+          setLastSavedEnabled(enabled);
+        }
         setMessage({ type: 'ok', text: COPY.settings.saved });
       } else {
         setMessage({ type: 'err', text: res.error });

@@ -144,6 +144,10 @@ export const COPY = {
     requiredError: '필수 항목에 동의해주세요.',
     saveError: '저장에 실패했어요. 잠시 후 다시 시도해주세요.',
     signOut: '동의하지 않고 로그아웃',
+    locationTitle: '위치 정보 이용 동의',
+    locationDesc:
+      '현 위치 기반 추천을 위해 위치 정보를 이용해요. 위치는 추천 계산에만 쓰이고 원본 좌표는 저장하지 않아요.',
+    locationAgree: '동의하고 사용',
   },
 
   // ───────── 마이펫타임 ─────────
