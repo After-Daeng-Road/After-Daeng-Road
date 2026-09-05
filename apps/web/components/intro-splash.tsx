@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { Play, SkipForward } from 'lucide-react';
+import { Play } from 'lucide-react';
 import { COPY } from '@/lib/copy';
 
 // 홈 진입 인트로 영상 스플래시 — 메인 페이지 위 풀스크린 오버레이.
@@ -20,7 +20,6 @@ export function IntroSplash() {
   const [visible, setVisible] = useState(false);
   const [needsTap, setNeedsTap] = useState(false);
   const [fading, setFading] = useState(false);
-  const [hideToday, setHideToday] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
 
   // 마운트 후 노출 판단 (SSR 하이드레이션 안전) — 오늘 숨김이면 렌더 자체를 안 함
@@ -59,15 +58,14 @@ export function IntroSplash() {
     videoRef.current?.play().catch(() => setNeedsTap(true));
   };
 
-  const toggleHideToday = () => {
-    const next = !hideToday;
-    setHideToday(next);
+  // '오늘 하루 보지 않기' — 날짜 저장 후 즉시 닫기
+  const hideTodayAndClose = () => {
     try {
-      if (next) localStorage.setItem(HIDE_KEY, todayStr());
-      else localStorage.removeItem(HIDE_KEY);
+      localStorage.setItem(HIDE_KEY, todayStr());
     } catch {
-      /* 저장 실패 시 이번 진입만 반영 */
+      /* 저장 실패 시 이번 진입만 닫힘 */
     }
+    close();
   };
 
   return (
@@ -79,46 +77,55 @@ export function IntroSplash() {
         fading ? 'pointer-events-none opacity-0' : 'opacity-100'
       }`}
     >
-      <video
-        ref={videoRef}
-        src={VIDEO_SRC}
-        poster={POSTER_SRC}
-        playsInline
-        preload="auto"
-        onEnded={close}
-        className="h-full w-full object-contain"
-      />
+      {/* 영상 — 꽉 채우지 않고 여백 있는 중앙 배치 */}
+      <div className="grid h-full w-full place-items-center px-5 py-14 sm:px-10 sm:py-16">
+        <video
+          ref={videoRef}
+          src={VIDEO_SRC}
+          poster={POSTER_SRC}
+          playsInline
+          preload="auto"
+          onEnded={close}
+          className="max-h-full w-auto max-w-full rounded-2xl shadow-lift"
+        />
+      </div>
 
-      {/* 자동재생 차단 시 — 입장 버튼 (클릭 제스처로 소리 재생) */}
+      {/* 자동재생 차단 시 — 브랜드 로고 + 플레이 (클릭 제스처로 소리 재생) */}
       {needsTap && (
         <button
           type="button"
           onClick={enter}
-          className="absolute inset-0 grid place-items-center bg-black/40"
+          aria-label={C.enter}
+          className="group absolute inset-0 grid place-items-center bg-black/50"
         >
-          <span className="inline-flex items-center gap-2 rounded-full bg-white/95 px-7 py-3.5 text-[15px] font-bold text-[#1d1813] shadow-lift transition hover:scale-105">
-            <Play className="h-4 w-4 fill-current" aria-hidden /> {C.enter}
+          <span className="flex flex-col items-center gap-3">
+            <span
+              aria-hidden
+              className="inline-block h-[30px] w-[30px] bg-[url('/brand/daengroad-favicon-ivory.svg')] bg-contain bg-center bg-no-repeat dark:bg-[url('/brand/daengroad-favicon-dark.svg')]"
+            />
+            <Play
+              className="h-6 w-6 fill-white/90 text-white/90 transition-transform group-hover:scale-110"
+              aria-hidden
+            />
           </span>
         </button>
       )}
 
-      {/* 하단 컨트롤 — 오늘 하루 보지 않기 · 건너뛰기 */}
-      <div className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-3 bg-gradient-to-t from-black/70 to-transparent px-5 pb-[max(20px,env(safe-area-inset-bottom))] pt-10">
-        <label className="inline-flex cursor-pointer items-center gap-2 text-[13px] text-white/85">
-          <input
-            type="checkbox"
-            checked={hideToday}
-            onChange={toggleHideToday}
-            className="h-4 w-4 accent-white"
-          />
+      {/* 하단 컨트롤 — 텍스트 버튼 (보더 없음, 호버) */}
+      <div className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-3 px-6 pb-[max(20px,env(safe-area-inset-bottom))] pt-8">
+        <button
+          type="button"
+          onClick={hideTodayAndClose}
+          className="text-[13px] text-white/60 transition-colors hover:text-white"
+        >
           {C.hideToday}
-        </label>
+        </button>
         <button
           type="button"
           onClick={close}
-          className="inline-flex items-center gap-1.5 rounded-full border border-white/35 px-4 py-2 text-[13px] font-medium text-white/95 backdrop-blur-sm transition-colors hover:bg-white/15"
+          className="text-[13px] text-white/60 transition-colors hover:text-white"
         >
-          {C.skip} <SkipForward className="h-3.5 w-3.5" aria-hidden />
+          {C.skip}
         </button>
       </div>
     </div>
