@@ -3,7 +3,6 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { FcGoogle } from 'react-icons/fc';
 import { RiKakaoTalkFill } from 'react-icons/ri';
-import { SiNaver } from 'react-icons/si';
 import { BrandMark } from '@/components/brand-mark';
 import { COPY } from '@/lib/copy';
 
@@ -34,7 +33,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Search
         >
           <button
             type="submit"
-            className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-field border border-line bg-surface px-4 py-3 text-sm font-medium text-body transition-colors hover:bg-surface-2"
+            className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-field border border-line bg-surface px-4 py-3 text-sm font-medium text-body transition-colors hover:bg-surface-2 dark:border-transparent dark:bg-white dark:text-black dark:hover:bg-white/90"
           >
             <FcGoogle className="h-5 w-5" aria-hidden /> {COPY.login.google}
           </button>
@@ -53,20 +52,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Search
             <RiKakaoTalkFill className="h-5 w-5" aria-hidden /> {COPY.login.kakao}
           </button>
         </form>
-
-        <form
-          action={async () => {
-            'use server';
-            await signIn('naver', { redirectTo: callbackUrl });
-          }}
-        >
-          <button
-            type="submit"
-            className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-field bg-naver px-4 py-3 text-sm font-medium text-white transition-opacity hover:opacity-90"
-          >
-            <SiNaver className="h-3.5 w-3.5" aria-hidden /> {COPY.login.naver}
-          </button>
-        </form>
+        {/* 네이버 로그인 — UI 에서만 숨김 (프로바이더 설정은 auth.config 에 유지, 재노출 시 폼만 복원) */}
       </div>
 
       {params.error && (
