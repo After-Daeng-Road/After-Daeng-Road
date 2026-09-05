@@ -110,9 +110,13 @@ model User {
   emailNotifyTime    String    @default("18:00") @map("email_notify_time")
   emailNotifyDays    String[]  @default(["MON", "TUE", "WED", "THU", "FRI"]) @map("email_notify_days")
   role               String    @default("user")
-  // 탈퇴 시각. 개인정보보호법 §21 — 즉시 식별정보를 지우고 30일 뒤 행을 완전 파기한다.
-  // 완전 삭제를 즉시 하지 않는 이유: 전 관계가 onDelete:Cascade 라 공개 후기까지 사라진다.
-  // 탈퇴 처리는 식별자(email·provider id·닉네임·좌표)를 비우고 이 값을 채운다.
+  // 탈퇴 시각. 탈퇴 처리는 식별자(email·provider id·닉네임·주소·좌표)를 비우고 이 값을 채운다.
+  //
+  // 행 자체는 지우지 않는다. 이 모델을 참조하는 FK 8개가 전부 onDelete: Cascade 라
+  // 행을 지우면 공개 후기·사장님 답글·벤더 등록이 연쇄 삭제된다.
+  // 식별자를 비우고 나면 남는 컬럼이 개인을 식별하지 못하므로 §21 파기 대상이 아니다.
+  //
+  // 30일 뒤 지우는 것은 user_consents 의 ip_address·user_agent 다 (0019).
   deletedAt          DateTime? @map("deleted_at")
   createdAt          DateTime  @default(now()) @map("created_at")
   updatedAt          DateTime  @updatedAt @map("updated_at")
