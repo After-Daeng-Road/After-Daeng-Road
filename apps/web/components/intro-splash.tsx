@@ -93,14 +93,14 @@ export function IntroSplash() {
             <button
               type="button"
               onClick={hideTodayAndClose}
-              className="text-[13px] text-white/60 transition-colors hover:text-white"
+              className="text-[15px] text-black transition-opacity hover:opacity-60"
             >
               {C.hideToday}
             </button>
             <button
               type="button"
               onClick={close}
-              className="text-[13px] text-white/60 transition-colors hover:text-white"
+              className="text-[15px] text-black transition-opacity hover:opacity-60"
             >
               {C.skip}
             </button>
@@ -115,24 +115,15 @@ export function IntroSplash() {
             type="button"
             onClick={enter}
             aria-label={C.enter}
-            className="group flex flex-col items-center gap-5"
+            className="group relative grid h-[76px] w-[76px] place-items-center"
           >
+            {/* 은은한 펄스 링 */}
             <span
               aria-hidden
-              className="inline-block h-10 w-10 bg-[url('/brand/daengroad-favicon-dark.svg')] bg-contain bg-center bg-no-repeat opacity-90"
+              className="absolute inset-0 animate-ping rounded-full bg-white/10 [animation-duration:2600ms]"
             />
-            <span className="relative grid h-[76px] w-[76px] place-items-center">
-              {/* 은은한 펄스 링 */}
-              <span
-                aria-hidden
-                className="absolute inset-0 animate-ping rounded-full bg-white/10 [animation-duration:2600ms]"
-              />
-              <span className="relative grid h-full w-full place-items-center rounded-full bg-white/10 ring-1 ring-white/30 backdrop-blur-md transition duration-300 ease-ds group-hover:scale-105 group-hover:bg-white/20 group-hover:ring-white/50">
-                <Play className="ml-1 h-7 w-7 fill-white text-white" aria-hidden />
-              </span>
-            </span>
-            <span className="text-[12.5px] font-medium tracking-[0.14em] text-white/70 transition-colors group-hover:text-white">
-              {C.enter}
+            <span className="relative grid h-full w-full place-items-center rounded-full bg-white/10 ring-1 ring-white/30 backdrop-blur-md transition duration-300 ease-ds group-hover:scale-105 group-hover:bg-white/20 group-hover:ring-white/50">
+              <Play className="ml-1 h-7 w-7 fill-white text-white" aria-hidden />
             </span>
           </button>
         </div>
