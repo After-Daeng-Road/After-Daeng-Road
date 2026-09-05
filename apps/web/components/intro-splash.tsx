@@ -80,54 +80,56 @@ export function IntroSplash() {
       {/* 영상 + 하단 컨트롤 — 여백 있는 중앙 배치, 컨트롤은 영상 하단 오른쪽 */}
       <div className="grid h-full w-full place-items-center px-5 py-10 sm:px-10 sm:py-14">
         <div className="flex max-h-full max-w-full flex-col">
-          <video
-            ref={videoRef}
-            src={VIDEO_SRC}
-            poster={POSTER_SRC}
-            playsInline
-            preload="auto"
-            onEnded={close}
-            className="min-h-0 w-auto max-w-full flex-1 object-contain shadow-lift"
-          />
-          <div className="mt-3 flex items-center justify-end gap-5">
+          {/* 영상 — 재생 대기 오버레이는 영상 영역만 덮어, 아래 컨트롤은 항상 클릭 가능 */}
+          <div className="relative min-h-0 flex-1">
+            <video
+              ref={videoRef}
+              src={VIDEO_SRC}
+              poster={POSTER_SRC}
+              playsInline
+              preload="auto"
+              onEnded={close}
+              className="h-full w-auto max-w-full object-contain shadow-lift"
+            />
+            {/* 자동재생 차단 시 — 글래스 플레이 버튼 (클릭 제스처로 소리 재생) */}
+            {needsTap && (
+              <div className="absolute inset-0 grid place-items-center bg-black/60 backdrop-blur-[3px]">
+                <button
+                  type="button"
+                  onClick={enter}
+                  aria-label={C.enter}
+                  className="group relative grid h-[76px] w-[76px] place-items-center"
+                >
+                  {/* 은은한 펄스 링 */}
+                  <span
+                    aria-hidden
+                    className="absolute inset-0 animate-ping rounded-full bg-white/10 [animation-duration:2600ms]"
+                  />
+                  <span className="relative grid h-full w-full place-items-center rounded-full bg-white/10 ring-1 ring-white/30 backdrop-blur-md transition duration-300 ease-ds group-hover:scale-105 group-hover:bg-white/20 group-hover:ring-white/50">
+                    <Play className="ml-1 h-7 w-7 fill-white text-white" aria-hidden />
+                  </span>
+                </button>
+              </div>
+            )}
+          </div>
+          <div className="mt-3 flex items-center justify-end gap-6">
             <button
               type="button"
               onClick={hideTodayAndClose}
-              className="text-[15px] text-white/85 transition-colors hover:text-brand-hover"
+              className="text-[35px] text-white/85 transition-colors hover:text-brand-hover"
             >
               {C.hideToday}
             </button>
             <button
               type="button"
               onClick={close}
-              className="text-[15px] text-white/85 transition-colors hover:text-brand-hover"
+              className="text-[35px] text-white/85 transition-colors hover:text-brand-hover"
             >
               {C.skip}
             </button>
           </div>
         </div>
       </div>
-
-      {/* 자동재생 차단 시 — 글래스 플레이 버튼 (클릭 제스처로 소리 재생) */}
-      {needsTap && (
-        <div className="absolute inset-0 grid place-items-center bg-black/60 backdrop-blur-[3px]">
-          <button
-            type="button"
-            onClick={enter}
-            aria-label={C.enter}
-            className="group relative grid h-[76px] w-[76px] place-items-center"
-          >
-            {/* 은은한 펄스 링 */}
-            <span
-              aria-hidden
-              className="absolute inset-0 animate-ping rounded-full bg-white/10 [animation-duration:2600ms]"
-            />
-            <span className="relative grid h-full w-full place-items-center rounded-full bg-white/10 ring-1 ring-white/30 backdrop-blur-md transition duration-300 ease-ds group-hover:scale-105 group-hover:bg-white/20 group-hover:ring-white/50">
-              <Play className="ml-1 h-7 w-7 fill-white text-white" aria-hidden />
-            </span>
-          </button>
-        </div>
-      )}
     </div>
   );
 }
