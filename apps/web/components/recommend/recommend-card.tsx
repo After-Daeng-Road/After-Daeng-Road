@@ -3,7 +3,7 @@ import { ArrowUpRight, Navigation, TrendingUp } from 'lucide-react';
 import { BookmarkButton } from '@/components/poi/bookmark-button';
 import { PoiImageFallback } from '@/components/poi/poi-image-fallback';
 import { COPY } from '@/lib/copy';
-import { kakaoDirectionsUrl, type DeparturePoint } from '@/lib/format';
+import { kakaoDirectionsUrl, stripHtmlText, type DeparturePoint } from '@/lib/format';
 import type { Recommendation } from '@/lib/types/recommendation';
 
 // 추천 결과 — 사진-좌 / 본문-우 매거진 카드 (DESIGN_SYSTEM §9.1)
@@ -40,13 +40,15 @@ export function RecommendCard({
             src={rec.imageUrl}
             alt=""
             loading="lazy"
-            className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 ease-ds group-hover:scale-105"
+            className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 ease-ds group-hover:scale-110"
           />
         ) : (
           <PoiImageFallback type={rec.type} />
         )}
         <span className="absolute left-4 top-4 z-[2] inline-flex items-center gap-[7px] rounded-full bg-white/90 px-3 py-1.5 pl-2.5 text-[#1d1813] backdrop-blur-sm">
-          <span className="fig text-[15px] font-medium">{RANK[rank] ?? rank + 1}</span>
+          <span className="fig text-[15px] font-medium">
+            {RANK[rank] ?? String(rank + 1).padStart(2, '0')}
+          </span>
           <span className="text-[10.5px] font-bold uppercase tracking-[0.14em] text-[#8a7f6f]">
             {C.rankLabel}
           </span>
@@ -78,17 +80,19 @@ export function RecommendCard({
             {rec.name}
           </span>
         )}
-        <div className="mt-1.5 flex min-w-0 items-center gap-1.5 text-[13px] text-muted">
-          <span className="shrink-0">{rec.address}</span>
-          <span className="h-[3px] w-[3px] shrink-0 rounded-full bg-faint" aria-hidden />
-          <span className="shrink-0">{rec.sourceLabel}</span>
-          {/* 운영시간 원문 (TourAPI detailIntro2). "기상여건에 따라…" 같은 안내문도 있어 잘라 쓴다 */}
-          {rec.openHoursText && (
-            <>
-              <span className="h-[3px] w-[3px] shrink-0 rounded-full bg-faint" aria-hidden />
-              <span className="truncate">{rec.openHoursText}</span>
-            </>
-          )}
+        {/* 주소 / (다음 줄) 출처 라벨 · 운영시간 */}
+        <div className="mt-1.5 min-w-0 text-[13px] text-muted">
+          <div className="truncate">{rec.address}</div>
+          <div className="mt-0.5 flex min-w-0 items-center gap-1.5">
+            <span className="shrink-0">{rec.sourceLabel}</span>
+            {/* 운영시간 원문 (TourAPI detailIntro2). "기상여건에 따라…" 같은 안내문도 있어 잘라 쓴다 */}
+            {rec.openHoursText && (
+              <>
+                <span className="h-[3px] w-[3px] shrink-0 rounded-full bg-faint" aria-hidden />
+                <span className="truncate">{stripHtmlText(rec.openHoursText)}</span>
+              </>
+            )}
+          </div>
         </div>
 
         {/* 스탯 행 — 세리프 누메랄 */}

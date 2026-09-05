@@ -12,7 +12,12 @@ import { EmailCta } from '@/components/recommend/email-cta';
 import { FloatingBadgeGuide } from '@/components/recommend/floating-badge-guide';
 import { RecommendForm } from '@/components/recommend/recommend-form';
 import { RecommendResults } from '@/components/recommend/recommend-results';
-import type { Pet, Recommendation, RecommendInput } from '@/lib/types/recommendation';
+import type {
+  Pet,
+  Recommendation,
+  RecommendInput,
+  RecommendResponse,
+} from '@/lib/types/recommendation';
 
 // ───────── 스키마 ─────────
 
@@ -39,6 +44,11 @@ export function HomeRecommend({ pets }: { pets: Pet[] }) {
   const [departure, setDeparture] = useState<RecommendInput['departure'] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  // 더보기(서버 페이지네이션) — hasMore 는 서버 응답, lastInput 은 첫 검색 조건.
+  // 더보기 요청은 startAt·departure 를 첫 검색 값 그대로 재사용해야 순위가 흔들리지 않는다 (PR #30).
+  const [hasMore, setHasMore] = useState(false);
+  const [lastInput, setLastInput] = useState<RecommendInput | null>(null);
+  const [loadingMore, setLoadingMore] = useState(false);
 
   // 상세보기 이동 후 뒤로 오면 홈이 언마운트→재마운트되며 결과가 사라지는 문제 해결.
   // 마지막 추천 결과·시간을 sessionStorage 에 유지했다가 복원한다 (SSR 하이드레이션 불일치 방지 위해 effect 에서).
@@ -50,52 +60,100 @@ export function HomeRecommend({ pets }: { pets: Pet[] }) {
         results?: Recommendation[];
         timeHours?: number;
         departure?: RecommendInput['departure'];
+        hasMore?: boolean;
+        lastInput?: RecommendInput;
       };
       if (parsed.results) setResults(parsed.results);
       if (typeof parsed.timeHours === 'number') setTimeHours(parsed.timeHours);
       if (parsed.departure) setDeparture(parsed.departure);
+      if (typeof parsed.hasMore === 'boolean') setHasMore(parsed.hasMore);
+      if (parsed.lastInput) setLastInput(parsed.lastInput);
     } catch {
       /* 손상된 값이면 무시 */
     }
   }, []);
 
+  const persist = (state: {
+    results: Recommendation[];
+    timeHours: number;
+    departure: RecommendInput['departure'];
+    hasMore: boolean;
+    lastInput: RecommendInput;
+  }) => {
+    try {
+      sessionStorage.setItem('daeng:recommend', JSON.stringify(state));
+    } catch {
+      /* 저장 실패는 치명적 아님 */
+    }
+  };
+
+  const callRecommend = async (body: RecommendInput & { limit?: number; offset?: number }) => {
+    const res = await fetch('/api/recommend', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (res.status === 429) throw new Error(COPY.home.errors.rateLimit);
+    if (!res.ok) throw new Error(COPY.home.errors.apiFail(res.status));
+    return (await res.json()) as RecommendResponse;
+  };
+
+  // 첫 검색 — limit 생략(서버 기본 3, PRD §6.1 "추천 3곳")
   const handleRecommend = (input: RecommendInput) => {
     setError(null);
     setDeparture(input.departure);
     startTransition(async () => {
       try {
         RecommendInputSchema.parse(input);
-
-        const res = await fetch('/api/recommend', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(input),
-        });
-
-        if (res.status === 429) {
-          throw new Error(COPY.home.errors.rateLimit);
-        }
-        if (!res.ok) {
-          throw new Error(COPY.home.errors.apiFail(res.status));
-        }
-        const data: { recommendations: Recommendation[] } = await res.json();
+        const data = await callRecommend(input);
         setResults(data.recommendations);
-        try {
-          sessionStorage.setItem(
-            'daeng:recommend',
-            JSON.stringify({
-              results: data.recommendations,
-              timeHours: input.timeHours,
-              departure: input.departure,
-            }),
-          );
-        } catch {
-          /* 저장 실패는 치명적 아님 */
-        }
+        setHasMore(data.hasMore);
+        setLastInput(input);
+        persist({
+          results: data.recommendations,
+          timeHours: input.timeHours,
+          departure: input.departure,
+          hasMore: data.hasMore,
+          lastInput: input,
+        });
       } catch (e) {
         setError(e instanceof Error ? e.message : COPY.home.errors.unknown);
       }
     });
+  };
+
+  // 다음 페이지 10개 로드 — offset+limit ≤ 100 서버 제약이라 마지막 페이지는 잘라서 요청.
+  // 성공 여부를 반환해 결과 영역이 페이지 이동을 확정할 수 있게 한다.
+  const handleLoadMore = async (): Promise<boolean> => {
+    if (!lastInput || !results || loadingMore) return false;
+    const offset = results.length;
+    const limit = Math.min(10, 100 - offset);
+    if (limit <= 0) {
+      setHasMore(false);
+      return false;
+    }
+    setLoadingMore(true);
+    setError(null);
+    try {
+      const data = await callRecommend({ ...lastInput, offset, limit });
+      const merged = [...results, ...data.recommendations];
+      const more = data.hasMore && offset + data.recommendations.length < 100;
+      setResults(merged);
+      setHasMore(more);
+      persist({
+        results: merged,
+        timeHours: lastInput.timeHours,
+        departure: lastInput.departure,
+        hasMore: more,
+        lastInput,
+      });
+      return data.recommendations.length > 0;
+    } catch (e) {
+      setError(e instanceof Error ? e.message : COPY.home.errors.unknown);
+      return false;
+    } finally {
+      setLoadingMore(false);
+    }
   };
 
   return (
@@ -155,6 +213,9 @@ export function HomeRecommend({ pets }: { pets: Pet[] }) {
           timeHours={timeHours}
           departure={departure ?? undefined}
           onRelax={() => setTimeHours(Math.min(TIME_MAX, timeHours + 1))}
+          hasMore={hasMore}
+          loadingMore={loadingMore}
+          onLoadMore={handleLoadMore}
         />
 
         {/* ═════ 이메일 밴드 ═════ */}
