@@ -37,6 +37,7 @@ import { z } from 'zod';
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
+import { DELETE_CONFIRM_TEXT } from '@/lib/constants';
 
 const PHOTO_BUCKET = 'pet-photos';
 
@@ -46,9 +47,6 @@ const DeleteAccountSchema = z.object({
 });
 
 export type DeleteAccountInput = z.infer<typeof DeleteAccountSchema>;
-
-/** 화면과 서버가 같은 문구를 쓰도록 여기서 정의한다 */
-export const DELETE_CONFIRM_TEXT = '탈퇴합니다';
 
 /**
  * 후기에 첨부된 사진은 지우지 않는다.

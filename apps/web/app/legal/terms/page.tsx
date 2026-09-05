@@ -1,6 +1,6 @@
 import { COPY } from '@/lib/copy';
 
-// PRD §14.2 약관 v1.1 — 현행 기능 전수 반영 (2026-09-05). 정식 본문은 법무 검토 후 확정.
+// PRD §14.2 약관 v1.2 — 회원 탈퇴 조항 + 일반 사용자 언어로 순화 (2026-09-05). 정식 본문은 법무 검토 후 확정.
 
 export const metadata = { title: COPY.common.terms };
 
@@ -8,7 +8,7 @@ export default function TermsPage() {
   return (
     <main className="mx-auto max-w-2xl px-4 py-10">
       <h1 className="mb-2 text-2xl font-bold text-ink">{COPY.common.terms}</h1>
-      <p className="mb-6 text-xs text-muted">최종 개정 2026-09-05 · v1.1</p>
+      <p className="mb-6 text-xs text-muted">최종 개정 2026-09-05 · v1.2</p>
 
       <article className="prose prose-sm max-w-none space-y-4 text-sm text-body">
         <section>
@@ -35,7 +35,7 @@ export default function TermsPage() {
         <section>
           <h2 className="font-semibold text-ink">제3조 (회원가입 및 인증)</h2>
           <p>
-            카카오·구글·네이버 소셜 계정(OAuth)으로 가입하며, 가입 절차에서 본 약관과
+            카카오·구글 등 소셜 계정으로 간편하게 가입하며, 가입 절차에서 본 약관과
             개인정보처리방침에 대한 필수 동의를 받습니다. 약관이 개정되면 재동의를 요청할 수
             있습니다. 동의 이력은 시점·버전과 함께 보관됩니다.
           </p>
@@ -52,7 +52,8 @@ export default function TermsPage() {
           <p>
             현 위치 기반 추천은 별도의 위치 정보 이용 동의 후 제공됩니다. 출발지 좌표는 추천 계산에
             사용된 뒤 24시간 내 평문이 무효화되고, 암호화된 형태로 90일까지 보관 후 영구 삭제됩니다.
-            방문 인증 사진의 위치 메타데이터(EXIF)는 인증 유효성 확인 목적으로만 사용됩니다.
+            방문 인증 사진에 담긴 촬영 위치·시각 정보는 실제 방문 여부를 확인하는 목적으로만
+            사용됩니다.
           </p>
         </section>
         <section>
@@ -72,12 +73,23 @@ export default function TermsPage() {
         <section>
           <h2 className="font-semibold text-ink">제7조 (이용 제한)</h2>
           <p>
-            비정상적 대량 호출은 요청 제한(Rate Limit)으로 차단될 수 있으며, 약관 위반·어뷰징
-            행위에는 서비스 이용 제한 조치가 취해질 수 있습니다.
+            비정상적인 대량 요청은 자동으로 차단될 수 있으며, 약관 위반·어뷰징 행위에는 서비스 이용
+            제한 조치가 취해질 수 있습니다.
           </p>
         </section>
         <section>
-          <h2 className="font-semibold text-ink">제8조 (면책)</h2>
+          <h2 className="font-semibold text-ink">제8조 (회원 탈퇴)</h2>
+          <p>
+            회원은 마이펫타임 하단의 {"'회원탈퇴'"}에서 언제든 탈퇴할 수 있습니다. 탈퇴 시
+            이메일·소셜 계정 연결·닉네임·반려견 정보·북마크·추천 이력·방문 인증과 그 사진이 즉시
+            삭제됩니다. 다만 작성한 후기와 첨부 사진은 다른 이용자를 위한 공개 게시물로서{' '}
+            <strong>작성자 정보가 제거된 익명 상태로 유지</strong>되며, 후기까지 지우고 싶다면 탈퇴
+            전에 {'"내가 쓴 후기"'}에서 직접 삭제하면 됩니다. 동의 기록에 남은 IP·접속 기기 정보는
+            30일 후 삭제되며, 탈퇴 후 같은 소셜 계정으로 재가입할 수 있습니다.
+          </p>
+        </section>
+        <section>
+          <h2 className="font-semibold text-ink">제9조 (면책)</h2>
           <p>
             서비스가 제공하는 한적도·운영시간 등 정보는 공공 데이터와 추정 모델에 기반한 참고
             정보로, 실제와 차이가 있을 수 있습니다. 방문 전 현장 확인을 권장하며, 정보 오차로 인한
@@ -85,7 +97,7 @@ export default function TermsPage() {
           </p>
         </section>
         <section>
-          <h2 className="font-semibold text-ink">제9조 (약관 변경 및 준거법)</h2>
+          <h2 className="font-semibold text-ink">제10조 (약관 변경 및 준거법)</h2>
           <p>
             약관 변경 시 서비스 내 공지하며, 중요한 변경은 재동의를 받습니다. 본 약관은 대한민국
             법률을 따릅니다.

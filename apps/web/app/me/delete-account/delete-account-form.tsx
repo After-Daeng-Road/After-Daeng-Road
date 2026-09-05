@@ -6,7 +6,8 @@
 
 import { useState, useTransition } from 'react';
 import { signOut } from 'next-auth/react';
-import { deleteAccount, DELETE_CONFIRM_TEXT } from '@/lib/actions/account';
+import { deleteAccount } from '@/lib/actions/account';
+import { DELETE_CONFIRM_TEXT } from '@/lib/constants';
 import { COPY } from '@/lib/copy';
 
 const C = COPY.account;
@@ -58,7 +59,10 @@ export function DeleteAccountForm() {
   }
 
   return (
-    <section className="mt-10 rounded-card border border-danger-soft bg-surface p-5">
+    <section
+      id="delete-account"
+      className="mt-10 scroll-mt-20 rounded-card border border-danger-soft bg-surface p-5"
+    >
       <h2 className="text-sm font-semibold text-danger">{C.dangerTitle}</h2>
       <p className="mt-2 text-xs leading-relaxed text-muted">{C.dangerDesc}</p>
       <p className="mt-1.5 text-xs leading-relaxed text-faint">{C.keepNotice}</p>

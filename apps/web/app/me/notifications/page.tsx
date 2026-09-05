@@ -1,7 +1,6 @@
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { NotifySettingsForm } from './form';
-import { DeleteAccountForm } from './delete-account-form';
 import { COPY } from '@/lib/copy';
 import { DEFAULT_NOTIFY_DAYS, DEFAULT_NOTIFY_TIME, type DayKey } from '@/lib/constants';
 
@@ -27,9 +26,6 @@ export default async function SettingsPage() {
           days: (user?.emailNotifyDays ?? DEFAULT_NOTIFY_DAYS) as DayKey[],
         }}
       />
-
-      {/* 회원 탈퇴 — 개인정보처리방침이 고지한 삭제 요구권 이행 수단 */}
-      <DeleteAccountForm />
     </main>
   );
 }
