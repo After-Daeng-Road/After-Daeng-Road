@@ -2,13 +2,7 @@
 // 근거: 2026-08-29 실데이터 프로브 (KorService2/areaBasedList2 + detailPetTour2)
 
 export type PoiTypeStr =
-  | 'CAFE'
-  | 'RESTAURANT'
-  | 'TRAIL'
-  | 'PARK'
-  | 'ATTRACTION'
-  | 'ACCOMMODATION'
-  | 'REST_AREA';
+  'CAFE' | 'RESTAURANT' | 'TRAIL' | 'PARK' | 'ATTRACTION' | 'ACCOMMODATION' | 'REST_AREA';
 
 export const LDONG_REGN_CD = 44; // 충청남도 법정동 시도코드
 
@@ -172,4 +166,52 @@ export function geohash7(lat: number, lng: number): string {
     }
   }
   return hash;
+}
+
+// ─── detailCommon2 / detailImage2 응답 정제 ───
+// 근거: 2026-09-05 KorPetTourService2 실응답. homepage 는 앵커태그·순수URL·스킴없는주소
+// 세 형태로 오고, overview 에는 <br> 과 HTML 엔티티가 섞인다.
+
+const HTML_ENTITIES: Record<string, string> = {
+  '&lt;': '<',
+  '&gt;': '>',
+  '&quot;': '"',
+  '&#39;': "'",
+  '&apos;': "'",
+  '&nbsp;': ' ',
+};
+
+/** detailCommon2 의 homepage → 링크로 쓸 수 있는 URL (없으면 null) */
+export function parseHomepage(raw: string | undefined | null): string | null {
+  const s = (raw ?? '').trim();
+  if (!s) return null;
+
+  // <a href="...">텍스트</a> 형태면 href 를 쓴다 (표시 텍스트는 한글 도메인이라 링크로 부적합)
+  const href = s.match(/<a[^>]*\shref=["']([^"']*)["']/i)?.[1]?.trim();
+  const url = href !== undefined ? href : s.replace(/<[^>]*>/g, '').trim();
+  if (!url) return null;
+
+  return /^https?:\/\//i.test(url) ? url : `https://${url}`;
+}
+
+/** detailCommon2 의 overview → 평문 소개글 (없으면 null) */
+export function cleanOverview(raw: string | undefined | null): string | null {
+  let s = (raw ?? '').replace(/<[^>]*>/g, ' ');
+  for (const [ent, ch] of Object.entries(HTML_ENTITIES)) s = s.split(ent).join(ch);
+  s = s.split('&amp;').join('&'); // &amp; 는 마지막 (이중 이스케이프 방지)
+  s = s.replace(/\s+/g, ' ').trim();
+  return s || null;
+}
+
+/** 대표이미지(firstimage) + 상세이미지(detailImage2) 병합. http→https 정규화 후 중복 제거 */
+export function mergeImageUrls(existing: string[], extra: string[]): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const raw of [...existing, ...extra]) {
+    const url = (raw ?? '').trim().replace(/^http:\/\//i, 'https://');
+    if (!url || seen.has(url)) continue;
+    seen.add(url);
+    out.push(url);
+  }
+  return out;
 }

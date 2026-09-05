@@ -78,7 +78,9 @@ export const openApiDocument = {
     {
       name: 'TourAPI (외부 데이터소스)',
       description:
-        '한국관광공사 OpenAPI(data.go.kr B551011). 서버(tour-api-etl / seed:tourapi)만 호출하는 원천 데이터 — 충남 4개 시 POI·펫동반 정보의 출처. 프론트 직접 호출 대상 아님(참고용).',
+        '한국관광공사 OpenAPI(data.go.kr B551011). 서버만 호출하는 원천 데이터 — 충남 4개 시 POI·펫동반 정보의 출처. 프론트 직접 호출 대상 아님(참고용).\n\n' +
+        '· `KorService2` — 국문 관광정보(15101578). POI 950건 적재: `tour-api-etl` / `seed:tourapi`\n' +
+        '· `KorPetTourService2` — 반려동물 동반여행(15135102). 펫 83건 플래그·상세: `seed:pet-realdata`',
     },
   ],
   paths: {
@@ -582,10 +584,15 @@ export const openApiDocument = {
         summary: '반려동물 동반여행 상세 (펫 오버레이)',
         operationId: 'tourDetailPetTour2',
         description: [
-          '`contentId` 로 반려동물 동반 정보를 조회. 데이터가 있으면 그 POI 는 **펫동반 가능**(`pois.petAllowed=true`).',
+          '`contentId` 로 반려동물 동반 정보를 조회. 동반유형·필요사항·주의사항을 반환한다.',
           '',
-          '⚠️ 예전 경로 `KorPetTourService/detailPetTour` 는 **404** — **`KorService2/detailPetTour2`** 가 정답.',
-          '충남 4개 시 펫등록률 ≈ 8%. 일일 호출한도 1000.',
+          '⚠️ 같은 이름의 오퍼레이션이 **두 서비스**에 있다. 펫 POI 적재는 전용 서비스를 쓴다.',
+          '- `KorService2/detailPetTour2` — 일반 관광정보 서비스. POI 하나씩 되물어야 하고 대부분 빈 응답(표본 40건 중 2건)',
+          '- **`KorPetTourService2/detailPetTour2`** — 반려동물 동반여행 전용 서비스(data.go.kr 15135102). 목록 자체가 펫 동반 가능 POI',
+          '',
+          '전용 서비스 `areaBasedList2` 로 받은 목록에 있다는 것 = 펫 동반 가능(`pois.petAllowed=true`).',
+          '충남 4개 시 83건(관광지 12 · 쇼핑 71), 전국 9,684건. 일일 호출한도 1000.',
+          '(경로 `KorPetTourService/detailPetTour` — 서비스명 끝 `2` 없음 — 는 존재하지 않는다)',
         ].join('\n'),
         parameters: [
           { name: 'serviceKey', in: 'query', required: true, schema: { type: 'string' } },
@@ -709,7 +716,8 @@ export const openApiDocument = {
           sourceLabel: {
             type: 'string',
             example: '펫 동반 가능',
-            description: "'펫 동반 가능' | '한적한 산책지' | '두루누비 코스'",
+            description:
+              "'펫 동반 가능'(TourAPI 전용 서비스 등록) | '한적한 산책지'(펫 미등록 야외). 두루누비 연동 시 코스 라벨 추가 예정",
           },
           type: { $ref: '#/components/schemas/PoiType' },
           imageUrl: { type: 'string', nullable: true },
@@ -717,7 +725,8 @@ export const openApiDocument = {
           petAllowed: {
             type: 'boolean',
             description:
-              '펫 동반 가능(TourAPI detailPetTour2 등록). FE "펫 동반 가능" 뱃지. PET_VERIFIED(사용자 검증 뱃지)와 별개.',
+              '펫 동반 가능(KorPetTourService2 등록). FE "펫 동반 가능" 뱃지. PET_VERIFIED(사용자 검증 뱃지)와 별개.\n' +
+              '⚠️ 쇼핑(contentTypeId 38)은 등록돼 있어도 추천에서 제외한다 — 83건 중 71건이 체인 매장.',
           },
           reason: { $ref: '#/components/schemas/RecommendReason' },
           sampleSufficient: { type: 'boolean', description: '한적도 표본이 충분한지' },
@@ -785,7 +794,10 @@ export const openApiDocument = {
           intro: { type: 'string', nullable: true },
           homepage: { type: 'string', nullable: true },
           phone: { type: 'string', nullable: true },
-          petAllowed: { type: 'boolean', description: 'TourAPI detailPetTour2 등록 여부' },
+          petAllowed: {
+            type: 'boolean',
+            description: 'KorPetTourService2 목록 등록 여부(= 펫 동반 가능)',
+          },
           petSizeMaxKg: { type: 'integer', nullable: true },
           petIndoor: { type: 'boolean', nullable: true },
           petOutdoor: { type: 'boolean', nullable: true },
