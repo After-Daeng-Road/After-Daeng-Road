@@ -85,6 +85,40 @@ function targetDates(): Date[] {
   return out;
 }
 
+/** 일시적 실패에 대한 재시도 횟수. 56콜 중 한 번의 타임아웃이 전체를 죽이면 안 된다. */
+const MAX_RETRY = 3;
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+/**
+ * 하루치를 받는다. 타임아웃·네트워크 오류·5xx 는 지수 백오프로 재시도한다.
+ *
+ * 재시도를 넣은 이유: 첫 실행에서 56일 중 한 건이 30초를 넘겨
+ * DOMException(TimeoutError) 이 mapLimit 을 타고 올라와 전체 적재가 실패했다.
+ * 공공데이터포털은 간헐적으로 느려지므로 한 번의 실패로 처음부터 다시 도는 것은 낭비다.
+ *
+ * 반대로 인증 실패나 파라미터 오류(resultCode 가 0000 이 아님)는 재시도해도 같으므로
+ * 즉시 던진다 — 조용히 0건으로 넘어가면 잘못된 데이터가 적재된다.
+ */
+async function fetchDayWithRetry(date: Date): Promise<Row[]> {
+  let lastErr: unknown;
+  for (let attempt = 1; attempt <= MAX_RETRY; attempt++) {
+    try {
+      return await fetchDay(date);
+    } catch (e) {
+      lastErr = e;
+      const msg = e instanceof Error ? e.message : String(e);
+      // API 가 명시적으로 거절한 경우는 재시도 의미가 없다
+      if (msg.includes('데이터랩') && msg.includes('code=')) throw e;
+      if (attempt === MAX_RETRY) break;
+      const backoff = 1000 * 2 ** (attempt - 1); // 1s → 2s → 4s
+      console.log(`    ↻ ${ymd(date)} 재시도 ${attempt}/${MAX_RETRY - 1} (${backoff}ms 후)`);
+      await sleep(backoff);
+    }
+  }
+  throw lastErr;
+}
+
 async function fetchDay(date: Date): Promise<Row[]> {
   const key = process.env.TOUR_API_SERVICE_KEY;
   if (!key) throw new Error('TOUR_API_SERVICE_KEY 미설정 (apps/api/.env)');
@@ -106,7 +140,7 @@ async function fetchDay(date: Date): Promise<Row[]> {
 
   const res = await fetch(u, {
     headers: { 'User-Agent': UA },
-    signal: AbortSignal.timeout(30_000),
+    signal: AbortSignal.timeout(45_000),
   });
   const text = await res.text();
   let json: any = null;
@@ -161,7 +195,7 @@ async function main() {
   );
 
   const perDay = await mapLimit(dates, CONCURRENCY, async (d, i) => {
-    const rows = await fetchDay(d);
+    const rows = await fetchDayWithRetry(d);
     if ((i + 1) % 14 === 0) console.log(`    ... ${i + 1}/${dates.length}일`);
     return rows;
   });
