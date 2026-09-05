@@ -34,6 +34,6 @@ export async function updateNotifySettings(input: NotifySettings) {
     },
   });
 
-  revalidatePath('/me/settings');
+  revalidatePath('/me/notifications');
   return { ok: true as const };
 }

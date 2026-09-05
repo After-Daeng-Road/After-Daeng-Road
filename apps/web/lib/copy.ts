@@ -203,6 +203,7 @@ export const COPY = {
     menuReviewsSub: '작성한 후기 관리',
     menuSaved: '저장한 장소',
     menuSavedSub: '북마크한 펫 외출 코스',
+    withdraw: '회원탈퇴',
   },
 
   // ───────── 알림 설정 ─────────

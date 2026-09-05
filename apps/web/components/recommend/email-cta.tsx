@@ -7,7 +7,7 @@ import { COPY } from '@/lib/copy';
 
 // 이메일 알림 밴드 — 매일 저녁 6시 한적한 길 메일 (PRD §16.4 / DESIGN_SYSTEM §9.1)
 // 좌: 샌드색 카피 + 세리프 강조어 + 이메일 입력/구독, 우: 반려견 산책 사진.
-// 구독은 로그인 + 설정 기반(PRD §16.4)이므로, 입력 후 /me/settings 로 이메일을 넘겨 이어서 켬.
+// 구독은 로그인 + 설정 기반(PRD §16.4)이므로, 입력 후 /me/notifications 로 이메일을 넘겨 이어서 켬.
 
 const B = COPY.home.band;
 
@@ -20,8 +20,8 @@ export function EmailCta() {
     const trimmed = email.trim();
     // 알림 설정은 로그인 사용자 기준 — 입력 이메일을 쿼리로 넘겨 설정 화면에서 이어 켬
     const target = trimmed
-      ? `/me/settings?subscribe=1&email=${encodeURIComponent(trimmed)}`
-      : '/me/settings?subscribe=1';
+      ? `/me/notifications?subscribe=1&email=${encodeURIComponent(trimmed)}`
+      : '/me/notifications?subscribe=1';
     router.push(target);
   };
 
