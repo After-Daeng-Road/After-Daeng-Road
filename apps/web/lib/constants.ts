@@ -44,8 +44,10 @@ export const CONSENT_VERSION = 'pet-health-v1.0.0';
 export type ConsentKind = 'TERMS' | 'PRIVACY' | 'LOCATION' | 'MARKETING_EMAIL' | 'PET_HEALTH';
 
 export const CONSENT_VERSIONS: Record<ConsentKind, string> = {
-  TERMS: 'terms-v1.0.0',
-  PRIVACY: 'privacy-v1.0.0',
+  // 2026-09-05 v1.1 개정 — 기능 전수 반영 (구글 OAuth·방문인증 EXIF·추천이력·북마크·위탁처 등).
+  // 버전을 올리면 ConsentGate 가 기존 회원에게 재동의를 요청한다.
+  TERMS: 'terms-v1.1.0',
+  PRIVACY: 'privacy-v1.1.0',
   LOCATION: 'location-v1.0.0',
   MARKETING_EMAIL: 'marketing-email-v1.0.0',
   PET_HEALTH: CONSENT_VERSION, // 기존 'pet-health-v1.0.0' 과 정렬
