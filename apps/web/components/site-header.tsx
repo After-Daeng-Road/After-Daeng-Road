@@ -36,7 +36,7 @@ export function SiteHeader() {
           href="/"
           className="inline-flex items-center gap-2.5 text-[18px] font-bold tracking-[-0.01em] text-ink"
         >
-          <BrandMark className="h-[30px] w-[30px]" />
+          <BrandMark className="h-10 w-10" />
           {COPY.brand.name}
         </Link>
 
@@ -51,7 +51,7 @@ export function SiteHeader() {
                 className={
                   active
                     ? 'text-sm font-medium text-ink'
-                    : 'text-sm font-medium text-muted transition-colors hover:text-ink'
+                    : 'text-sm font-medium text-faint transition-colors hover:text-ink'
                 }
               >
                 {item.label}

@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { ArrowRight, ChevronDown, Clock, Dog, MapPin } from 'lucide-react';
 import { getConsentStatus, recordConsent } from '@/lib/actions/consent';
+import { Spinner } from '@/components/ui/spinner';
 import { COPY } from '@/lib/copy';
 import { CHUNGNAM_SEED, TIME_MAX, TIME_MIN, TIME_STEP } from '@/lib/constants';
 import { formatHHmm, radiusFromHours } from '@/lib/format';
@@ -299,7 +300,9 @@ export function RecommendForm({
           className="col-span-2 inline-flex h-[50px] items-center justify-center gap-2 whitespace-nowrap rounded-field bg-brand px-[26px] text-[14.5px] font-bold text-white shadow-[0_8px_20px_-8px_var(--accent)] transition duration-200 ease-ds hover:translate-y-[-1px] hover:brightness-[1.04] disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none dark:text-[#20160f] md:col-span-1"
         >
           {loading ? (
-            C.submitting
+            <>
+              <Spinner size={16} /> {C.submitting}
+            </>
           ) : (
             <>
               {C.submit} <ArrowRight className="h-4 w-4" aria-hidden />

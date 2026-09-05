@@ -8,6 +8,7 @@ import { z } from 'zod';
 import { COPY } from '@/lib/copy';
 import { TIME_DEFAULT, TIME_MAX } from '@/lib/constants';
 import { ErrorBanner } from '@/components/ui/error-banner';
+import { LoadingOverlay } from '@/components/ui/loading-overlay';
 import { EmailCta } from '@/components/recommend/email-cta';
 import { FloatingBadgeGuide } from '@/components/recommend/floating-badge-guide';
 import { RecommendForm } from '@/components/recommend/recommend-form';
@@ -224,6 +225,9 @@ export function HomeRecommend({ pets }: { pets: Pet[] }) {
 
       {/* ═════ 검증 배지 가이드 플로팅 ═════ */}
       <FloatingBadgeGuide />
+
+      {/* ═════ 전면 로딩 오버레이 — 추천 검색·페이지 로드 중 화면 정중앙 ═════ */}
+      <LoadingOverlay show={isPending || loadingMore} />
     </>
   );
 }
