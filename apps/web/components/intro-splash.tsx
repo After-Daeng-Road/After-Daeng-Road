@@ -77,57 +77,54 @@ export function IntroSplash() {
         fading ? 'pointer-events-none opacity-0' : 'opacity-100'
       }`}
     >
-      {/* 영상 — 꽉 채우지 않고 여백 있는 중앙 배치 */}
-      <div className="grid h-full w-full place-items-center px-5 py-14 sm:px-10 sm:py-16">
-        <video
-          ref={videoRef}
-          src={VIDEO_SRC}
-          poster={POSTER_SRC}
-          playsInline
-          preload="auto"
-          onEnded={close}
-          className="max-h-full w-auto max-w-full rounded-2xl shadow-lift"
-        />
+      {/* 영상 + 하단 컨트롤 — 여백 있는 중앙 배치, 컨트롤은 영상 하단 오른쪽 */}
+      <div className="grid h-full w-full place-items-center px-5 py-10 sm:px-10 sm:py-14">
+        <div className="flex max-h-full max-w-full flex-col">
+          <video
+            ref={videoRef}
+            src={VIDEO_SRC}
+            poster={POSTER_SRC}
+            playsInline
+            preload="auto"
+            onEnded={close}
+            className="min-h-0 w-auto max-w-full flex-1 object-contain shadow-lift"
+          />
+          <div className="mt-3 flex items-center justify-end gap-5">
+            <button
+              type="button"
+              onClick={hideTodayAndClose}
+              className="text-[13px] text-white/60 transition-colors hover:text-white"
+            >
+              {C.hideToday}
+            </button>
+            <button
+              type="button"
+              onClick={close}
+              className="text-[13px] text-white/60 transition-colors hover:text-white"
+            >
+              {C.skip}
+            </button>
+          </div>
+        </div>
       </div>
 
-      {/* 자동재생 차단 시 — 브랜드 로고 + 플레이 (클릭 제스처로 소리 재생) */}
+      {/* 자동재생 차단 시 — 네모 버튼: 멍멍이 로고 + 플레이 (클릭 제스처로 소리 재생) */}
       {needsTap && (
-        <button
-          type="button"
-          onClick={enter}
-          aria-label={C.enter}
-          className="group absolute inset-0 grid place-items-center bg-black/50"
-        >
-          <span className="flex flex-col items-center gap-3">
+        <div className="absolute inset-0 grid place-items-center bg-black/50">
+          <button
+            type="button"
+            onClick={enter}
+            aria-label={C.enter}
+            className="flex h-28 w-28 flex-col items-center justify-center gap-3 bg-white/95 shadow-lift transition hover:scale-105"
+          >
             <span
               aria-hidden
-              className="inline-block h-[30px] w-[30px] bg-[url('/brand/daengroad-favicon-ivory.svg')] bg-contain bg-center bg-no-repeat dark:bg-[url('/brand/daengroad-favicon-dark.svg')]"
+              className="inline-block h-[34px] w-[34px] bg-[url('/brand/daengroad-favicon-ivory.svg')] bg-contain bg-center bg-no-repeat"
             />
-            <Play
-              className="h-6 w-6 fill-white/90 text-white/90 transition-transform group-hover:scale-110"
-              aria-hidden
-            />
-          </span>
-        </button>
+            <Play className="h-6 w-6 fill-[#1d1813] text-[#1d1813]" aria-hidden />
+          </button>
+        </div>
       )}
-
-      {/* 하단 컨트롤 — 텍스트 버튼 (보더 없음, 호버) */}
-      <div className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-3 px-6 pb-[max(20px,env(safe-area-inset-bottom))] pt-8">
-        <button
-          type="button"
-          onClick={hideTodayAndClose}
-          className="text-[13px] text-white/60 transition-colors hover:text-white"
-        >
-          {C.hideToday}
-        </button>
-        <button
-          type="button"
-          onClick={close}
-          className="text-[13px] text-white/60 transition-colors hover:text-white"
-        >
-          {C.skip}
-        </button>
-      </div>
     </div>
   );
 }
