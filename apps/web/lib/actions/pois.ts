@@ -16,45 +16,49 @@ export async function getPoiDetail(input: DetailInput) {
   const parsed = DetailInputSchema.safeParse(input);
   if (!parsed.success) return null;
 
-  const poi = await prisma.poi.findUnique({
-    where: { id: parsed.data.poiId },
-    include: {
-      durunubi: true,
-      badges: true,
-      forecasts: {
-        where: { forecastDate: { gte: new Date() } },
-        orderBy: { forecastDate: 'asc' },
-        take: 30,
-      },
-      reviews: {
-        where: { status: 'PUBLIC' },
-        orderBy: { createdAt: 'desc' },
-        take: 20,
-        include: { user: { select: { nickname: true } }, reply: true },
-      },
-    },
-  });
-  if (!poi) return null;
-
-  // 시간대별 한적도 (현재 weekday 기준 0~23시)
+  const poiId = parsed.data.poiId;
   const today = new Date().getDay();
-  const hourly = await prisma.quietnessScore.findMany({
-    where: { poiId: poi.id, weekday: today },
-    orderBy: { hourSlot: 'asc' },
-    select: { hourSlot: true, score: true, sampleSize: true },
-  });
-
-  // 검증 수 (PRD §6.3: 6개월 + isValid + 사진)
   const sixMonthsAgo = new Date();
   sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
-  const verifiedCount = await prisma.verification.count({
-    where: {
-      poiId: poi.id,
-      isValid: true,
-      photoUrl: { not: null },
-      visitedAt: { gte: sixMonthsAgo },
-    },
-  });
+
+  // 세 쿼리는 서로 의존하지 않는다. 순차로 돌리면 왕복이 3배가 된다.
+  // (Vercel 함수 리전과 DB 리전이 다를 때 왕복 1회가 곧 지연이다)
+  const [poi, hourly, verifiedCount] = await Promise.all([
+    prisma.poi.findUnique({
+      where: { id: poiId },
+      include: {
+        durunubi: true,
+        badges: true,
+        forecasts: {
+          where: { forecastDate: { gte: new Date() } },
+          orderBy: { forecastDate: 'asc' },
+          take: 30,
+        },
+        reviews: {
+          where: { status: 'PUBLIC' },
+          orderBy: { createdAt: 'desc' },
+          take: 20,
+          include: { user: { select: { nickname: true } }, reply: true },
+        },
+      },
+    }),
+    // 시간대별 한적도 (현재 weekday 기준)
+    prisma.quietnessScore.findMany({
+      where: { poiId, weekday: today },
+      orderBy: { hourSlot: 'asc' },
+      select: { hourSlot: true, score: true, sampleSize: true },
+    }),
+    // 검증 수 (PRD §6.3: 6개월 + isValid + 사진)
+    prisma.verification.count({
+      where: {
+        poiId,
+        isValid: true,
+        photoUrl: { not: null },
+        visitedAt: { gte: sixMonthsAgo },
+      },
+    }),
+  ]);
+  if (!poi) return null;
 
   return { poi, hourly, verifiedCount };
 }

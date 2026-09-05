@@ -7,7 +7,13 @@ import { useSession } from 'next-auth/react';
 import { LogIn, Star } from 'lucide-react';
 import { createReview } from '@/lib/actions/reviews';
 import { COPY } from '@/lib/copy';
-import { PhotoUpload } from '@/components/photo-upload';
+import dynamic from 'next/dynamic';
+
+// PhotoUpload 는 @supabase/supabase-js(브라우저 직접 업로드)를 끌어온다.
+// 상세 페이지 초기 번들에서 빼고, 후기 작성 영역이 실제로 그려질 때 받는다.
+const PhotoUpload = dynamic(() => import('@/components/photo-upload').then((m) => m.PhotoUpload), {
+  ssr: false,
+});
 
 // POI 방문 후기 작성 — 별점 + 텍스트 + 사진 → createReview.
 // 비로그인 시 로그인 유도(게이트). 성공 시 router.refresh() 로 목록 갱신.
