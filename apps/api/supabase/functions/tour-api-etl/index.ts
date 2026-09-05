@@ -11,6 +11,29 @@ const env = (k: string): string => Deno.env.get(k) ?? '';
 const SUPABASE_URL = env('SUPABASE_URL');
 const SUPABASE_SERVICE_ROLE = env('SUPABASE_SERVICE_ROLE_KEY');
 const TOUR_API_KEY = env('TOUR_API_SERVICE_KEY');
+const CRON_SECRET = env('CRON_SECRET');
+
+/**
+ * pg_cron 호출인지 확인한다.
+ *
+ * config.toml 의 verify_jwt = false 라 플랫폼 게이트웨이가 아무것도 검사하지 않는다.
+ * verify_jwt = true 로 바꾸는 것으로는 방어가 안 된다 — anon 키도 유효한 JWT 이고
+ * 그 키는 웹 클라이언트 번들에 공개되어 있다. 함수 안에서 공유 시크릿을 직접 봐야 한다.
+ *
+ * 이 함수는 service_role 로 RLS 를 우회해 쓰고, TourAPI 일일 쿼터를 소모한다.
+ * 열려 있으면 반복 호출로 쿼터를 소진시켜 다음 날 갱신을 막고 pois 를 오염시킬 수 있다.
+ *
+ * 시크릿 미설정 시 통과가 아니라 거부한다(fail-closed). 키 누락이 곧 구멍이 되면 안 된다.
+ */
+function isAuthorizedCron(req: Request): boolean {
+  if (!CRON_SECRET) return false;
+  const got = req.headers.get('x-cron-secret') ?? '';
+  // 길이가 다르면 즉시 거부. 같으면 전체를 비교해 조기 반환으로 인한 타이밍 차이를 줄인다.
+  if (got.length !== CRON_SECRET.length) return false;
+  let diff = 0;
+  for (let i = 0; i < got.length; i++) diff |= got.charCodeAt(i) ^ CRON_SECRET.charCodeAt(i);
+  return diff === 0;
+}
 
 const LDONG_REGN_CD = 44; // 충청남도
 const CHUNGNAM_CITIES = [
@@ -34,6 +57,8 @@ type EtlResult = { added: number; updated: number; failed: number };
 
 // @ts-expect-error — Deno global
 Deno.serve(async (req: Request): Promise<Response> => {
+  // 인증을 가장 먼저 본다 — 메서드 검사보다 앞이어야 존재 여부조차 덜 드러난다
+  if (!isAuthorizedCron(req)) return json({ error: 'Unauthorized' }, 401);
   if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
 
   const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE, {
