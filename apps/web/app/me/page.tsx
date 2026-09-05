@@ -137,11 +137,10 @@ export default async function MePage() {
           subtitle={COPY.me.menuHistorySub}
         />
         <NavListItem
-          href="#"
+          href="/me/reviews"
           icon={<Star className="h-4 w-4" aria-hidden />}
           title={COPY.me.menuReviews}
           subtitle={COPY.me.menuReviewsSub}
-          disabled
         />
         <NavListItem
           href="/me/saved"

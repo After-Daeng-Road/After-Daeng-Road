@@ -293,6 +293,22 @@ export const COPY = {
     verifyChip: (n: number) => `검증 ${n}명`,
   },
 
+  // ───────── 내가 쓴 후기 ─────────
+  myReviews: {
+    loginTitle: '로그인이 필요해요',
+    loginDesc: '로그인하면 작성한 후기를 볼 수 있어요.',
+    headTitle: '내가 쓴 후기',
+    headDesc: '작성한 후기를 확인하고 관리해요.',
+    emptyTitle: '아직 작성한 후기가 없어요',
+    emptyDesc: '다녀온 곳의 후기를 남겨보세요',
+    hiddenChip: '신고 누적 숨김',
+    removedChip: '운영 삭제',
+    delete: '삭제',
+    deleting: '삭제 중…',
+    deleteConfirm: '이 후기를 삭제할까요? 되돌릴 수 없어요.',
+    deleteFail: '삭제에 실패했어요. 잠시 후 다시 시도해주세요.',
+  },
+
   // ───────── 저장한 장소(북마크) ─────────
   saved: {
     loginTitle: '로그인이 필요해요',
