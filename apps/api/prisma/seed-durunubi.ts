@@ -8,9 +8,12 @@
 //   - routeIdx: 남파랑길·서해랑길·DMZ 평화의 길·해파랑길 4개
 //   - crsIdx  : 실제 코스 142개  ← 적재 단위
 //
-//   충남 4개 시(공주·천안·아산·서산) 해당 코스는 서산 3건뿐이다. 그래도 142건 전부 적재한다.
-//   행이 142개라 저장 비용이 사실상 없고, 지역 확장 시 재적재 없이 바로 쓸 수 있으며,
-//   두루누비 전량 연동이라는 데이터 활용 근거가 된다.
+//   전국 142코스 중 충남만 적재한다(16건). 서비스 지역이 충남이고, 다른 시도 코스는
+//   추천 반경에 절대 걸리지 않아 DB 에 두어도 쓰이지 않는다.
+//   충남 16건 = 태안 6 · 서산 3 · 서천 3 · 보령 2 · 당진 2.
+//   이 중 서비스 대상 4개 시(공주·천안·아산·서산)에 해당하는 것은 서산 3건뿐이고
+//   나머지는 인접 시군이라 반경에 따라 후보로 잡힐 수 있다.
+//   지역을 넓히려면 REGION_PREFIXES 만 고치면 된다.
 //
 // 좌표:
 //   courseList 응답에는 좌표가 없다. gpxpath 로 GPX 파일을 받아 첫 좌표를 시작점으로 삼고,
@@ -32,8 +35,13 @@ const GPX_CONCURRENCY = 4;
 // pathGeoJson 에 남길 최대 좌표 수. 원본은 코스당 수천 점이다.
 const PATH_MAX_POINTS = 100;
 
+// 적재 대상 시도. sigun 원문("충남 서산시")의 앞부분으로 거른다.
+// 전국 142코스 중 여기 해당하는 것만 GPX 를 받고 DB 에 넣는다.
+const REGION_PREFIXES = ['충남'];
+
 // sigun 원문("충남 서산시") → 프로젝트 sigunguCode.
-// 서비스 지역 밖 코스는 null 로 두어 지역 통계에 섞이지 않게 한다.
+// 서비스 대상 4개 시가 아닌 인접 시군(태안·서천·보령·당진)은 null 로 두어
+// 지역 단위 통계·조회에 섞이지 않게 한다. 좌표 기반 추천에는 그대로 잡힌다.
 const SIGUNGU_BY_NAME: Record<string, number> = {
   '충남 공주시': 33020,
   '충남 천안시': 33040,
@@ -280,12 +288,23 @@ async function main() {
   for (const r of routes) if (r.routeIdx && r.themeNm) themeByRoute.set(r.routeIdx, r.themeNm);
   console.log(`  노선 ${routes.length}건: ${[...themeByRoute.values()].join(', ')}`);
 
-  const courses = await fetchList<CourseItem>('courseList');
-  console.log(`  코스 ${courses.length}건 — GPX 좌표 수집 시작 (동시 ${GPX_CONCURRENCY})`);
+  const all = await fetchList<CourseItem>('courseList');
+  // 지역 필터는 GPX 수집 전에 건다 — 대상 밖 코스까지 파일을 받을 이유가 없다
+  const courses = all.filter((c) =>
+    REGION_PREFIXES.some((p) => String(c.sigun ?? '').startsWith(p)),
+  );
+  console.log(
+    `  코스 전체 ${all.length}건 → ${REGION_PREFIXES.join('·')} ${courses.length}건 — GPX 좌표 수집 시작 (동시 ${GPX_CONCURRENCY})`,
+  );
+  if (courses.length === 0) {
+    throw new Error(
+      `${REGION_PREFIXES.join('·')} 코스 0건. sigun 표기가 바뀌었을 수 있다 — 0건을 정상으로 넘기지 않는다`,
+    );
+  }
 
   const paths = await mapLimit(courses, GPX_CONCURRENCY, async (c, i) => {
     const p = c.gpxpath ? await fetchGpx(c.gpxpath) : null;
-    if ((i + 1) % 25 === 0) console.log(`    ... ${i + 1}/${courses.length}`);
+    console.log(`    ${i + 1}/${courses.length} ${c.crsKorNm}${p ? '' : ' (좌표 없음)'}`);
     return p;
   });
 
