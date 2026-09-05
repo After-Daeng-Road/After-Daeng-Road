@@ -6,7 +6,7 @@
 import { useEffect, useState, useTransition } from 'react';
 import { z } from 'zod';
 import { COPY } from '@/lib/copy';
-import { DEMO_RECOMMENDATIONS, TIME_DEFAULT, TIME_MAX } from '@/lib/constants';
+import { TIME_DEFAULT, TIME_MAX } from '@/lib/constants';
 import { ErrorBanner } from '@/components/ui/error-banner';
 import { EmailCta } from '@/components/recommend/email-cta';
 import { FloatingBadgeGuide } from '@/components/recommend/floating-badge-guide';
@@ -33,13 +33,14 @@ export function HomeRecommend({ pets }: { pets: Pet[] }) {
   // 폼 상태 — timeHours 만 EmptyResult.onRelax 에서 외부 조작 위해 페이지에 잔류
   const [timeHours, setTimeHours] = useState(TIME_DEFAULT);
 
-  // 결과 상태 — 초기엔 데모 추천 표시, 실제 검색 응답이 오면 교체
-  const [results, setResults] = useState<Recommendation[] | null>(DEMO_RECOMMENDATIONS);
+  // 결과 상태 — null 이면 RecommendResults 가 섹션 자체를 렌더하지 않는다.
+  // (데모 추천을 초기값으로 두면 검색 전에 가짜 3곳이 실데이터처럼 보인다)
+  const [results, setResults] = useState<Recommendation[] | null>(null);
   const [departure, setDeparture] = useState<RecommendInput['departure'] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  // 상세보기 이동 후 뒤로 오면 홈이 언마운트→재마운트되며 결과가 데모로 초기화되는 문제 해결.
+  // 상세보기 이동 후 뒤로 오면 홈이 언마운트→재마운트되며 결과가 사라지는 문제 해결.
   // 마지막 추천 결과·시간을 sessionStorage 에 유지했다가 복원한다 (SSR 하이드레이션 불일치 방지 위해 effect 에서).
   useEffect(() => {
     try {

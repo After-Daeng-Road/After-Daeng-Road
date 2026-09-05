@@ -78,10 +78,17 @@ export function RecommendCard({
             {rec.name}
           </span>
         )}
-        <div className="mt-1.5 flex items-center gap-1.5 text-[13px] text-muted">
-          {rec.address}
-          <span className="h-[3px] w-[3px] rounded-full bg-faint" aria-hidden />
-          {rec.sourceLabel}
+        <div className="mt-1.5 flex min-w-0 items-center gap-1.5 text-[13px] text-muted">
+          <span className="shrink-0">{rec.address}</span>
+          <span className="h-[3px] w-[3px] shrink-0 rounded-full bg-faint" aria-hidden />
+          <span className="shrink-0">{rec.sourceLabel}</span>
+          {/* 운영시간 원문 (TourAPI detailIntro2). "기상여건에 따라…" 같은 안내문도 있어 잘라 쓴다 */}
+          {rec.openHoursText && (
+            <>
+              <span className="h-[3px] w-[3px] shrink-0 rounded-full bg-faint" aria-hidden />
+              <span className="truncate">{rec.openHoursText}</span>
+            </>
+          )}
         </div>
 
         {/* 스탯 행 — 세리프 누메랄 */}
