@@ -67,7 +67,7 @@ export function MobileDrawer({
       >
         <div className="flex items-center justify-between border-b border-line-soft px-4 py-3.5">
           <span className="inline-flex items-center gap-2 text-[17px] font-bold text-ink">
-            <BrandMark className="h-7 w-7" />
+            <BrandMark className="h-9 w-9" />
             {COPY.brand.name}
           </span>
           <button

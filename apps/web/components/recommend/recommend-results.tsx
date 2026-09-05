@@ -6,6 +6,7 @@ import { COPY } from '@/lib/copy';
 import { EmptyResult } from './empty-result';
 import { RecommendCard } from './recommend-card';
 import { RecommendSkeleton } from './recommend-skeleton';
+import { Spinner } from '@/components/ui/spinner';
 import type { DeparturePoint } from '@/lib/format';
 import type { Recommendation } from '@/lib/types/recommendation';
 
@@ -142,11 +143,9 @@ export function RecommendResults({
               onClick={goNext}
               disabled={loadingMore}
               aria-label={R.nextPage}
-              className={`fig grid h-9 w-9 place-items-center rounded-full border border-dashed border-line text-[14px] text-faint transition-colors hover:border-brand hover:text-ink disabled:pointer-events-none ${
-                loadingMore ? 'animate-pulse' : ''
-              }`}
+              className="fig grid h-9 w-9 place-items-center rounded-full border border-dashed border-line text-[14px] text-faint transition-colors hover:border-brand hover:text-ink disabled:pointer-events-none"
             >
-              …
+              {loadingMore ? <Spinner size={14} /> : '…'}
             </button>
           )}
           <button
@@ -154,9 +153,9 @@ export function RecommendResults({
             onClick={goNext}
             disabled={!canNext || loadingMore}
             aria-label={R.nextPage}
-            className={`${pagerBtn} ${loadingMore ? 'animate-pulse' : ''}`}
+            className={pagerBtn}
           >
-            <ChevronRight className="h-4 w-4" aria-hidden />
+            {loadingMore ? <Spinner size={14} /> : <ChevronRight className="h-4 w-4" aria-hidden />}
           </button>
         </nav>
       )}
