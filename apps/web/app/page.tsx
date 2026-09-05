@@ -4,6 +4,7 @@
 
 import { listPets } from '@/lib/actions/pets';
 import { HomeRecommend } from '@/components/recommend/home-recommend';
+import { IntroSplash } from '@/components/intro-splash';
 import type { Pet } from '@/lib/types/recommendation';
 
 export default async function HomePage() {
@@ -16,5 +17,11 @@ export default async function HomePage() {
     ageYears: p.ageYears,
   }));
 
-  return <HomeRecommend pets={pets} />;
+  return (
+    <>
+      {/* 인트로 영상 — 메인은 아래에 렌더된 상태로 오버레이만 걷힘 (LCP 영향 없음) */}
+      <IntroSplash />
+      <HomeRecommend pets={pets} />
+    </>
+  );
 }
