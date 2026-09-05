@@ -6,6 +6,9 @@ import {
   geohash7,
   CHUNGNAM_CITIES,
   LDONG_REGN_CD,
+  parseHomepage,
+  cleanOverview,
+  mergeImageUrls,
 } from './transform.ts';
 
 test('contentTypeToPoiType 매핑', () => {
@@ -55,4 +58,76 @@ test('CHUNGNAM_CITIES 구성', () => {
   const cheonan = CHUNGNAM_CITIES.find((c) => c.name === '천안')!;
   assert.deepEqual(cheonan.signgu, [131, 133]); // 동남구+서북구
   assert.equal(cheonan.sigunguCode, 33040);
+});
+
+// ─── detailCommon2 / detailImage2 응답 정제 (2026-09-05 실응답 기준) ───
+
+test('parseHomepage — HTML 앵커에서 href 추출', () => {
+  const raw =
+    '<a href="http://xn--o39am5bv7vomeopa05vdxb.gajagaja.co.kr/#none" target="_blank" title="새창 : 서산 유기방가옥 홈페이지로 이동">http://유기방가옥.gajagaja.co.kr/</a>';
+  assert.equal(parseHomepage(raw), 'http://xn--o39am5bv7vomeopa05vdxb.gajagaja.co.kr/#none');
+});
+
+test('parseHomepage — 순수 URL 은 그대로', () => {
+  assert.equal(parseHomepage('http://chunjangdae.or.kr/'), 'http://chunjangdae.or.kr/');
+  assert.equal(parseHomepage('https://a.example.com'), 'https://a.example.com');
+});
+
+test('parseHomepage — 스킴 없으면 https 부여', () => {
+  assert.equal(parseHomepage('www.oliveyoung.co.kr'), 'https://www.oliveyoung.co.kr');
+});
+
+test('parseHomepage — 빈 값은 null', () => {
+  assert.equal(parseHomepage(''), null);
+  assert.equal(parseHomepage('   '), null);
+  assert.equal(parseHomepage(undefined), null);
+  assert.equal(parseHomepage('<a href="">빈 링크</a>'), null);
+});
+
+test('cleanOverview — 평문은 trim 만', () => {
+  assert.equal(
+    cleanOverview('  춘장대해수욕장은 완만한 경사와  '),
+    '춘장대해수욕장은 완만한 경사와',
+  );
+});
+
+test('cleanOverview — HTML 태그 제거 + 엔티티 디코드', () => {
+  assert.equal(cleanOverview('가옥이며<br>향토사적<br />건축학적'), '가옥이며 향토사적 건축학적');
+  assert.equal(
+    cleanOverview('안채&amp;행랑채 &lt;중요&gt; &quot;민속&quot;&nbsp;자료'),
+    '안채&행랑채 <중요> "민속" 자료',
+  );
+});
+
+test('cleanOverview — 빈 값은 null', () => {
+  assert.equal(cleanOverview(''), null);
+  assert.equal(cleanOverview('   '), null);
+  assert.equal(cleanOverview(undefined), null);
+  assert.equal(cleanOverview('<br><br>'), null);
+});
+
+test('mergeImageUrls — 대표이미지 뒤에 상세이미지 append', () => {
+  const merged = mergeImageUrls(
+    ['https://t.kr/a.jpg'],
+    ['https://t.kr/b.jpg', 'https://t.kr/c.jpg'],
+  );
+  assert.deepEqual(merged, ['https://t.kr/a.jpg', 'https://t.kr/b.jpg', 'https://t.kr/c.jpg']);
+});
+
+test('mergeImageUrls — http/https 차이는 같은 이미지로 보고 중복 제거', () => {
+  const merged = mergeImageUrls(
+    ['https://t.kr/a.jpg'],
+    ['http://t.kr/a.jpg', 'https://t.kr/b.jpg'],
+  );
+  assert.deepEqual(merged, ['https://t.kr/a.jpg', 'https://t.kr/b.jpg']);
+});
+
+test('mergeImageUrls — http 는 https 로 정규화', () => {
+  assert.deepEqual(mergeImageUrls([], ['http://t.kr/a.jpg']), ['https://t.kr/a.jpg']);
+});
+
+test('mergeImageUrls — 빈 입력과 빈 문자열 처리', () => {
+  assert.deepEqual(mergeImageUrls([], []), []);
+  assert.deepEqual(mergeImageUrls(['https://t.kr/a.jpg'], []), ['https://t.kr/a.jpg']);
+  assert.deepEqual(mergeImageUrls([], ['', '  ']), []);
 });
