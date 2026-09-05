@@ -35,6 +35,7 @@ type Recommendation = {
   lat: number;
   lng: number;
   sourceLabel: string;
+  openHoursText: string | null;
   type: string;
   imageUrl: string | null;
   badges: string[];
@@ -57,6 +58,9 @@ type PoiCandidate = {
   pet_allowed: boolean;
   sigungu_code: number;
   content_type_id: number | null;
+  use_time_text: string | null;
+  open_from: number | null;
+  open_to: number | null;
 };
 
 // ═══════════════ 환경 변수 ═══════════════
@@ -189,8 +193,8 @@ Deno.serve(async (req: Request): Promise<Response> => {
     const slice = candidates.slice(0, MAX_CANDIDATES);
     const poiIds = slice.map((p) => p.id);
     const sigungus = [...new Set(slice.map((p) => p.sigungu_code))];
-    const weekday = startAt.getDay();
-    const hourSlot = startAt.getHours();
+    const weekday = kstWeekday(startAt);
+    const hourSlot = kstHour(startAt);
 
     const [verifiedMap, quietnessBySigungu, forecastsByPoi, etas] = await Promise.all([
       fetchVerifiedCounts(admin, poiIds), // 1 query
@@ -213,7 +217,13 @@ Deno.serve(async (req: Request): Promise<Response> => {
 
     // ─ 시간 예산(왕복 = timeHours/2 시간 = 분) 안에 들어오는 것만 ─
     const budgetMin = (input.timeHours / 2) * 60;
-    const inBudget = enriched.filter((e) => e.eta.minutes <= budgetMin);
+    // 시간 예산 + "도착했을 때 문이 열려 있는가".
+    // 운영시간은 detailIntro2 실데이터(pois.open_from/open_to). 정보가 없으면 통과시킨다.
+    const inBudget = enriched.filter((e) => {
+      if (e.eta.minutes > budgetMin) return false;
+      const arrival = new Date(startAt.getTime() + e.eta.minutes * 60_000);
+      return isOpenAtHour(e.poi.open_from, e.poi.open_to, kstHour(arrival));
+    });
     if (inBudget.length === 0) return j({ recommendations: [] });
 
     // ─ 점수 (PRD §12.2): 0.4*quietness + 0.3*verification + 0.2*dist_inv + 0.1*weather ─
@@ -250,6 +260,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
       lng: s.poi.lng,
       // 두루누비는 아직 미연동 → TRAIL 도 '한적한 산책지'. 연동 시 코스 라벨 부활.
       sourceLabel: s.poi.pet_allowed ? '펫 동반 가능' : '한적한 산책지',
+      openHoursText: s.poi.use_time_text,
       type: s.poi.type,
       imageUrl: s.poi.image_urls?.[0] ?? null,
       badges: badgesByPoi.get(s.poi.id) ?? [],
@@ -327,7 +338,7 @@ async function fetchPoiCandidates(
   const latDelta = radiusKm / 111;
   const lngDelta = radiusKm / (111 * Math.cos((origin.lat * Math.PI) / 180));
   const cols =
-    'id,name,type,lat,lng,address,image_urls,pet_policy_text,is_wellness,is_eco,pet_allowed,sigungu_code,content_type_id';
+    'id,name,type,lat,lng,address,image_urls,pet_policy_text,is_wellness,is_eco,pet_allowed,sigungu_code,content_type_id,use_time_text,open_from,open_to';
   const box = (q: any) =>
     q
       .gte('lat', origin.lat - latDelta)
@@ -405,6 +416,24 @@ async function getEtaCached(
 // ═══════════════ 한적도 (현재 + 30일 예측 + 주간 평균) ═══════════════
 
 // poi.id(UUID) → 32bit 결정적 해시 (FNV-1a). POI별 한적도 편차 산출용 (QA #2 임시).
+// Deno Edge 런타임은 UTC 로 실행된다. 서비스 기준 시각은 KST 이므로 날짜·시각을 쓸 때는
+// 반드시 아래 헬퍼로 환산한다. (Date#getHours 를 그대로 쓰면 9시간 어긋난다 —
+//  밤 8시 KST = 11시 UTC 라 "08:00~17:00" 인 곳이 영업 중으로 판정됐다)
+const KST_OFFSET_MS = 9 * 60 * 60 * 1000;
+const toKst = (d: Date): Date => new Date(d.getTime() + KST_OFFSET_MS);
+const kstHour = (d: Date): number => toKst(d).getUTCHours();
+const kstWeekday = (d: Date): number => toKst(d).getUTCDay();
+const kstDateStr = (d: Date): string => toKst(d).toISOString().slice(0, 10);
+
+// 도착 시각에 문이 열려 있는가. prisma/tourapi/transform.ts 의 isOpenAtHour 와 동일 로직.
+// 정보가 없으면(open_from null) true — 모르는 것을 닫힘으로 취급해 후보에서 빼지 않는다.
+function isOpenAtHour(openFrom: number | null, openTo: number | null, hour: number): boolean {
+  if (openFrom == null || openTo == null) return true;
+  if (openFrom === openTo) return true;
+  if (openFrom < openTo) return hour >= openFrom && hour < openTo;
+  return hour >= openFrom || hour < openTo; // 자정 넘김
+}
+
 function hash32(s: string): number {
   let h = 2166136261; // FNV-1a offset basis
   for (let i = 0; i < s.length; i++) {
@@ -486,8 +515,8 @@ async function fetchForecasts(
     .from('poi_forecasts')
     .select('poi_id, forecast_date, expected_score')
     .in('poi_id', poiIds)
-    .gte('forecast_date', startAt.toISOString().slice(0, 10))
-    .lte('forecast_date', weekFromNow.toISOString().slice(0, 10));
+    .gte('forecast_date', kstDateStr(startAt))
+    .lte('forecast_date', kstDateStr(weekFromNow));
 
   for (const r of (data ?? []) as ForecastRow[]) {
     const list = map.get(r.poi_id) ?? [];
@@ -510,9 +539,7 @@ function computeQuietness(
   weekAvg: number;
   sampleSufficient: boolean;
 } {
-  const tomorrow = new Date(startAt);
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  const tomorrowDate = tomorrow.toISOString().slice(0, 10);
+  const tomorrowDate = kstDateStr(new Date(startAt.getTime() + 24 * 60 * 60 * 1000));
 
   const { nowScore, sampleSufficient } = quietnessBySigungu.get(poi.sigungu_code) ?? {
     nowScore: 60,
