@@ -83,13 +83,19 @@ Deno.serve(async (req: Request): Promise<Response> => {
                   .join(' / ') || null
               : null,
             last_synced_at: new Date().toISOString(),
+            // updated_at 은 NOT NULL 인데 컬럼 DEFAULT 가 없다(0014 에서 추가).
+            // Prisma 의 @updatedAt 은 클라이언트 기능이라 supabase-js 경로에서는 직접 채워야 한다.
+            updated_at: new Date().toISOString(),
           };
 
           if (existing.data) {
-            await admin.from('pois').update(row).eq('id', existing.data.id);
+            const { error } = await admin.from('pois').update(row).eq('id', existing.data.id);
+            if (error) throw new Error(`pois.update: ${error.message}`);
             result.updated++;
           } else {
-            await admin.from('pois').insert(row);
+            // id 명시 — pois.id 는 UUID NOT NULL 이고 컬럼 DEFAULT 가 없다.
+            const { error } = await admin.from('pois').insert({ id: crypto.randomUUID(), ...row });
+            if (error) throw new Error(`pois.insert: ${error.message}`);
             result.added++;
           }
         } catch (e) {
@@ -100,10 +106,11 @@ Deno.serve(async (req: Request): Promise<Response> => {
     }
 
     // 카테고리 배지 동기화 (웰니스/생태/두루누비)
-    await admin.rpc('sync_category_badges');
+    const { error: badgeErr } = await admin.rpc('sync_category_badges');
+    if (badgeErr) console.error('[sync_category_badges] 실패', badgeErr.message);
 
-    // ETL 로그 기록 (PRD §11 tour_api_sync_logs)
-    await admin.from('tour_api_sync_logs').insert({
+    // ETL 로그 기록 (PRD §11 tour_api_sync_logs) — id 는 BIGSERIAL 이라 명시하지 않는다
+    const { error: logErr } = await admin.from('tour_api_sync_logs').insert({
       dataset: 'pois.areaBasedList2+detailPetTour',
       started_at: startedAt,
       finished_at: new Date().toISOString(),
@@ -113,17 +120,19 @@ Deno.serve(async (req: Request): Promise<Response> => {
       status: result.failed > 0 ? 'partial' : 'ok',
       error_message: result.failed > 0 ? `${result.failed} items failed` : null,
     });
+    if (logErr) console.error('[tour_api_sync_logs.insert] 실패', logErr.message);
 
     return json({ ok: true, ...result });
   } catch (err) {
     console.error('[tour-api-etl]', err);
-    await admin.from('tour_api_sync_logs').insert({
+    const { error: failLogErr } = await admin.from('tour_api_sync_logs').insert({
       dataset: 'pois.areaBasedList2+detailPetTour',
       started_at: startedAt,
       finished_at: new Date().toISOString(),
       status: 'failed',
       error_message: String(err),
     });
+    if (failLogErr) console.error('[tour_api_sync_logs.insert] 실패', failLogErr.message);
     return json({ error: 'ETL failed' }, 500);
   }
 });
