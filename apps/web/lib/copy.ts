@@ -113,6 +113,7 @@ export const COPY = {
       placeholder: '이메일 주소',
       submit: '구독',
       note: '시간·요일 자율 설정 · 1탭 수신거부',
+      comingSoon: '개발 준비 중이에요',
       imageAlt: '반려견과의 산책',
     },
     floatingBadge: '검증 배지',
