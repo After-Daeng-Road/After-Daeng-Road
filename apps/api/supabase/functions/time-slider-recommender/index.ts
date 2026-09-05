@@ -35,6 +35,7 @@ type Recommendation = {
   lat: number;
   lng: number;
   sourceLabel: string;
+  openHoursText: string | null;
   type: string;
   imageUrl: string | null;
   badges: string[];
@@ -56,6 +57,10 @@ type PoiCandidate = {
   is_eco: boolean;
   pet_allowed: boolean;
   sigungu_code: number;
+  content_type_id: number | null;
+  use_time_text: string | null;
+  open_from: number | null;
+  open_to: number | null;
 };
 
 // ═══════════════ 환경 변수 ═══════════════
@@ -82,6 +87,25 @@ const RATE_LIMIT_MAX = 30;
 const AVG_SPEED_KMH = 50; // 1차 휴리스틱 (PRD §12.2)
 const TOP_N = 3;
 const MAX_CANDIDATES = 30;
+// 펫 공식 등록(TourAPI 반려동물 동반여행) 가산점. 총점 만점 1.0 기준 → 한적도 25점과 동등.
+// 무조건 우선이 아니라 가산점인 이유: 충남 펫 등록 83곳 중 71곳이 쇼핑(올리브영 등)이라
+// 절대 우선하면 공원·호수가 영원히 밀린다 (천안은 펫 등록 48곳이 전부 매장).
+const PET_BONUS = 0.1;
+// 펫 미등록이라도 반려동물 산책이 사실상 자유로운 야외 장소.
+// type 으로 거르면 안 된다 — transform 이 쇼핑(38)·문화시설(14)·축제(15)를 모두
+// ATTRACTION 으로 뭉개서, ATTRACTION 568건 중 192건이 실내이거나 기간한정이다.
+// contentTypeId 로 관광지(12)·레포츠(28)만 취한다.
+// 여행코스(25)는 제외 — 24건 중 23건이 주소가 없고, 이름이 장소가 아니라 코스 설명문이다
+// ("곰 여인의 전설이 강물 되어 흐르네"). 여러 지점을 묶은 코스라 단일 좌표도 의미가 약하다.
+// 산책 코스는 두루누비 연동 후 durunubi_courses 로 제대로 채운다.
+const OUTDOOR_CONTENT_TYPES = [12, 28];
+// 쇼핑(38)은 펫 공식 등록이라도 추천에서 뺀다. 충남 펫 등록 83곳 중 71곳이 올리브영·
+// 하이마트 같은 체인 매장이고, 시내에 있어 거리 점수까지 유리해 상위를 독식한다.
+// "퇴근 후 한적한 펫 외출"과 맞지 않는다. DB 에는 그대로 두고 추천에서만 제외한다.
+const SHOPPING_CONTENT_TYPE = 38;
+// 거리 정렬 전에 받아둘 후보 풀. 박스 쿼리는 순서 보장이 없어 limit 을 바로 걸면
+// 반경 안에서 아무 30건이나 잡히고 가까운 곳이 통째로 누락된다.
+const CANDIDATE_POOL = 300;
 
 // PRD §14: CORS origin 화이트리스트 — production 도메인 + localhost
 const ALLOWED_ORIGINS = new Set([
@@ -169,8 +193,8 @@ Deno.serve(async (req: Request): Promise<Response> => {
     const slice = candidates.slice(0, MAX_CANDIDATES);
     const poiIds = slice.map((p) => p.id);
     const sigungus = [...new Set(slice.map((p) => p.sigungu_code))];
-    const weekday = startAt.getDay();
-    const hourSlot = startAt.getHours();
+    const weekday = kstWeekday(startAt);
+    const hourSlot = kstHour(startAt);
 
     const [verifiedMap, quietnessBySigungu, forecastsByPoi, etas] = await Promise.all([
       fetchVerifiedCounts(admin, poiIds), // 1 query
@@ -193,7 +217,13 @@ Deno.serve(async (req: Request): Promise<Response> => {
 
     // ─ 시간 예산(왕복 = timeHours/2 시간 = 분) 안에 들어오는 것만 ─
     const budgetMin = (input.timeHours / 2) * 60;
-    const inBudget = enriched.filter((e) => e.eta.minutes <= budgetMin);
+    // 시간 예산 + "도착했을 때 문이 열려 있는가".
+    // 운영시간은 detailIntro2 실데이터(pois.open_from/open_to). 정보가 없으면 통과시킨다.
+    const inBudget = enriched.filter((e) => {
+      if (e.eta.minutes > budgetMin) return false;
+      const arrival = new Date(startAt.getTime() + e.eta.minutes * 60_000);
+      return isOpenAtHour(e.poi.open_from, e.poi.open_to, kstHour(arrival));
+    });
     if (inBudget.length === 0) return j({ recommendations: [] });
 
     // ─ 점수 (PRD §12.2): 0.4*quietness + 0.3*verification + 0.2*dist_inv + 0.1*weather ─
@@ -206,14 +236,16 @@ Deno.serve(async (req: Request): Promise<Response> => {
         // 카테고리 가산점 (PRD §6.2 웰니스/생태 +5)
         const categoryBonus = (e.poi.is_wellness ? 5 : 0) + (e.poi.is_eco ? 5 : 0);
         const quietnessAdj = Math.min(100, e.quietness.now + categoryBonus);
+        // PRD §12.2 가중치는 불변. 펫 가산점은 한적도를 왜곡하지 않도록 총점에 더한다.
         const score =
-          0.4 * (quietnessAdj / 100) + 0.3 * verifNorm + 0.2 * distInverse + 0.1 * weatherIndoor;
+          0.4 * (quietnessAdj / 100) +
+          0.3 * verifNorm +
+          0.2 * distInverse +
+          0.1 * weatherIndoor +
+          (e.poi.pet_allowed ? PET_BONUS : 0);
         return { ...e, score, quietnessAdj };
       })
-      .sort((a, b) => {
-        if (a.poi.pet_allowed !== b.poi.pet_allowed) return a.poi.pet_allowed ? -1 : 1; // 펫 우선
-        return b.score - a.score;
-      })
+      .sort((a, b) => b.score - a.score)
       .slice(0, TOP_N);
 
     // ─ 배지 일괄 조회 ─
@@ -226,11 +258,9 @@ Deno.serve(async (req: Request): Promise<Response> => {
       address: s.poi.address ?? '',
       lat: s.poi.lat,
       lng: s.poi.lng,
-      sourceLabel: s.poi.pet_allowed
-        ? '펫 동반 가능'
-        : s.poi.type === 'TRAIL'
-          ? '두루누비 코스'
-          : '한적한 산책지',
+      // 두루누비는 아직 미연동 → TRAIL 도 '한적한 산책지'. 연동 시 코스 라벨 부활.
+      sourceLabel: s.poi.pet_allowed ? '펫 동반 가능' : '한적한 산책지',
+      openHoursText: s.poi.use_time_text,
       type: s.poi.type,
       imageUrl: s.poi.image_urls?.[0] ?? null,
       badges: badgesByPoi.get(s.poi.id) ?? [],
@@ -308,7 +338,7 @@ async function fetchPoiCandidates(
   const latDelta = radiusKm / 111;
   const lngDelta = radiusKm / (111 * Math.cos((origin.lat * Math.PI) / 180));
   const cols =
-    'id,name,type,lat,lng,address,image_urls,pet_policy_text,is_wellness,is_eco,pet_allowed,sigungu_code';
+    'id,name,type,lat,lng,address,image_urls,pet_policy_text,is_wellness,is_eco,pet_allowed,sigungu_code,content_type_id,use_time_text,open_from,open_to';
   const box = (q: any) =>
     q
       .gte('lat', origin.lat - latDelta)
@@ -316,23 +346,38 @@ async function fetchPoiCandidates(
       .gte('lng', origin.lng - lngDelta)
       .lte('lng', origin.lng + lngDelta);
 
-  // 1) 펫동반 가능 우선
-  const { data: petData, error: petErr } = await box(
-    supabase.from('pois').select(cols).eq('pet_allowed', true),
-  ).limit(MAX_CANDIDATES);
-  if (petErr) throw petErr;
-  const pet = (petData ?? []) as PoiCandidate[];
+  // 출발지에서 가까운 순으로 n 건. 박스 안 순서가 불확정이라 여기서 직접 정렬한다.
+  const nearest = (rows: PoiCandidate[], n: number): PoiCandidate[] =>
+    rows
+      .map((p) => ({ p, d: haversineKm(origin, { lat: p.lat, lng: p.lng }) }))
+      .sort((a, b) => a.d - b.d)
+      .slice(0, n)
+      .map((x) => x.p);
 
-  // 2) 부족하면 비펫 야외 타입으로 fallback ("한적한 산책지")
-  if (pet.length >= TOP_N) return pet;
+  // 1) 펫 공식 등록. 정원의 절반까지만 — 나머지는 야외 몫으로 남긴다.
+  //    (전량을 펫으로 채우면 쇼핑 편중 지역에서 야외가 한 곳도 후보에 못 든다)
+  const petQuota = Math.ceil(MAX_CANDIDATES / 2);
+  const { data: petData, error: petErr } = await box(
+    supabase
+      .from('pois')
+      .select(cols)
+      .eq('pet_allowed', true)
+      // content_type_id 가 null 인 POI(사용자 제보 등)는 남긴다
+      .or(`content_type_id.is.null,content_type_id.neq.${SHOPPING_CONTENT_TYPE}`),
+  ).limit(CANDIDATE_POOL);
+  if (petErr) throw petErr;
+  const pet = nearest((petData ?? []) as PoiCandidate[], petQuota);
+
+  // 2) 야외 장소는 항상 함께 조회한다 (펫 후보가 넉넉해도 점수로 경쟁시킨다).
+  //    남은 정원을 모두 쓰므로 펫 등록이 적은 지역일수록 야외가 많이 들어온다.
   const { data: walkData } = await box(
     supabase
       .from('pois')
       .select(cols)
       .eq('pet_allowed', false)
-      .in('type', ['TRAIL', 'PARK', 'ATTRACTION']),
-  ).limit(MAX_CANDIDATES - pet.length);
-  const walk = (walkData ?? []) as PoiCandidate[];
+      .in('content_type_id', OUTDOOR_CONTENT_TYPES),
+  ).limit(CANDIDATE_POOL);
+  const walk = nearest((walkData ?? []) as PoiCandidate[], MAX_CANDIDATES - pet.length);
   return [...pet, ...walk];
 }
 
@@ -371,6 +416,24 @@ async function getEtaCached(
 // ═══════════════ 한적도 (현재 + 30일 예측 + 주간 평균) ═══════════════
 
 // poi.id(UUID) → 32bit 결정적 해시 (FNV-1a). POI별 한적도 편차 산출용 (QA #2 임시).
+// Deno Edge 런타임은 UTC 로 실행된다. 서비스 기준 시각은 KST 이므로 날짜·시각을 쓸 때는
+// 반드시 아래 헬퍼로 환산한다. (Date#getHours 를 그대로 쓰면 9시간 어긋난다 —
+//  밤 8시 KST = 11시 UTC 라 "08:00~17:00" 인 곳이 영업 중으로 판정됐다)
+const KST_OFFSET_MS = 9 * 60 * 60 * 1000;
+const toKst = (d: Date): Date => new Date(d.getTime() + KST_OFFSET_MS);
+const kstHour = (d: Date): number => toKst(d).getUTCHours();
+const kstWeekday = (d: Date): number => toKst(d).getUTCDay();
+const kstDateStr = (d: Date): string => toKst(d).toISOString().slice(0, 10);
+
+// 도착 시각에 문이 열려 있는가. prisma/tourapi/transform.ts 의 isOpenAtHour 와 동일 로직.
+// 정보가 없으면(open_from null) true — 모르는 것을 닫힘으로 취급해 후보에서 빼지 않는다.
+function isOpenAtHour(openFrom: number | null, openTo: number | null, hour: number): boolean {
+  if (openFrom == null || openTo == null) return true;
+  if (openFrom === openTo) return true;
+  if (openFrom < openTo) return hour >= openFrom && hour < openTo;
+  return hour >= openFrom || hour < openTo; // 자정 넘김
+}
+
 function hash32(s: string): number {
   let h = 2166136261; // FNV-1a offset basis
   for (let i = 0; i < s.length; i++) {
@@ -452,8 +515,8 @@ async function fetchForecasts(
     .from('poi_forecasts')
     .select('poi_id, forecast_date, expected_score')
     .in('poi_id', poiIds)
-    .gte('forecast_date', startAt.toISOString().slice(0, 10))
-    .lte('forecast_date', weekFromNow.toISOString().slice(0, 10));
+    .gte('forecast_date', kstDateStr(startAt))
+    .lte('forecast_date', kstDateStr(weekFromNow));
 
   for (const r of (data ?? []) as ForecastRow[]) {
     const list = map.get(r.poi_id) ?? [];
@@ -476,9 +539,7 @@ function computeQuietness(
   weekAvg: number;
   sampleSufficient: boolean;
 } {
-  const tomorrow = new Date(startAt);
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  const tomorrowDate = tomorrow.toISOString().slice(0, 10);
+  const tomorrowDate = kstDateStr(new Date(startAt.getTime() + 24 * 60 * 60 * 1000));
 
   const { nowScore, sampleSufficient } = quietnessBySigungu.get(poi.sigungu_code) ?? {
     nowScore: 60,

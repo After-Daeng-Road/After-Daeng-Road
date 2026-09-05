@@ -78,3 +78,18 @@ export async function fetchDetailPetTour(contentId: string | number): Promise<Pe
     return null; // 펫 미등록/조회실패는 미동반으로 처리
   }
 }
+
+/**
+ * 운영 정보 (detailIntro2). contentTypeId 필수.
+ * 실패는 throw 한다 — fetchDetailPetTour 처럼 삼키면 "정보 없음"과 구분되지 않는다.
+ * 펫 POI 도 KorService2 에 같은 contentId 로 존재하므로 서비스를 나누지 않는다.
+ */
+export async function fetchIntro(
+  contentId: string | number,
+  contentTypeId: number,
+): Promise<Record<string, string> | null> {
+  const json = await getJson(url('KorService2/detailIntro2', { contentId, contentTypeId }));
+  const item = json.response.body?.items?.item;
+  const first = Array.isArray(item) ? item[0] : item;
+  return first && typeof first === 'object' ? (first as Record<string, string>) : null;
+}

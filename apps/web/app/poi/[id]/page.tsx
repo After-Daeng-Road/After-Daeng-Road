@@ -13,12 +13,12 @@ import { COPY } from '@/lib/copy';
 
 export default async function PoiDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const detail = await getPoiDetail({ poiId: id });
+  // 두 조회는 서로 의존하지 않는다 — 순차로 두면 DB 왕복이 2배가 된다
+  const [detail, bookmarked] = await Promise.all([getPoiDetail({ poiId: id }), isBookmarked(id)]);
   if (!detail) notFound();
 
   const { poi, hourly, verifiedCount } = detail;
   const maxScore = Math.max(...hourly.map((h) => h.score), 100);
-  const bookmarked = await isBookmarked(poi.id);
 
   return (
     <main className="mx-auto max-w-2xl px-4 py-6">

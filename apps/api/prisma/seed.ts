@@ -1,8 +1,12 @@
 // 댕로드 시드 데이터 (PRD §11.6, §13.3)
-// 데모 user/pet + 충남 4시 POI 20개 + quietness_scores 140행 + 카테고리 배지 자동 부여
+// 데모 user/pet + quietness_scores 140행 + 카테고리 배지 자동 부여
+//
+// POI 는 시드하지 않는다. 실데이터(TourAPI)만 쓴다:
+//   npm run seed:tourapi        — 일반 관광정보 950건
+//   npm run seed:pet-realdata   — 반려동물 동반여행 83건 (펫 플래그·상세)
 // 실행: `npm run seed` (apps/api)
 
-import { PrismaClient, PoiType, SyncSource, QuietnessSource } from '@prisma/client';
+import { PrismaClient, QuietnessSource } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
@@ -14,78 +18,8 @@ const CHUNGNAM_SIGUNGU = [
   { code: 33150, name: '서산', lat: 36.7848, lng: 126.4503 },
 ] as const;
 
-// 시·군별 5개 POI 템플릿 (deterministic offsets로 재실행 가능)
-const POI_TEMPLATES: Array<{
-  suffix: string;
-  type: PoiType;
-  petAllowed: boolean;
-  petIndoor: boolean;
-  petOutdoor: boolean;
-  isWellness: boolean;
-  isEco: boolean;
-  dlat: number;
-  dlng: number;
-}> = [
-  {
-    suffix: '댕댕 카페',
-    type: 'CAFE',
-    petAllowed: true,
-    petIndoor: true,
-    petOutdoor: true,
-    isWellness: false,
-    isEco: false,
-    dlat: 0.012,
-    dlng: 0.012,
-  },
-  {
-    suffix: '북카페',
-    type: 'CAFE',
-    petAllowed: true,
-    petIndoor: true,
-    petOutdoor: false,
-    isWellness: false,
-    isEco: false,
-    dlat: -0.012,
-    dlng: 0.012,
-  },
-  {
-    suffix: '한식당',
-    type: 'RESTAURANT',
-    petAllowed: false,
-    petIndoor: false,
-    petOutdoor: true,
-    isWellness: false,
-    isEco: false,
-    dlat: 0.012,
-    dlng: -0.012,
-  },
-  {
-    suffix: '하천 산책로',
-    type: 'TRAIL',
-    petAllowed: true,
-    petIndoor: false,
-    petOutdoor: true,
-    isWellness: false,
-    isEco: true,
-    dlat: -0.012,
-    dlng: -0.012,
-  },
-  {
-    suffix: '치유의 숲',
-    type: 'PARK',
-    petAllowed: true,
-    petIndoor: false,
-    petOutdoor: true,
-    isWellness: true,
-    isEco: true,
-    dlat: 0,
-    dlng: 0,
-  },
-];
-
 const DEMO_USER_ID = '00000000-0000-0000-0000-000000000000';
 const DEMO_PET_ID = '00000000-0000-0000-0000-000000000001';
-const SEED_SOURCE: SyncSource = 'USER_UGC';
 const QUIETNESS_SAMPLE_SOURCE: QuietnessSource = 'DATABANK_VISITOR';
 
 // ─── 유틸: geohash7 (Edge Function과 동일 알고리즘) ───
@@ -168,48 +102,6 @@ async function seedDemoUser() {
   return user;
 }
 
-// ─── 2. 충남 4시 POI ─ (시·군별 5개 × 4시 = 20) ─
-async function seedPois() {
-  // 기존 시드 POI 정리 (source=USER_UGC 만)
-  await prisma.poi.deleteMany({ where: { source: SEED_SOURCE } });
-
-  let count = 0;
-  for (const sgg of CHUNGNAM_SIGUNGU) {
-    for (let i = 0; i < POI_TEMPLATES.length; i++) {
-      const tpl = POI_TEMPLATES[i];
-      const lat = sgg.lat + tpl.dlat;
-      const lng = sgg.lng + tpl.dlng;
-
-      await prisma.poi.create({
-        data: {
-          source: SEED_SOURCE,
-          sourceId: `seed-${sgg.code}-${i + 1}`,
-          name: `${sgg.name} ${tpl.suffix}`,
-          type: tpl.type,
-          sigunguCode: sgg.code,
-          address: `충남 ${sgg.name}시 시드 ${i + 1}`,
-          lat,
-          lng,
-          geohash7: geohash7(lat, lng),
-          imageUrls: [],
-          intro: `${sgg.name}의 ${tpl.suffix} — 데모 시드 데이터`,
-          petAllowed: tpl.petAllowed,
-          petIndoor: tpl.petAllowed ? tpl.petIndoor : null,
-          petOutdoor: tpl.petAllowed ? tpl.petOutdoor : null,
-          petPolicyText: tpl.petAllowed ? '리드줄 필수, 화장실 OK' : '펫 미동반',
-          isWellness: tpl.isWellness,
-          isEco: tpl.isEco,
-          lastSyncedAt: new Date(),
-        },
-      });
-      count++;
-    }
-  }
-  console.log(
-    `  ✓ ${count}개 POI (${CHUNGNAM_SIGUNGU.length} 시 × ${POI_TEMPLATES.length} 템플릿)`,
-  );
-}
-
 // ─── 3. 한적도 점수 (key 시간대만 — 4시 × 7 요일 × 5 시간대 = 140행) ─
 async function seedQuietness() {
   await prisma.quietnessScore.deleteMany({ where: { source: QUIETNESS_SAMPLE_SOURCE } });
@@ -253,7 +145,6 @@ async function seedBadges() {
 async function main() {
   console.log('🐕 댕로드 시드 시작');
   await seedDemoUser();
-  await seedPois();
   await seedQuietness();
   await seedBadges();
   console.log('✅ 시드 완료');

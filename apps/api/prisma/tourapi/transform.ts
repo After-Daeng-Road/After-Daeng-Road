@@ -2,13 +2,7 @@
 // 근거: 2026-08-29 실데이터 프로브 (KorService2/areaBasedList2 + detailPetTour2)
 
 export type PoiTypeStr =
-  | 'CAFE'
-  | 'RESTAURANT'
-  | 'TRAIL'
-  | 'PARK'
-  | 'ATTRACTION'
-  | 'ACCOMMODATION'
-  | 'REST_AREA';
+  'CAFE' | 'RESTAURANT' | 'TRAIL' | 'PARK' | 'ATTRACTION' | 'ACCOMMODATION' | 'REST_AREA';
 
 export const LDONG_REGN_CD = 44; // 충청남도 법정동 시도코드
 
@@ -172,4 +166,138 @@ export function geohash7(lat: number, lng: number): string {
     }
   }
   return hash;
+}
+
+// ─── detailCommon2 / detailImage2 응답 정제 ───
+// 근거: 2026-09-05 KorPetTourService2 실응답. homepage 는 앵커태그·순수URL·스킴없는주소
+// 세 형태로 오고, overview 에는 <br> 과 HTML 엔티티가 섞인다.
+
+const HTML_ENTITIES: Record<string, string> = {
+  '&lt;': '<',
+  '&gt;': '>',
+  '&quot;': '"',
+  '&#39;': "'",
+  '&apos;': "'",
+  '&nbsp;': ' ',
+};
+
+/** detailCommon2 의 homepage → 링크로 쓸 수 있는 URL (없으면 null) */
+export function parseHomepage(raw: string | undefined | null): string | null {
+  const s = (raw ?? '').trim();
+  if (!s) return null;
+
+  // <a href="...">텍스트</a> 형태면 href 를 쓴다 (표시 텍스트는 한글 도메인이라 링크로 부적합)
+  const href = s.match(/<a[^>]*\shref=["']([^"']*)["']/i)?.[1]?.trim();
+  const url = href !== undefined ? href : s.replace(/<[^>]*>/g, '').trim();
+  if (!url) return null;
+
+  return /^https?:\/\//i.test(url) ? url : `https://${url}`;
+}
+
+/** detailCommon2 의 overview → 평문 소개글 (없으면 null) */
+export function cleanOverview(raw: string | undefined | null): string | null {
+  let s = (raw ?? '').replace(/<[^>]*>/g, ' ');
+  for (const [ent, ch] of Object.entries(HTML_ENTITIES)) s = s.split(ent).join(ch);
+  s = s.split('&amp;').join('&'); // &amp; 는 마지막 (이중 이스케이프 방지)
+  s = s.replace(/\s+/g, ' ').trim();
+  return s || null;
+}
+
+/** 대표이미지(firstimage) + 상세이미지(detailImage2) 병합. http→https 정규화 후 중복 제거 */
+export function mergeImageUrls(existing: string[], extra: string[]): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const raw of [...existing, ...extra]) {
+    const url = (raw ?? '').trim().replace(/^http:\/\//i, 'https://');
+    if (!url || seen.has(url)) continue;
+    seen.add(url);
+    out.push(url);
+  }
+  return out;
+}
+
+// ─── detailIntro2 운영시간 ───
+// 실응답은 세 형태다: "상시 개방" / "08:00~17:00" / "기상여건에 따라 통제 되므로 …"(안내문).
+// 안내문은 파싱하지 않고 null 로 둔다 — 추천에서 시간 판단 자체를 건너뛰게 해서
+// 정보가 없다는 이유로 후보에서 탈락시키지 않는다.
+
+const ALWAYS_OPEN_RE = /상시|24\s*시간|연중\s*무휴\s*개방/;
+const HOUR_RANGE_RE = /(\d{1,2}):(\d{2})\s*[~\-–—]\s*(\d{1,2}):(\d{2})/;
+
+export type OpenHours = { openFrom: number | null; openTo: number | null };
+
+export function parseUseTime(raw: string | undefined | null): OpenHours {
+  const s = (raw ?? '').trim();
+  if (!s) return { openFrom: null, openTo: null };
+  if (ALWAYS_OPEN_RE.test(s)) return { openFrom: 0, openTo: 24 };
+
+  // 여러 범위(하절기/동절기)가 있으면 첫 번째를 대표값으로 쓴다
+  const m = s.match(HOUR_RANGE_RE);
+  if (!m) return { openFrom: null, openTo: null };
+
+  const from = Number(m[1]);
+  const to = Number(m[3]);
+  if (!Number.isFinite(from) || !Number.isFinite(to) || from > 24 || to > 24) {
+    return { openFrom: null, openTo: null };
+  }
+  return { openFrom: from, openTo: to };
+}
+
+/** 해당 시각에 열려 있는가. 정보가 없으면 true (모르는 것을 닫힘으로 취급하지 않는다) */
+export function isOpenAtHour(
+  openFrom: number | null | undefined,
+  openTo: number | null | undefined,
+  hour: number,
+): boolean {
+  if (openFrom == null || openTo == null) return true;
+  if (openFrom === openTo) return true; // 24시간 운영 표기
+  if (openFrom < openTo) return hour >= openFrom && hour < openTo;
+  return hour >= openFrom || hour < openTo; // 자정 넘김 (예: 22~02)
+}
+
+// detailIntro2 는 contentTypeId 마다 필드명이 다르다 (실응답 확인):
+//   12 관광지 usetime / 14 문화시설 usetimeculture / 28 레포츠 usetimeleports
+//   38 쇼핑 opentime / 39 음식점 opentimefood
+// 타입 → 키 매핑표를 두는 대신, 후보 키를 순서대로 훑어 첫 값을 쓴다.
+// 응답에는 해당 타입의 키만 오므로 충돌하지 않고, 새 타입이 늘어도 목록만 추가하면 된다.
+const INTRO_KEYS = {
+  useTimeText: ['usetime', 'usetimeleports', 'usetimeculture', 'opentime', 'opentimefood'],
+  restDateText: [
+    'restdate',
+    'restdateleports',
+    'restdateculture',
+    'restdateshopping',
+    'restdatefood',
+  ],
+  parkingText: ['parking', 'parkingleports', 'parkingculture', 'parkingshopping', 'parkingfood'],
+  infoCenter: [
+    'infocenter',
+    'infocenterleports',
+    'infocenterculture',
+    'infocentershopping',
+    'infocenterfood',
+  ],
+} as const;
+
+export type IntroFields = {
+  useTimeText: string | null;
+  restDateText: string | null;
+  parkingText: string | null;
+  infoCenter: string | null;
+};
+
+export function pickIntroFields(intro: Record<string, string> | null | undefined): IntroFields {
+  const pick = (keys: readonly string[]): string | null => {
+    for (const k of keys) {
+      const v = intro?.[k]?.trim();
+      if (v) return v;
+    }
+    return null;
+  };
+  return {
+    useTimeText: pick(INTRO_KEYS.useTimeText),
+    restDateText: pick(INTRO_KEYS.restDateText),
+    parkingText: pick(INTRO_KEYS.parkingText),
+    infoCenter: pick(INTRO_KEYS.infoCenter),
+  };
 }

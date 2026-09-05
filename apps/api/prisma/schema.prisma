@@ -198,6 +198,15 @@ model Poi {
   homepage  String?
   phone     String?
 
+  // 운영 정보 (TourAPI detailIntro2) — 원문 그대로 보존해 상세 화면에 노출
+  useTimeText  String? @map("use_time_text") // "상시 개방" / "08:00~17:00" / 안내문
+  restDateText String? @map("rest_date_text") // "연중무휴" 등
+  parkingText  String? @map("parking_text")
+  infoCenter   String? @map("info_center")
+  // useTimeText 에서 파싱한 개·폐장 시각(0~24). 파싱 불가하면 null → 추천에서 시간 판단 안 함
+  openFrom     Int?    @map("open_from")
+  openTo       Int?    @map("open_to")
+
   // 펫 메타 (TourAPI detailPetTour)
   petAllowed    Boolean  @default(false) @map("pet_allowed")
   petSizeMaxKg  Int?     @map("pet_size_max_kg")

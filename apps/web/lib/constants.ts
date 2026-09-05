@@ -1,8 +1,6 @@
 // 댕로드 FE 데이터 상수 — 내비/도시/요일/펫제한/소스 라벨/시간 경계/데모 데이터.
 // 텍스트 카피는 lib/copy.ts, 여기엔 "구조적 데이터"만 둔다.
 
-import type { Recommendation } from '@/lib/types/recommendation';
-
 // ───────── 내비게이션 ─────────
 export const NAV_ITEMS = [
   { href: '/', label: '홈' },
@@ -74,68 +72,3 @@ export const TIME_MIN = 1;
 export const TIME_MAX = 6;
 export const TIME_STEP = 0.5;
 export const TIME_DEFAULT = 3;
-
-// ───────── 초기 데모 추천 3곳 (ui_kits 홈 기준) ─────────
-// 실제 "지금 추천받기" 응답이 오면 교체됨. 실데이터 연동 시 제거하고 초기값 null 로.
-export const DEMO_RECOMMENDATIONS: Recommendation[] = [
-  {
-    poiId: 'sample-seosan-haemi',
-    name: '서산 해미읍성 둘레길',
-    address: '충남 서산시 해미면',
-    lat: 36.7028,
-    lng: 126.5519,
-    sourceLabel: '두루누비 코스',
-    type: 'TRAIL',
-    imageUrl: '/images/ref/poi-1.jpg',
-    badges: ['TRAIL_OFFICIAL'],
-    sampleSufficient: true,
-    reason: {
-      distanceKm: 42,
-      etaMin: 48,
-      quietnessNow: 87,
-      quietnessForecast: 92,
-      quietnessWeekAvg: 89,
-      verifiedCount: 5,
-    },
-  },
-  {
-    poiId: 'sample-asan-sinjeong',
-    name: '아산 신정호 호수 산책로',
-    address: '충남 아산시',
-    lat: 36.7757,
-    lng: 127.0376,
-    sourceLabel: '두루누비 코스',
-    type: 'TRAIL',
-    imageUrl: '/images/ref/poi-2.jpg',
-    badges: ['TRAIL_OFFICIAL'],
-    sampleSufficient: true,
-    reason: {
-      distanceKm: 28,
-      etaMin: 32,
-      quietnessNow: 79,
-      quietnessForecast: 83,
-      quietnessWeekAvg: 81,
-      verifiedCount: 8,
-    },
-  },
-  {
-    poiId: 'sample-gongju-muryeong',
-    name: '공주 무령왕릉 인근 야외 카페',
-    address: '충남 공주시',
-    lat: 36.4609,
-    lng: 127.1145,
-    sourceLabel: '펫동반 가능',
-    type: 'CAFE',
-    imageUrl: '/images/ref/poi-3.jpg',
-    badges: ['PET_VERIFIED'],
-    sampleSufficient: true,
-    reason: {
-      distanceKm: 55,
-      etaMin: 60,
-      quietnessNow: 91,
-      quietnessForecast: 90,
-      quietnessWeekAvg: 88,
-      verifiedCount: 3,
-    },
-  },
-];
