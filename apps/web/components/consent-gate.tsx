@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { signOut, useSession } from 'next-auth/react';
 import { ShieldCheck } from 'lucide-react';
 import { getConsentStatus, recordConsent } from '@/lib/actions/consent';
-import { REQUIRED_CONSENTS } from '@/lib/constants';
+import { CONSENT_VERSIONS, REQUIRED_CONSENTS } from '@/lib/constants';
 import { COPY } from '@/lib/copy';
 
 // PRD §14 — 온보딩 필수 동의 게이트 (QA #4 후속).
@@ -46,7 +46,10 @@ export function ConsentGate() {
     let cancelled = false;
     getConsentStatus().then((latest) => {
       if (cancelled) return;
-      const missing = REQUIRED_CONSENTS.some((k) => !latest[k]?.agreed);
+      // 미동의뿐 아니라 "이전 버전에만 동의"한 경우도 재동의 대상 (약관 개정 대응)
+      const missing = REQUIRED_CONSENTS.some(
+        (k) => !latest[k]?.agreed || latest[k]?.version !== CONSENT_VERSIONS[k],
+      );
       setOpen(missing);
     });
     return () => {
