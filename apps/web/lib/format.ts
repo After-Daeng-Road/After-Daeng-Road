@@ -26,9 +26,20 @@ export function kakaoDirectionsUrl(
   return `https://map.kakao.com/link/to/${to}`;
 }
 
-// 시간 예산(h) → 검색 반경(km). 평균 50km/h · 편도 절반 가정 (DESIGN_SYSTEM §5 TimeSlider)
+// ⚠ Edge Function(time-slider-recommender)의 oneWayBudgetMin 과 같은 식이어야 한다.
+// 두 곳이 어긋나면 슬라이더 캡션의 "반경 약 N km"와 실제 검색 반경이 달라져
+// 화면이 사실과 다른 값을 말하게 된다.
+const MIN_STAY_MIN = 60;
+const MIN_ONE_WAY_MIN = 15;
+
+/** 슬라이더 시간(h) → 편도 이동 예산(분). 왕복 이동 + 최소 체류를 빼고 남은 절반 */
+export function oneWayBudgetMin(timeHours: number): number {
+  return Math.max(MIN_ONE_WAY_MIN, (timeHours * 60 - MIN_STAY_MIN) / 2);
+}
+
+// 시간 예산(h) → 검색 반경(km). 평균 50km/h (DESIGN_SYSTEM §5 TimeSlider)
 export function radiusFromHours(timeHours: number): number {
-  return Math.round((timeHours / 2) * 50);
+  return Math.round((oneWayBudgetMin(timeHours) / 60) * 50);
 }
 
 export function formatDate(d: Date): string {

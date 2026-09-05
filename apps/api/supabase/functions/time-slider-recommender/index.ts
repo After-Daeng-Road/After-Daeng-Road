@@ -25,7 +25,12 @@ type RecommendInput = {
 
 type ReasonChip = {
   distanceKm: number;
+  /** 편도 이동 시간(분) */
   etaMin: number;
+  /** 왕복 이동 시간(분) = etaMin × 2 */
+  roundTripMin: number;
+  /** 왕복을 빼고 현지에서 쓸 수 있는 시간(분). 두루누비 코스는 도보 소요 시간 */
+  stayMin: number;
   quietnessNow: number;
   quietnessForecast: number;
   quietnessWeekAvg: number;
@@ -50,6 +55,7 @@ type Recommendation = {
 
 type PoiCandidate = {
   id: string;
+  source: string;
   name: string;
   type: string;
   lat: number;
@@ -89,6 +95,17 @@ const ETA_TTL_SEC = 24 * 60 * 60; // PRD §13.5
 const RATE_LIMIT_WINDOW_SEC = 60; // PRD §10.1: 분당 30회
 const RATE_LIMIT_MAX = 30;
 const AVG_SPEED_KMH = 50; // 1차 휴리스틱 (PRD §12.2)
+// 현지에서 실제로 머무는 최소 시간. 슬라이더 시간에서 이만큼을 뺀 나머지를 왕복에 쓴다.
+// 이전에는 편도 ETA 만 "시간의 절반" 안에 들면 통과시켜, 3시간을 고른 사용자에게
+// 왕복 주행만 정확히 3시간인 곳을 추천했다 — 체류 시간이 0분이라 제품 약속이 성립하지 않았다.
+const MIN_STAY_MIN = 60;
+// 편도 예산의 하한. 1시간을 고르면 (60-60)/2 = 0 이 되어 후보가 전멸한다.
+const MIN_ONE_WAY_MIN = 15;
+
+/** 슬라이더 시간(h) → 편도 이동 예산(분). 반경·통과 판정이 모두 이 값에서 파생된다. */
+function oneWayBudgetMin(timeHours: number): number {
+  return Math.max(MIN_ONE_WAY_MIN, (timeHours * 60 - MIN_STAY_MIN) / 2);
+}
 const DEFAULT_LIMIT = 3; // PRD §6.1 "추천 3곳" — 홈 카드 기본값
 const MAX_LIMIT = 100;
 // 후보 수는 요청(limit/offset)과 무관하게 고정한다.
@@ -192,7 +209,10 @@ Deno.serve(async (req: Request): Promise<Response> => {
   try {
     const startAt = input.startAt ? new Date(input.startAt) : new Date();
     const origin = await resolveDeparture(input.departure);
-    const radiusKm = (input.timeHours / 2) * AVG_SPEED_KMH;
+    // 반경과 통과 판정은 반드시 같은 편도 예산에서 파생시킨다.
+    // 따로 두면 박스 조회 반경과 필터가 어긋나 헛후보만 늘고 결과가 줄어든다.
+    const oneWayMin = oneWayBudgetMin(input.timeHours);
+    const radiusKm = (oneWayMin / 60) * AVG_SPEED_KMH;
 
     // ─ 후보 POI (geohash + petAllowed 인덱스 사용) ─
     const limit = input.limit ?? DEFAULT_LIMIT;
@@ -208,16 +228,21 @@ Deno.serve(async (req: Request): Promise<Response> => {
     const weekday = kstWeekday(startAt);
     const hourSlot = kstHour(startAt);
 
-    const [verifiedMap, quietnessBySigungu, forecastsByPoi, etas] = await Promise.all([
+    const [verifiedMap, quietnessBySigungu, forecastsByPoi, trailMeta, etas] = await Promise.all([
       fetchVerifiedCounts(admin, poiIds), // 1 query
       fetchQuietnessNow(admin, sigungus, weekday, hourSlot), // 1 query
       fetchForecasts(admin, poiIds, startAt), // 1 query
+      fetchTrailMeta(
+        admin,
+        slice.filter((p) => p.source === 'DURUNUBI').map((p) => p.id),
+      ), // 1 query
       Promise.all(slice.map((poi) => getEtaCached(origin, poi))), // haversine 폴백, DB 조회 없음
     ]);
 
     const enriched = slice.map((poi, i) => ({
       poi,
       eta: etas[i],
+      trail: trailMeta.get(poi.id) ?? null,
       quietness: computeQuietness(
         poi,
         quietnessBySigungu,
@@ -227,12 +252,17 @@ Deno.serve(async (req: Request): Promise<Response> => {
       verifiedCount: verifiedMap.get(poi.id) ?? 0,
     }));
 
-    // ─ 시간 예산(왕복 = timeHours/2 시간 = 분) 안에 들어오는 것만 ─
-    const budgetMin = (input.timeHours / 2) * 60;
+    // ─ 시간 예산: 왕복 이동 + 현지 체류가 슬라이더 시간 안에 들어와야 한다 ─
+    // 이전에는 편도 ETA 만 시간의 절반과 비교해, 3시간을 고르면 왕복 주행만 3시간인 곳이
+    // 통과하고 카드에는 편도 90분만 표시됐다. 체류 시간이 0분이라 제품 약속이 성립하지 않았다.
+    const totalBudgetMin = input.timeHours * 60;
     // 시간 예산 + "도착했을 때 문이 열려 있는가".
     // 운영시간은 detailIntro2 실데이터(pois.open_from/open_to). 정보가 없으면 통과시킨다.
     const inBudget = enriched.filter((e) => {
-      if (e.eta.minutes > budgetMin) return false;
+      const availableMin = totalBudgetMin - e.eta.minutes * 2;
+      // 두루누비 코스는 도보 소요 시간을 다 써야 완주한다. 그 외는 최소 체류를 요구한다.
+      const requiredMin = e.trail?.estimatedMin ?? MIN_STAY_MIN;
+      if (availableMin < requiredMin) return false;
       const arrival = new Date(startAt.getTime() + e.eta.minutes * 60_000);
       return isOpenAtHour(e.poi.open_from, e.poi.open_to, kstHour(arrival));
     });
@@ -272,8 +302,8 @@ Deno.serve(async (req: Request): Promise<Response> => {
       address: s.poi.address ?? '',
       lat: s.poi.lat,
       lng: s.poi.lng,
-      // 두루누비는 아직 미연동 → TRAIL 도 '한적한 산책지'. 연동 시 코스 라벨 부활.
-      sourceLabel: s.poi.pet_allowed ? '펫 동반 가능' : '한적한 산책지',
+      // 두루누비 코스는 출처를 드러낸다 — 한국관광공사 공식 걷기길이라는 것이 신뢰 근거다
+      sourceLabel: s.trail ? '두루누비 코스' : s.poi.pet_allowed ? '펫 동반 가능' : '한적한 산책지',
       openHoursText: s.poi.use_time_text,
       type: s.poi.type,
       imageUrl: s.poi.image_urls?.[0] ?? null,
@@ -283,6 +313,9 @@ Deno.serve(async (req: Request): Promise<Response> => {
       reason: {
         distanceKm: round1(s.eta.distanceKm),
         etaMin: Math.round(s.eta.minutes),
+        roundTripMin: Math.round(s.eta.minutes * 2),
+        // 왕복을 빼고 남는 시간. 두루누비 코스는 위 필터가 도보 소요 이상임을 보장한다
+        stayMin: Math.max(0, Math.round(totalBudgetMin - s.eta.minutes * 2)),
         quietnessNow: Math.round(s.quietnessAdj),
         quietnessForecast: Math.round(s.quietness.forecastTomorrow),
         quietnessWeekAvg: Math.round(s.quietness.weekAvg),
@@ -376,7 +409,7 @@ async function fetchPoiCandidates(
   const latDelta = radiusKm / 111;
   const lngDelta = radiusKm / (111 * Math.cos((origin.lat * Math.PI) / 180));
   const cols =
-    'id,name,type,lat,lng,address,image_urls,pet_policy_text,is_wellness,is_eco,pet_allowed,sigungu_code,content_type_id,use_time_text,open_from,open_to';
+    'id,source,name,type,lat,lng,address,image_urls,pet_policy_text,is_wellness,is_eco,pet_allowed,sigungu_code,content_type_id,use_time_text,open_from,open_to';
   const box = (q: any) =>
     q
       .gte('lat', origin.lat - latDelta)
@@ -406,7 +439,16 @@ async function fetchPoiCandidates(
   if (petErr) throw petErr;
   const pet = nearest((petData ?? []) as PoiCandidate[], petQuota);
 
-  // 2) 야외 장소는 항상 함께 조회한다 (펫 후보가 넉넉해도 점수로 경쟁시킨다).
+  // 2) 두루누비 공식 걷기길. 코스로 적재한 POI 는 content_type_id 가 없어
+  //    위아래 두 갈래 어디에도 걸리지 않는다 — 별도 갈래가 없으면 영원히 후보에 못 든다.
+  //    충남 16건 규모라 반경 안에 드는 것은 모두 넣고 점수로 경쟁시킨다.
+  const { data: trailData, error: trailErr } = await box(
+    supabase.from('pois').select(cols).eq('source', 'DURUNUBI'),
+  ).limit(CANDIDATE_POOL);
+  if (trailErr) throw trailErr;
+  const trail = nearest((trailData ?? []) as PoiCandidate[], maxCandidates);
+
+  // 3) 야외 장소는 항상 함께 조회한다 (펫 후보가 넉넉해도 점수로 경쟁시킨다).
   //    남은 정원을 모두 쓰므로 펫 등록이 적은 지역일수록 야외가 많이 들어온다.
   const { data: walkData } = await box(
     supabase
@@ -415,8 +457,42 @@ async function fetchPoiCandidates(
       .eq('pet_allowed', false)
       .in('content_type_id', OUTDOOR_CONTENT_TYPES),
   ).limit(CANDIDATE_POOL);
-  const walk = nearest((walkData ?? []) as PoiCandidate[], maxCandidates - pet.length);
-  return [...pet, ...walk];
+  const walk = nearest(
+    (walkData ?? []) as PoiCandidate[],
+    Math.max(0, maxCandidates - pet.length - trail.length),
+  );
+  return [...pet, ...trail, ...walk];
+}
+
+// ═══════════════ 두루누비 코스 메타 (도보 소요·코스명) ═══════════════
+
+type TrailMeta = { estimatedMin: number | null; crsName: string; themeName: string | null };
+
+/** 후보 중 두루누비 POI 의 코스 메타를 한 번에 가져온다. 도보 소요 시간이 체류 시간 판정에 쓰인다. */
+async function fetchTrailMeta(
+  supabase: SupabaseClient,
+  poiIds: string[],
+): Promise<Map<string, TrailMeta>> {
+  const out = new Map<string, TrailMeta>();
+  if (poiIds.length === 0) return out;
+  const { data, error } = await supabase
+    .from('durunubi_courses')
+    .select('poi_id,estimated_min,crs_name,theme_name')
+    .in('poi_id', poiIds);
+  if (error) {
+    // 코스 메타가 없다고 추천 전체를 막지 않는다. 체류 시간은 기본값으로 떨어진다.
+    console.error('[durunubi_courses.select] 실패', error.message);
+    return out;
+  }
+  for (const r of data ?? []) {
+    if (!r.poi_id) continue;
+    out.set(r.poi_id, {
+      estimatedMin: r.estimated_min ?? null,
+      crsName: r.crs_name,
+      themeName: r.theme_name ?? null,
+    });
+  }
+  return out;
 }
 
 // ═══════════════ ETA (카카오모빌리티 + Upstash 24h 캐시) ═══════════════

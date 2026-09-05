@@ -2,7 +2,12 @@
 
 export type ReasonChip = {
   distanceKm: number;
+  /** 편도 이동 시간(분) */
   etaMin: number;
+  /** 왕복 이동 시간(분). 이 필드 이전에 저장된 이력에는 없으므로 옵셔널 */
+  roundTripMin?: number;
+  /** 왕복을 빼고 현지에서 쓸 수 있는 시간(분). 이전 이력에는 없으므로 옵셔널 */
+  stayMin?: number;
   quietnessNow: number;
   quietnessForecast: number; // 내일 같은 시간
   quietnessWeekAvg: number; // 이번 주 평균
@@ -15,8 +20,8 @@ export type Recommendation = {
   address: string;
   lat: number;
   lng: number;
-  // Edge Function 실제 반환값. 두루누비 미연동이라 코스 라벨은 아직 없다.
-  sourceLabel: '펫 동반 가능' | '한적한 산책지';
+  // Edge Function 실제 반환값
+  sourceLabel: '펫 동반 가능' | '한적한 산책지' | '두루누비 코스';
   type: 'CAFE' | 'RESTAURANT' | 'TRAIL' | 'PARK' | 'ATTRACTION';
   imageUrl: string | null;
   badges: Array<'PET_VERIFIED' | 'WELLNESS' | 'ECO' | 'TRAIL_OFFICIAL'>;
