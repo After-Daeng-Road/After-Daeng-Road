@@ -57,6 +57,24 @@ export async function createReview(input: ReviewInput) {
   return { ok: true as const, review };
 }
 
+// 내가 쓴 후기 삭제 (PRD §7.2 마이펫타임 후기 관리) — 본인 소유만, 하드 삭제
+export async function deleteReview(reviewId: string) {
+  const session = await auth();
+  if (!session?.user?.id) return { ok: false as const, error: 'Unauthorized' };
+
+  const parsed = z.string().uuid().safeParse(reviewId);
+  if (!parsed.success) return { ok: false as const, error: parsed.error.message };
+
+  // deleteMany 로 소유권을 조건에 포함 — 남의 후기 id 로는 count 0
+  const { count } = await prisma.review.deleteMany({
+    where: { id: parsed.data, userId: session.user.id },
+  });
+  if (count === 0) return { ok: false as const, error: 'Not found' };
+
+  revalidatePath('/me/reviews');
+  return { ok: true as const };
+}
+
 export async function reportReview(reviewId: string) {
   const session = await auth();
   if (!session?.user?.id) return { ok: false as const, error: 'Unauthorized' };
