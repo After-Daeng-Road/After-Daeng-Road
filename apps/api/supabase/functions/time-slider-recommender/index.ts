@@ -15,6 +15,10 @@ type Coord = { lat: number; lng: number };
 type RecommendInput = {
   petId?: string;
   timeHours: number; // 1~6
+  /** 반환 개수. 생략하면 3 (PRD §6.1 "추천 3곳"). 상한 100 */
+  limit?: number;
+  /** 건너뛸 개수. "더보기" 페이지네이션용. 생략하면 0 */
+  offset?: number;
   startAt?: string; // ISO
   departure: Coord | { address: string };
 };
@@ -85,8 +89,13 @@ const ETA_TTL_SEC = 24 * 60 * 60; // PRD §13.5
 const RATE_LIMIT_WINDOW_SEC = 60; // PRD §10.1: 분당 30회
 const RATE_LIMIT_MAX = 30;
 const AVG_SPEED_KMH = 50; // 1차 휴리스틱 (PRD §12.2)
-const TOP_N = 3;
-const MAX_CANDIDATES = 30;
+const DEFAULT_LIMIT = 3; // PRD §6.1 "추천 3곳" — 홈 카드 기본값
+const MAX_LIMIT = 100;
+// 후보 수는 요청(limit/offset)과 무관하게 고정한다.
+// 페이지마다 후보 수가 달라지면 순위 자체가 바뀐다 — 특히 거리 점수의 분모(maxDist)가
+// 후보 집합에 의존해서, 같은 검색인데 offset 만 바꾸면 중복·누락이 생긴다.
+// MAX_LIMIT(100) 를 채우고도 필터 탈락분을 흡수할 만큼 잡는다.
+const CANDIDATE_LIMIT = 150;
 // 펫 공식 등록(TourAPI 반려동물 동반여행) 가산점. 총점 만점 1.0 기준 → 한적도 25점과 동등.
 // 무조건 우선이 아니라 가산점인 이유: 충남 펫 등록 83곳 중 71곳이 쇼핑(올리브영 등)이라
 // 절대 우선하면 공원·호수가 영원히 밀린다 (천안은 펫 등록 48곳이 전부 매장).
@@ -105,7 +114,7 @@ const OUTDOOR_CONTENT_TYPES = [12, 28];
 const SHOPPING_CONTENT_TYPE = 38;
 // 거리 정렬 전에 받아둘 후보 풀. 박스 쿼리는 순서 보장이 없어 limit 을 바로 걸면
 // 반경 안에서 아무 30건이나 잡히고 가까운 곳이 통째로 누락된다.
-const CANDIDATE_POOL = 300;
+const CANDIDATE_POOL = 500;
 
 // PRD §14: CORS origin 화이트리스트 — production 도메인 + localhost
 const ALLOWED_ORIGINS = new Set([
@@ -186,11 +195,14 @@ Deno.serve(async (req: Request): Promise<Response> => {
     const radiusKm = (input.timeHours / 2) * AVG_SPEED_KMH;
 
     // ─ 후보 POI (geohash + petAllowed 인덱스 사용) ─
-    const candidates = await fetchPoiCandidates(admin, origin, radiusKm);
-    if (candidates.length === 0) return j({ recommendations: [] });
+    const limit = input.limit ?? DEFAULT_LIMIT;
+    const offset = input.offset ?? 0;
+    const candidates = await fetchPoiCandidates(admin, origin, radiusKm, CANDIDATE_LIMIT);
+    if (candidates.length === 0)
+      return j({ recommendations: [], offset: 0, limit, hasMore: false });
 
     // ─ ETA + 한적도 + 검증 수 조회 (배치: POI별 개별쿼리 대신 slice 전체를 몇 개 쿼리로) ─
-    const slice = candidates.slice(0, MAX_CANDIDATES);
+    const slice = candidates.slice(0, CANDIDATE_LIMIT);
     const poiIds = slice.map((p) => p.id);
     const sigungus = [...new Set(slice.map((p) => p.sigungu_code))];
     const weekday = kstWeekday(startAt);
@@ -224,11 +236,11 @@ Deno.serve(async (req: Request): Promise<Response> => {
       const arrival = new Date(startAt.getTime() + e.eta.minutes * 60_000);
       return isOpenAtHour(e.poi.open_from, e.poi.open_to, kstHour(arrival));
     });
-    if (inBudget.length === 0) return j({ recommendations: [] });
+    if (inBudget.length === 0) return j({ recommendations: [], offset, limit, hasMore: false });
 
     // ─ 점수 (PRD §12.2): 0.4*quietness + 0.3*verification + 0.2*dist_inv + 0.1*weather ─
     const maxDist = Math.max(...inBudget.map((e) => e.eta.distanceKm), 1);
-    const scored = inBudget
+    const ranked = inBudget
       .map((e) => {
         const verifNorm = Math.min(e.verifiedCount / 10, 1);
         const distInverse = 1 - e.eta.distanceKm / maxDist;
@@ -245,8 +257,10 @@ Deno.serve(async (req: Request): Promise<Response> => {
           (e.poi.pet_allowed ? PET_BONUS : 0);
         return { ...e, score, quietnessAdj };
       })
-      .sort((a, b) => b.score - a.score)
-      .slice(0, TOP_N);
+      .sort((a, b) => b.score - a.score);
+
+    const scored = ranked.slice(offset, offset + limit);
+    const hasMore = ranked.length > offset + limit;
 
     // ─ 배지 일괄 조회 ─
     const topPoiIds = scored.map((s) => s.poi.id);
@@ -277,21 +291,24 @@ Deno.serve(async (req: Request): Promise<Response> => {
     }));
 
     // ─ 영속화 (PRD: recommendations 테이블) ─
-    await admin.from('recommendations').insert({
-      user_id: userId,
-      pet_id: input.petId ?? null,
-      status: 'COMPLETED',
-      departure_lat: origin.lat,
-      departure_lng: origin.lng,
-      departure_geohash7: geohash7(origin.lat, origin.lng),
-      time_hours: input.timeHours,
-      start_at: startAt.toISOString(),
-      results_json: recommendations,
-      reason_chips: recommendations.map((r) => r.reason),
-      completed_at: new Date().toISOString(),
-    });
+    // 첫 페이지만 기록한다 — "더보기"는 같은 검색의 연속이라 이력이 중복되면 안 된다
+    if (offset === 0) {
+      await admin.from('recommendations').insert({
+        user_id: userId,
+        pet_id: input.petId ?? null,
+        status: 'COMPLETED',
+        departure_lat: origin.lat,
+        departure_lng: origin.lng,
+        departure_geohash7: geohash7(origin.lat, origin.lng),
+        time_hours: input.timeHours,
+        start_at: startAt.toISOString(),
+        results_json: recommendations,
+        reason_chips: recommendations.map((r) => r.reason),
+        completed_at: new Date().toISOString(),
+      });
+    }
 
-    return j({ recommendations });
+    return j({ recommendations, offset, limit, hasMore });
   } catch (err) {
     console.error('[time-slider-recommender]', err);
     return j({ error: 'Internal error' }, 500);
@@ -304,6 +321,19 @@ function validateInput(i: RecommendInput): { ok: true } | { ok: false; error: st
   if (!i?.departure) return { ok: false, error: 'departure required' };
   if (typeof i.timeHours !== 'number' || i.timeHours < 1 || i.timeHours > 6) {
     return { ok: false, error: 'timeHours must be 1~6' };
+  }
+  if (i.limit !== undefined) {
+    if (!Number.isInteger(i.limit) || i.limit < 1 || i.limit > MAX_LIMIT) {
+      return { ok: false, error: `limit must be 1~${MAX_LIMIT}` };
+    }
+  }
+  if (i.offset !== undefined) {
+    if (!Number.isInteger(i.offset) || i.offset < 0 || i.offset > MAX_LIMIT) {
+      return { ok: false, error: `offset must be 0~${MAX_LIMIT}` };
+    }
+  }
+  if ((i.offset ?? 0) + (i.limit ?? DEFAULT_LIMIT) > MAX_LIMIT) {
+    return { ok: false, error: `offset + limit must be <= ${MAX_LIMIT}` };
   }
   if ('lat' in i.departure) {
     if (typeof i.departure.lat !== 'number' || typeof i.departure.lng !== 'number') {
@@ -334,6 +364,7 @@ async function fetchPoiCandidates(
   supabase: SupabaseClient,
   origin: Coord,
   radiusKm: number,
+  maxCandidates: number,
 ): Promise<PoiCandidate[]> {
   const latDelta = radiusKm / 111;
   const lngDelta = radiusKm / (111 * Math.cos((origin.lat * Math.PI) / 180));
@@ -356,7 +387,7 @@ async function fetchPoiCandidates(
 
   // 1) 펫 공식 등록. 정원의 절반까지만 — 나머지는 야외 몫으로 남긴다.
   //    (전량을 펫으로 채우면 쇼핑 편중 지역에서 야외가 한 곳도 후보에 못 든다)
-  const petQuota = Math.ceil(MAX_CANDIDATES / 2);
+  const petQuota = Math.ceil(maxCandidates / 2);
   const { data: petData, error: petErr } = await box(
     supabase
       .from('pois')
@@ -377,7 +408,7 @@ async function fetchPoiCandidates(
       .eq('pet_allowed', false)
       .in('content_type_id', OUTDOOR_CONTENT_TYPES),
   ).limit(CANDIDATE_POOL);
-  const walk = nearest((walkData ?? []) as PoiCandidate[], MAX_CANDIDATES - pet.length);
+  const walk = nearest((walkData ?? []) as PoiCandidate[], maxCandidates - pet.length);
   return [...pet, ...walk];
 }
 
