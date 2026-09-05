@@ -51,6 +51,12 @@ type Recommendation = {
   petAllowed: boolean;
   reason: ReasonChip;
   sampleSufficient: boolean;
+  /**
+   * 예측·주간 평균이 실제 poi_forecasts 데이터인지 여부.
+   * false 면 현재 값을 그대로 복사한 것이라 "내일 같은 시간"으로 표시하면 거짓이 된다.
+   * poi_forecasts 는 아직 쓰기 경로가 없어 현재는 항상 false 다.
+   */
+  hasForecastData: boolean;
 };
 
 type PoiCandidate = {
@@ -310,6 +316,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
       badges: badgesByPoi.get(s.poi.id) ?? [],
       petAllowed: s.poi.pet_allowed,
       sampleSufficient: s.quietness.sampleSufficient,
+      hasForecastData: s.quietness.hasForecastData,
       reason: {
         distanceKm: round1(s.eta.distanceKm),
         etaMin: Math.round(s.eta.minutes),
@@ -548,15 +555,6 @@ function isOpenAtHour(openFrom: number | null, openTo: number | null, hour: numb
   return hour >= openFrom || hour < openTo; // 자정 넘김
 }
 
-function hash32(s: string): number {
-  let h = 2166136261; // FNV-1a offset basis
-  for (let i = 0; i < s.length; i++) {
-    h ^= s.charCodeAt(i);
-    h = Math.imul(h, 16777619);
-  }
-  return h >>> 0;
-}
-
 type QuietnessNowRow = {
   sigungu_code: number;
   hour_slot: number;
@@ -652,6 +650,7 @@ function computeQuietness(
   forecastTomorrow: number;
   weekAvg: number;
   sampleSufficient: boolean;
+  hasForecastData: boolean;
 } {
   const tomorrowDate = kstDateStr(new Date(startAt.getTime() + 24 * 60 * 60 * 1000));
 
@@ -670,23 +669,24 @@ function computeQuietness(
       forecastRows.length
     : nowScore;
 
-  // ── 임시(Phase 1): POI별 결정적 한적도 편차 (QA #2) ──────────────────
-  // quietness_scores 는 (sigungu_code, weekday, hour_slot) 단위라 같은 시군구 POI 는 nowScore 가 동일하고,
-  // poi_forecasts 미시드로 forecast/week 도 nowScore 로 폴백 → 카드마다 한적도가 똑같아 보인다.
-  // poi.id(UUID) 해시로 결정적(재실행 동일) 편차를 얹어 카드별로 달라 보이게 한다.
-  // 실측 값이 있을 때(hadForecast/hadWeek)는 그대로 사용하고, 폴백일 때만 합성 편차를 적용한다.
-  // TODO: 데이터랩 실측 per-POI 값 확보 시 이 편차 블록 제거 (decisionsNeeded 참고).
-  const h = hash32(poi.id);
-  const offNow = (h % 17) - 8; // -8 ~ +8
-  const offFc = ((h >>> 8) % 13) - 4; // -4 ~ +8 (예측은 살짝 상방 편향)
-  const offWk = ((h >>> 16) % 11) - 5; // -5 ~ +5
+  // 한적도는 (시군구, 요일, 시간대) 단위 지표다. POI 단위 실측이 없으므로
+  // 같은 시군구·시간대의 POI 는 같은 값을 갖는다 — 그것이 데이터의 실제 입도다.
+  //
+  // 이전에는 "카드마다 한적도가 똑같아 보인다"는 이유로 poi.id 를 해시해 ±8 편차를 얹었다.
+  // 그 결과 사용자에게 보이는 숫자가 실측과 무관한 값이 됐고, 실측 가드가
+  // forecast/week 에만 걸려 있어 정작 화면에 표시되는 now 에는 무조건 적용됐다.
+  // 카드 차별화는 거리·검증 수·배지·펫 가산점으로 이미 충분하므로 편차를 제거한다.
   const clampScore = (n: number) => Math.max(0, Math.min(100, Math.round(n)));
 
-  const now = clampScore(nowScore + offNow);
-  const forecastTomorrow = hadForecast ? rawForecast : clampScore(rawForecast + offNow + offFc);
-  const weekAvg = hadWeek ? rawWeekAvg : clampScore(rawWeekAvg + offNow + offWk);
-
-  return { now, forecastTomorrow, weekAvg, sampleSufficient };
+  return {
+    now: clampScore(nowScore),
+    forecastTomorrow: clampScore(rawForecast),
+    weekAvg: clampScore(rawWeekAvg),
+    sampleSufficient,
+    // 예측·주간 평균이 실측인지(poi_forecasts 존재) 아니면 현재값 폴백인지.
+    // 화면이 근거를 정확히 말하려면 이 구분이 필요하다.
+    hasForecastData: hadForecast || hadWeek,
+  };
 }
 
 // ═══════════════ 검증 수 (PRD §6.3: 6개월 + isValid + 사진) — 배치 3/3 ═══════════════
