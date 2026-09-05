@@ -136,6 +136,14 @@ export function RecommendCard({
           </div>
         </div>
 
+        {/* 시간 분해 — 스탯의 '거리'는 편도라, 왕복과 남는 시간을 함께 밝힌다.
+            이게 없으면 "45분"만 보고 여유롭다고 읽히지만 실제로는 왕복 90분이 든다. */}
+        {reason.roundTripMin != null && reason.stayMin != null && (
+          <p className="mt-3.5 text-[12.5px] text-muted">
+            {C.timeBreakdown(reason.etaMin, reason.roundTripMin, reason.stayMin)}
+          </p>
+        )}
+
         {/* 30일 예측 라인 */}
         {rec.sampleSufficient && (
           <div className="mt-4 flex items-center gap-[7px] text-[13px] text-forecast">

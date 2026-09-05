@@ -86,7 +86,9 @@ export const COPY = {
       per100: '/100',
       visitUnit: '명 방문',
       sampleShort: '표본 부족',
-      distUnit: (eta: number) => `km · ${eta}분`,
+      distUnit: (eta: number) => `km · 편도 ${eta}분`,
+      timeBreakdown: (oneWay: number, roundTrip: number, stay: number) =>
+        `편도 ${oneWay}분 · 왕복 ${roundTrip}분 · 남는 시간 ${stay}분`,
       forecastPre: '내일 같은 시간',
       forecastMid: '이번 주 평균',
       kakao: '카카오 길찾기',
