@@ -77,6 +77,9 @@ export const COPY = {
     card: {
       demoTag: '예시 코스',
       rankLabel: '한적',
+      crowdQuiet: '한적',
+      crowdNormal: '보통',
+      crowdBusy: '복잡',
       quietness: '한적도',
       distance: '거리',
       verify: '검증',

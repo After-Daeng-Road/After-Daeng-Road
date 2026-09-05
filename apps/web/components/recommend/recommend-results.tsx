@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { COPY } from '@/lib/copy';
 import { EmptyResult } from './empty-result';
-import { NowLabel } from './now-label';
 import { RecommendCard } from './recommend-card';
 import { RecommendSkeleton } from './recommend-skeleton';
 import type { DeparturePoint } from '@/lib/format';
@@ -98,13 +97,6 @@ export function RecommendResults({
             {R.head2}
           </h2>
         </div>
-        <div className="flex-shrink-0 text-right text-[13px] text-muted">
-          <span className="fig block text-[22px] text-ink">
-            {String(total || 3).padStart(2, '0')}
-          </span>
-          {R.placeUnit} · <NowLabel />
-          {R.metaSuffix}
-        </div>
       </div>
 
       {loading && <RecommendSkeleton />}
@@ -113,9 +105,7 @@ export function RecommendResults({
 
       {!loading &&
         results !== null &&
-        pageItems.map((rec, i) => (
-          <RecommendCard key={rec.poiId} rec={rec} rank={start + i} departure={departure} />
-        ))}
+        pageItems.map((rec) => <RecommendCard key={rec.poiId} rec={rec} departure={departure} />)}
 
       {/* 페이지네이션 — 결과가 첫 페이지를 넘거나 서버에 더 있을 때만 */}
       {!loading && results !== null && results.length > 0 && (loadedPages > 1 || hasMore) && (
