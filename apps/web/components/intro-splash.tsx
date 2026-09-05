@@ -108,20 +108,32 @@ export function IntroSplash() {
         </div>
       </div>
 
-      {/* 자동재생 차단 시 — 네모 버튼: 멍멍이 로고 + 플레이 (클릭 제스처로 소리 재생) */}
+      {/* 자동재생 차단 시 — 글래스 플레이 버튼 (클릭 제스처로 소리 재생) */}
       {needsTap && (
-        <div className="absolute inset-0 grid place-items-center bg-black/50">
+        <div className="absolute inset-0 grid place-items-center bg-black/60 backdrop-blur-[3px]">
           <button
             type="button"
             onClick={enter}
             aria-label={C.enter}
-            className="flex h-28 w-28 flex-col items-center justify-center gap-3 bg-white/95 shadow-lift transition hover:scale-105"
+            className="group flex flex-col items-center gap-5"
           >
             <span
               aria-hidden
-              className="inline-block h-[34px] w-[34px] bg-[url('/brand/daengroad-favicon-ivory.svg')] bg-contain bg-center bg-no-repeat"
+              className="inline-block h-10 w-10 bg-[url('/brand/daengroad-favicon-dark.svg')] bg-contain bg-center bg-no-repeat opacity-90"
             />
-            <Play className="h-6 w-6 fill-[#1d1813] text-[#1d1813]" aria-hidden />
+            <span className="relative grid h-[76px] w-[76px] place-items-center">
+              {/* 은은한 펄스 링 */}
+              <span
+                aria-hidden
+                className="absolute inset-0 animate-ping rounded-full bg-white/10 [animation-duration:2600ms]"
+              />
+              <span className="relative grid h-full w-full place-items-center rounded-full bg-white/10 ring-1 ring-white/30 backdrop-blur-md transition duration-300 ease-ds group-hover:scale-105 group-hover:bg-white/20 group-hover:ring-white/50">
+                <Play className="ml-1 h-7 w-7 fill-white text-white" aria-hidden />
+              </span>
+            </span>
+            <span className="text-[12.5px] font-medium tracking-[0.14em] text-white/70 transition-colors group-hover:text-white">
+              {C.enter}
+            </span>
           </button>
         </div>
       )}
