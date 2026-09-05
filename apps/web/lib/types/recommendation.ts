@@ -38,12 +38,27 @@ export type Pet = {
 export type RecommendInput = {
   petId: string | null;
   timeHours: number;
+  /** 더보기(페이지네이션) 시에는 첫 요청의 값을 그대로 재사용해야 순서가 흔들리지 않는다.
+   *  운영시간·한적도 판정이 이 시각 기준이라 매번 현재 시각을 보내면 목록이 바뀔 수 있다. */
   startAt: string;
   departure: {
     lat: number;
     lng: number;
     label?: string;
   };
+  /** 반환 개수 (1~100). 생략하면 3 */
+  limit?: number;
+  /** 건너뛸 개수 (0~100). 생략하면 0. offset + limit <= 100 */
+  offset?: number;
+};
+
+/** POST /api/recommend 응답 */
+export type RecommendResponse = {
+  recommendations: Recommendation[];
+  offset: number;
+  limit: number;
+  /** 다음 페이지가 남아 있는지 — "더보기" 버튼 노출 판단용 */
+  hasMore: boolean;
 };
 
 // /recommendations 이력 resultsJson 디시리얼라이즈용 — 모든 필드 옵셔널 (구버전 호환)
