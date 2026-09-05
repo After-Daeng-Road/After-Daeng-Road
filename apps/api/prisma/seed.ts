@@ -20,7 +20,10 @@ const CHUNGNAM_SIGUNGU = [
 
 const DEMO_USER_ID = '00000000-0000-0000-0000-000000000000';
 const DEMO_PET_ID = '00000000-0000-0000-0000-000000000001';
-const QUIETNESS_SAMPLE_SOURCE: QuietnessSource = 'DATABANK_VISITOR';
+// ⚠ 아래 seedQuietness 가 만드는 값은 공식으로 계산한 합성 기준선이지 실측이 아니다.
+// 'DATABANK_VISITOR'(데이터랩 방문자 데이터) 라벨을 붙이면 DB 만 봐서는 구분할 수 없어
+// 실측과 뒤섞인다. 실측은 seed-datalab.ts 가 DATABANK_VISITOR 로 적재한다.
+const QUIETNESS_SAMPLE_SOURCE: QuietnessSource = 'SYNTHETIC_BASELINE';
 
 // ─── 유틸: geohash7 (Edge Function과 동일 알고리즘) ───
 function geohash7(lat: number, lng: number): string {
@@ -102,7 +105,9 @@ async function seedDemoUser() {
   return user;
 }
 
-// ─── 3. 한적도 점수 (key 시간대만 — 4시 × 7 요일 × 5 시간대 = 140행) ─
+// ─── 3. 한적도 합성 기준선 (key 시간대만 — 4시 × 7 요일 × 5 시간대 = 140행) ─
+// 실측이 아니다. 로컬 개발과 데이터랩 미적재 환경의 폴백용이며,
+// 운영 값은 seed-datalab.ts 가 DATABANK_VISITOR 로 적재한다.
 async function seedQuietness() {
   await prisma.quietnessScore.deleteMany({ where: { source: QUIETNESS_SAMPLE_SOURCE } });
 
@@ -124,7 +129,8 @@ async function seedQuietness() {
           hourSlot: hour,
           score,
           source: QUIETNESS_SAMPLE_SOURCE,
-          sampleSize: 100,
+          // 관측한 적이 없으므로 표본 크기를 지어내지 않는다 (이전에는 100 을 넣었다)
+          sampleSize: null,
           computedAt: now,
         };
       }),
