@@ -12,11 +12,14 @@ import type { Recommendation } from '@/lib/types/recommendation';
 
 const C = COPY.home.card;
 
-// 한적도 뱃지 티어 — 팀 결정: 50~60 한적 / 60~69 보통 / 나머지(50 미만·70 이상) 복잡
+// 한적도 뱃지 티어 — 점수가 높을수록 한적하다.
+// 이전 기준(50~60 한적 / 60~70 보통 / 70 이상 복잡)은 상단이 뒤집혀 있어,
+// 데이터랩 실측을 넣으면 서산 평일 74점이 '복잡'으로, 천안 토요일 51점이 '한적'으로 표시됐다.
+// 경계는 실측 분포(공주 토 33 ~ 서산 화 74)에 맞춰 잡았다.
 // 색은 신호등 관례(초록/노랑/빨강)로 쨍하게 — 사진 위에서도 상태가 즉시 읽히게.
 function crowdTier(q: number): { label: string; dot: string } {
-  if (q >= 50 && q < 60) return { label: C.crowdQuiet, dot: 'bg-[#16c750]' };
-  if (q >= 60 && q < 70) return { label: C.crowdNormal, dot: 'bg-[#ffc400]' };
+  if (q >= 65) return { label: C.crowdQuiet, dot: 'bg-[#16c750]' };
+  if (q >= 50) return { label: C.crowdNormal, dot: 'bg-[#ffc400]' };
   return { label: C.crowdBusy, dot: 'bg-[#ff3b30]' };
 }
 
@@ -144,8 +147,16 @@ export function RecommendCard({
           </p>
         )}
 
-        {/* 30일 예측 라인 */}
+        {/* 한적도 근거 — 어느 부분이 실측이고 어느 부분이 추정인지 밝힌다.
+            숫자만 보여주면 시간대까지 실측한 것으로 읽힌다. */}
         {rec.sampleSufficient && (
+          <p className="mt-1.5 text-[11.5px] text-faint">{C.quietnessBasis}</p>
+        )}
+
+        {/* 30일 예측 라인 — poi_forecasts 실측이 있을 때만 보여준다.
+            예측 데이터가 없으면 Edge 가 현재 값을 그대로 복사해 내려주므로,
+            "내일 같은 시간 62"가 사실은 오늘 값이 된다. 근거 없는 표시라 숨긴다. */}
+        {rec.sampleSufficient && rec.hasForecastData && (
           <div className="mt-4 flex items-center gap-[7px] text-[13px] text-forecast">
             <TrendingUp className="h-3.5 w-3.5" aria-hidden />
             {C.forecastPre} <span className="fig font-medium">{reason.quietnessForecast}</span>
