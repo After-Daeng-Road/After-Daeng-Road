@@ -17,6 +17,11 @@ export const COPY = {
     taglineShort: '퇴근 후 한적한 펫 외출',
     tagline: '퇴근 후, 가장 한적한 길로.',
   },
+
+  // ───────── 푸터 ─────────
+  footer: {
+    rights: 'All rights reserved.',
+  },
   header: {
     login: '로그인',
     logout: '로그아웃',
@@ -174,7 +179,7 @@ export const COPY = {
     loginTitle: '로그인이 필요해요',
     loginDesc: '로그인하면 펫 프로필·추천 이력·알림 설정을 볼 수 있어요.',
     loginCta: '로그인 / 회원가입',
-    loginFooter: '카카오 · 네이버로 5초 안에 시작',
+    loginFooter: '카카오 · 구글로 5초 안에 시작',
     displayNameFallback: '댕로드 친구',
     logout: '로그아웃',
     statVisited: '다녀온 곳',

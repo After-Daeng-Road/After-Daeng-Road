@@ -4,6 +4,7 @@ import { Analytics } from '@vercel/analytics/next';
 import { GoogleAnalytics } from '@next/third-parties/google';
 import { Providers } from './providers';
 import { SiteHeader } from '@/components/site-header';
+import { SiteFooter } from '@/components/site-footer';
 import { ConsentGate } from '@/components/consent-gate';
 import { COPY } from '@/lib/copy';
 import './globals.css';
@@ -90,10 +91,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
         <script dangerouslySetInnerHTML={{ __html: themeBoot }} />
       </head>
-      <body>
+      {/* flex 컬럼 + min-h-screen — 내용이 짧은 페이지에서도 푸터가 화면 하단에 붙는다 */}
+      <body className="flex min-h-screen flex-col">
         <Providers>
           <SiteHeader />
-          {children}
+          {/* flex-1 블록 래퍼 — 푸터를 하단으로 밀고, 페이지 main 의 mx-auto 가
+              flex 아이템 shrink-to-fit 에 걸리지 않게 일반 블록 컨텍스트를 유지 */}
+          <div className="flex-1">{children}</div>
+          <SiteFooter />
           {/* PRD §14 — 로그인 유저 필수 동의(TERMS·PRIVACY) 게이트 (QA #4 후속) */}
           <ConsentGate />
         </Providers>
