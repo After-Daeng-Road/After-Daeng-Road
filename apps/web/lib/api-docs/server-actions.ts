@@ -344,12 +344,12 @@ return bookmarks.map((b) => <SavedPoiCard key={b.bookmarkId} poi={b.poi} />);`,
     signature:
       'updateNotifySettings(input: NotifySettings): Promise<{ ok: true } | { ok: false; error: string }>',
     what: '이메일 알림 스케줄(on/off, 발송 시각 HH:MM, 요일 집합)을 저장한다. 일일 추천 이메일(daily-recommend-email 크론)이 이 설정을 참조한다.',
-    usedIn: '마이페이지 알림 설정 화면 (/me/settings).',
+    usedIn: '마이페이지 알림 설정 화면 (/me/notifications).',
     authRequired: true,
     input:
       "z.object({ enabled: boolean; time: string /^([01]\\d|2[0-3]):[0-5]\\d$/ (24h); days: ('MON'..'SUN')[].min(1).max(7) })",
     returns: '성공 { ok: true }. 실패 { ok: false, error } — "Unauthorized" | zod 메시지',
-    revalidates: "revalidatePath('/me/settings')",
+    revalidates: "revalidatePath('/me/notifications')",
     sideEffects: 'user.update(emailNotifyEnabled/Time/Days)',
     example: `import { updateNotifySettings } from '@/lib/actions/notify-settings';
 

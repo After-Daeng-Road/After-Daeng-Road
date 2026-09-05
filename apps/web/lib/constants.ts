@@ -46,8 +46,8 @@ export type ConsentKind = 'TERMS' | 'PRIVACY' | 'LOCATION' | 'MARKETING_EMAIL' |
 export const CONSENT_VERSIONS: Record<ConsentKind, string> = {
   // 2026-09-05 v1.1 개정 — 기능 전수 반영 (구글 OAuth·방문인증 EXIF·추천이력·북마크·위탁처 등).
   // 버전을 올리면 ConsentGate 가 기존 회원에게 재동의를 요청한다.
-  TERMS: 'terms-v1.1.0',
-  PRIVACY: 'privacy-v1.1.0',
+  TERMS: 'terms-v1.2.0',
+  PRIVACY: 'privacy-v1.2.0',
   LOCATION: 'location-v1.0.0',
   MARKETING_EMAIL: 'marketing-email-v1.0.0',
   PET_HEALTH: CONSENT_VERSION, // 기존 'pet-health-v1.0.0' 과 정렬
@@ -74,3 +74,8 @@ export const TIME_MIN = 1;
 export const TIME_MAX = 6;
 export const TIME_STEP = 0.5;
 export const TIME_DEFAULT = 3;
+
+// ───────── 회원 탈퇴 ─────────
+// 'use server' 파일(lib/actions/account.ts)은 async 함수만 export 가능해 상수는 여기 둔다.
+// 화면과 서버가 같은 확인 문구를 쓰도록 단일 소스로 관리.
+export const DELETE_CONFIRM_TEXT = '탈퇴합니다';

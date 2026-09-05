@@ -125,7 +125,7 @@ export default async function MePage() {
       {/* 메뉴 */}
       <nav className="mt-4 space-y-2">
         <NavListItem
-          href="/me/settings"
+          href="/me/notifications"
           icon={<Bell className="h-4 w-4" aria-hidden />}
           title={COPY.me.menuNotify}
           subtitle={COPY.me.menuNotifySub}
@@ -159,6 +159,10 @@ export default async function MePage() {
         </span>
         <Link href="/legal/privacy" className="inline-flex items-center gap-1 hover:text-body">
           <Shield className="h-3 w-3" aria-hidden /> {COPY.common.privacy}
+        </Link>
+        {/* 회원탈퇴 — 오른쪽 끝, 설정의 탈퇴 섹션으로 이동 */}
+        <Link href="/me/delete-account" className="ml-auto hover:text-body">
+          {COPY.me.withdraw}
         </Link>
       </div>
     </main>
