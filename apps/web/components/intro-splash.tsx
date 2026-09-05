@@ -93,14 +93,14 @@ export function IntroSplash() {
             <button
               type="button"
               onClick={hideTodayAndClose}
-              className="text-[15px] text-black transition-opacity hover:opacity-60"
+              className="text-[15px] text-white/85 transition-colors hover:text-brand-hover"
             >
               {C.hideToday}
             </button>
             <button
               type="button"
               onClick={close}
-              className="text-[15px] text-black transition-opacity hover:opacity-60"
+              className="text-[15px] text-white/85 transition-colors hover:text-brand-hover"
             >
               {C.skip}
             </button>
