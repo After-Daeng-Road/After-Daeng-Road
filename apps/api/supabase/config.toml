@@ -80,10 +80,13 @@ verify_jwt = true
 
 # PRD §13: TourAPI 일별 ETL (Cron 트리거)
 [functions.tour-api-etl]
-verify_jwt = false  # pg_cron 에서 service_role 키로 호출
+# verify_jwt=false 라 게이트웨이가 검사하지 않는다. 함수 안에서 x-cron-secret 을 직접 검증한다.
+# verify_jwt=true 로 바꿔도 방어가 안 된다 — anon 키도 유효한 JWT 이고 웹 번들에 공개되어 있다.
+verify_jwt = false
 
 # PRD §16.4: 일일 추천 이메일 (Cron 트리거)
 [functions.daily-recommend-email]
+# 위와 같다 — 함수 안에서 x-cron-secret 검증 (0017 이 pg_cron 헤더를 주입)
 verify_jwt = false
 
 [analytics]

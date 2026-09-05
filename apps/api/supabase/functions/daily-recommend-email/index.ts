@@ -12,6 +12,29 @@ const SUPABASE_URL = env('SUPABASE_URL');
 const SUPABASE_SERVICE_ROLE = env('SUPABASE_SERVICE_ROLE_KEY');
 const RESEND_API_KEY = env('RESEND_API_KEY');
 const APP_URL = env('APP_URL') || 'https://daengroad.app';
+const CRON_SECRET = env('CRON_SECRET');
+
+/**
+ * pg_cron 호출인지 확인한다.
+ *
+ * config.toml 의 verify_jwt = false 라 플랫폼 게이트웨이가 아무것도 검사하지 않는다.
+ * verify_jwt = true 로 바꾸는 것으로는 방어가 안 된다 — anon 키도 유효한 JWT 이고
+ * 그 키는 웹 클라이언트 번들에 공개되어 있다. 함수 안에서 공유 시크릿을 직접 봐야 한다.
+ *
+ * 이 함수는 호출 시각과 email_notify_time 이 맞는 사용자 전원에게 즉시 메일을 보낸다.
+ * 열려 있으면 연타로 중복 발송을 유발해 Resend 요금과 발신 도메인 스팸 평판을 망친다.
+ * 광고성 정보 수신 관련 법적 문제로도 이어진다.
+ *
+ * 시크릿 미설정 시 통과가 아니라 거부한다(fail-closed).
+ */
+function isAuthorizedCron(req: Request): boolean {
+  if (!CRON_SECRET) return false;
+  const got = req.headers.get('x-cron-secret') ?? '';
+  if (got.length !== CRON_SECRET.length) return false;
+  let diff = 0;
+  for (let i = 0; i < got.length; i++) diff |= got.charCodeAt(i) ^ CRON_SECRET.charCodeAt(i);
+  return diff === 0;
+}
 
 const FROM_ADDRESS = '댕로드 <noreply@daengroad.app>';
 const KST_OFFSET_HOURS = 9;
@@ -27,7 +50,11 @@ type UserRow = {
 };
 
 // @ts-expect-error — Deno global
-Deno.serve(async (_req: Request): Promise<Response> => {
+Deno.serve(async (req: Request): Promise<Response> => {
+  // 요청 객체를 무시(_req)하고 있어 메서드도 헤더도 보지 않았다. 인증을 가장 먼저 본다.
+  if (!isAuthorizedCron(req)) return json({ error: 'Unauthorized' }, 401);
+  if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
+
   const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE, {
     auth: { persistSession: false },
   });
