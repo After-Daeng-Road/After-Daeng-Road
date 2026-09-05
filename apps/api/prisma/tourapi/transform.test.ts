@@ -9,6 +9,9 @@ import {
   parseHomepage,
   cleanOverview,
   mergeImageUrls,
+  parseUseTime,
+  isOpenAtHour,
+  pickIntroFields,
 } from './transform.ts';
 
 test('contentTypeToPoiType 매핑', () => {
@@ -130,4 +133,100 @@ test('mergeImageUrls — 빈 입력과 빈 문자열 처리', () => {
   assert.deepEqual(mergeImageUrls([], []), []);
   assert.deepEqual(mergeImageUrls(['https://t.kr/a.jpg'], []), ['https://t.kr/a.jpg']);
   assert.deepEqual(mergeImageUrls([], ['', '  ']), []);
+});
+
+// ─── detailIntro2 운영시간 (2026-09-05 실응답 기준) ───
+
+test('parseUseTime — 상시 개방은 0~24', () => {
+  assert.deepEqual(parseUseTime('상시 개방'), { openFrom: 0, openTo: 24 });
+  assert.deepEqual(parseUseTime('상시개방'), { openFrom: 0, openTo: 24 });
+  assert.deepEqual(parseUseTime('24시간'), { openFrom: 0, openTo: 24 });
+  assert.deepEqual(parseUseTime('연중 상시 개방'), { openFrom: 0, openTo: 24 });
+});
+
+test('parseUseTime — HH:MM 범위', () => {
+  assert.deepEqual(parseUseTime('08:00~17:00'), { openFrom: 8, openTo: 17 });
+  assert.deepEqual(parseUseTime('09:00 ~ 18:00'), { openFrom: 9, openTo: 18 });
+  assert.deepEqual(parseUseTime('10:00-19:00'), { openFrom: 10, openTo: 19 });
+});
+
+test('parseUseTime — 여러 범위면 첫 번째만', () => {
+  assert.deepEqual(parseUseTime('하절기 06:00~21:00 / 동절기 07:00~18:00'), {
+    openFrom: 6,
+    openTo: 21,
+  });
+});
+
+test('parseUseTime — 파싱 불가는 null (추천에서 시간 판단 제외)', () => {
+  assert.deepEqual(parseUseTime('기상여건에 따라 통제 되므로 자세한 사항은 홈페이지 참조'), {
+    openFrom: null,
+    openTo: null,
+  });
+  assert.deepEqual(parseUseTime(''), { openFrom: null, openTo: null });
+  assert.deepEqual(parseUseTime(undefined), { openFrom: null, openTo: null });
+});
+
+test('parseUseTime — 분 단위는 시각으로 절삭·반올림하지 않고 시(hour)만 취한다', () => {
+  assert.deepEqual(parseUseTime('09:30~18:30'), { openFrom: 9, openTo: 18 });
+});
+
+test('isOpenAtHour — 일반 영업시간', () => {
+  assert.equal(isOpenAtHour(8, 17, 10), true);
+  assert.equal(isOpenAtHour(8, 17, 8), true);
+  assert.equal(isOpenAtHour(8, 17, 17), false); // 폐장 시각은 이미 닫힘
+  assert.equal(isOpenAtHour(8, 17, 19), false);
+  assert.equal(isOpenAtHour(8, 17, 7), false);
+});
+
+test('isOpenAtHour — 상시 개방과 자정 넘김', () => {
+  assert.equal(isOpenAtHour(0, 24, 3), true);
+  assert.equal(isOpenAtHour(22, 2, 23), true); // 야간 영업
+  assert.equal(isOpenAtHour(22, 2, 1), true);
+  assert.equal(isOpenAtHour(22, 2, 12), false);
+});
+
+test('isOpenAtHour — 정보 없으면 판단하지 않고 true', () => {
+  assert.equal(isOpenAtHour(null, null, 23), true);
+  assert.equal(isOpenAtHour(8, null, 23), true);
+});
+
+test('pickIntroFields — 관광지(12)', () => {
+  const f = pickIntroFields({
+    usetime: '08:00~17:00',
+    restdate: '연중무휴',
+    parking: '가능',
+    infocenter: '041-663-4326',
+  });
+  assert.equal(f.useTimeText, '08:00~17:00');
+  assert.equal(f.restDateText, '연중무휴');
+  assert.equal(f.parkingText, '가능');
+  assert.equal(f.infoCenter, '041-663-4326');
+});
+
+test('pickIntroFields — 레포츠(28)는 접미사가 붙는다', () => {
+  const f = pickIntroFields({
+    usetimeleports: '09:00~18:00',
+    restdateleports: '월요일',
+    infocenterleports: '041-000-0000',
+  });
+  assert.equal(f.useTimeText, '09:00~18:00');
+  assert.equal(f.restDateText, '월요일');
+  assert.equal(f.infoCenter, '041-000-0000');
+  assert.equal(f.parkingText, null);
+});
+
+test('pickIntroFields — 쇼핑(38)은 opentime', () => {
+  const f = pickIntroFields({ opentime: '10:00~22:00', restdateshopping: '설날' });
+  assert.equal(f.useTimeText, '10:00~22:00');
+  assert.equal(f.restDateText, '설날');
+});
+
+test('pickIntroFields — 빈 응답', () => {
+  assert.deepEqual(pickIntroFields(null), {
+    useTimeText: null,
+    restDateText: null,
+    parkingText: null,
+    infoCenter: null,
+  });
+  assert.deepEqual(pickIntroFields({ usetime: '   ' }).useTimeText, null);
 });

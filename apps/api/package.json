@@ -12,6 +12,7 @@
     "seed": "tsx prisma/seed.ts",
     "seed:tourapi": "tsx prisma/seed-tourapi.ts",
     "seed:pet-realdata": "tsx prisma/seed-pet-realdata.ts",
+    "seed:poi-hours": "tsx prisma/seed-poi-hours.ts",
     "seed:pet-overlay": "tsx prisma/seed-pet-overlay.ts",
     "verify:recommend": "tsx scripts/verify-recommend.ts",
     "supabase:serve": "supabase functions serve --no-verify-jwt --env-file .env",
