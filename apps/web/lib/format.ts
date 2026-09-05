@@ -47,3 +47,16 @@ export function formatRelative(d: Date): string {
   if (hours < 24) return `${hours}시간 전`;
   return `${Math.floor(hours / 24)}일 전`;
 }
+
+// TourAPI 원문(usetime 등)에 섞인 HTML 태그(<br> 등)·엔티티를 걷어내 한 줄 텍스트로.
+// 렌더는 텍스트 노드라 XSS 위험은 없고, 태그가 문자 그대로 보이는 문제만 정리한다.
+export function stripHtmlText(input: string): string {
+  return input
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&amp;/gi, '&')
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
