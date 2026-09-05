@@ -29,9 +29,9 @@ pnpm-lock.yaml
 # Vercel
 .vercel
 
-# Supabase 로컬
-supabase/.branches/
-supabase/.temp/
+# Supabase 로컬 (CLI 산출물 — 모노레포라 apps/api/supabase/ 아래에도 생긴다)
+**/supabase/.branches/
+**/supabase/.temp/
 
 # PRD / 기획 문서 (수동 포맷 유지)
 *.md
