@@ -10,19 +10,24 @@ import type { Recommendation } from '@/lib/types/recommendation';
 // 랭킹 뱃지 · 세리프 누메랄 스탯 행(한적도·거리·검증) · 30일 예측 라인 · 잉크 길찾기.
 // 호버 시 리프트 + 사진 줌.
 
-const RANK = ['01', '02', '03', '04', '05'] as const;
 const C = COPY.home.card;
+
+// 한적도 뱃지 티어 — 팀 결정: 50~60 한적 / 60~69 보통 / 나머지(50 미만·70 이상) 복잡
+// 색은 신호등 관례(초록/노랑/빨강)로 쨍하게 — 사진 위에서도 상태가 즉시 읽히게.
+function crowdTier(q: number): { label: string; dot: string } {
+  if (q >= 50 && q < 60) return { label: C.crowdQuiet, dot: 'bg-[#16c750]' };
+  if (q >= 60 && q < 70) return { label: C.crowdNormal, dot: 'bg-[#ffc400]' };
+  return { label: C.crowdBusy, dot: 'bg-[#ff3b30]' };
+}
 
 // 데모 초기 추천의 가짜 poiId('sample-*')는 UUID가 아니므로 상세 링크를 걸지 않는다 (QA #6).
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export function RecommendCard({
   rec,
-  rank,
   departure,
 }: {
   rec: Recommendation;
-  rank: number;
   departure?: DeparturePoint;
 }) {
   const { reason } = rec;
@@ -46,11 +51,12 @@ export function RecommendCard({
           <PoiImageFallback type={rec.type} />
         )}
         <span className="absolute left-4 top-4 z-[2] inline-flex items-center gap-[7px] rounded-full bg-white/90 px-3 py-1.5 pl-2.5 text-[#1d1813] backdrop-blur-sm">
-          <span className="fig text-[15px] font-medium">
-            {RANK[rank] ?? String(rank + 1).padStart(2, '0')}
-          </span>
-          <span className="text-[10.5px] font-bold uppercase tracking-[0.14em] text-[#8a7f6f]">
-            {C.rankLabel}
+          <span
+            className={`h-2 w-2 rounded-full ${crowdTier(reason.quietnessNow).dot}`}
+            aria-hidden
+          />
+          <span className="text-[12px] font-bold tracking-[0.08em]">
+            {crowdTier(reason.quietnessNow).label}
           </span>
         </span>
         {hasDetail ? (
