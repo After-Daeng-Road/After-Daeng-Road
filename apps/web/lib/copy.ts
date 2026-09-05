@@ -7,7 +7,8 @@ export const COPY = {
   meta: {
     titleDefault: '댕로드 — 퇴근 후 한적한 펫 외출',
     titleTemplate: '%s · 댕로드',
-    description: '퇴근 18:12, 시간 슬라이더 3시간 → 한적도 87점·펫동반 검증된 충남 근교 즉시 추천',
+    description:
+      '퇴근 18:12, 시간 슬라이더 3시간 → 한적한 시간대의 펫동반 가능 충남 근교를 즉시 추천',
     appName: '댕로드',
     siteName: '댕로드',
     author: 'Hun',
@@ -35,7 +36,7 @@ export const COPY = {
       titleMid: '가장',
       titleEmph: '한적한',
       titleTail: '길로.',
-      lede: '시간 슬라이더 하나면 충분해요. 데이터로 검증한 한적도와 펫 동반 코스 3곳을, 퇴근 5초 안에.',
+      lede: '시간 슬라이더 하나면 충분해요. 관광공사 방문자 데이터로 본 한적도와 펫 동반 코스 3곳을, 퇴근 5초 안에.',
       imageAlt: '해질 무렵 한적한 충남 근교 길',
     },
     errors: {
@@ -86,6 +87,9 @@ export const COPY = {
       per100: '/100',
       visitUnit: '명 방문',
       sampleShort: '표본 부족',
+      // 한적도의 근거를 화면에 밝힌다. 요일·지역은 관광공사 방문자 데이터 실측이고
+      // 시간대는 추정이다 — 데이터랩에 시간 축이 없다.
+      quietnessBasis: '요일·지역은 한국관광공사 방문자 데이터, 시간대는 추정',
       distUnit: (eta: number) => `km · 편도 ${eta}분`,
       timeBreakdown: (oneWay: number, roundTrip: number, stay: number) =>
         `편도 ${oneWay}분 · 왕복 ${roundTrip}분 · 남는 시간 ${stay}분`,
@@ -298,9 +302,9 @@ export const COPY = {
   // ───────── 추천 이력 ─────────
   recs: {
     loginTitle: '로그인하면 추천 이력을 볼 수 있어요',
-    loginDesc: '한적도가 매시간 갱신돼 같은 곳도 시점에 따라 결과가 달라져요.',
+    loginDesc: '한적도는 요일·시간대에 따라 달라져요. 같은 곳도 언제 가느냐로 결과가 바뀝니다.',
     headTitle: '최근 추천 이력',
-    headDesc: '한적도가 매시간 갱신되어 같은 곳도 시점에 따라 결과가 달라져요.',
+    headDesc: '한적도는 요일·시간대에 따라 달라져요. 같은 곳도 언제 가느냐로 결과가 바뀝니다.',
     emptyTitle: '아직 추천 이력이 없어요',
     emptyDesc: '메인에서 시간 슬라이더로 첫 추천을 받아보세요',
     emptyCta: '지금 추천받기',

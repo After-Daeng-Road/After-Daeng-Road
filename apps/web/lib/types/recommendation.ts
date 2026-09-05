@@ -30,6 +30,12 @@ export type Recommendation = {
   openHoursText: string | null;
   reason: ReasonChip;
   sampleSufficient: boolean;
+  /**
+   * 예측·주간 평균이 실제 poi_forecasts 데이터인지 여부.
+   * false 면 현재 값을 그대로 복사한 것이라 "내일 같은 시간"으로 표시하면 거짓이 된다.
+   * 이 필드 이전에 저장된 이력에는 없으므로 옵셔널.
+   */
+  hasForecastData?: boolean;
 };
 
 export type Pet = {
