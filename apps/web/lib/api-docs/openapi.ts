@@ -895,18 +895,37 @@ export const openApiDocument = {
       },
       DurunubiCourse: {
         type: 'object',
-        description: '두루누비 산책/트레일 코스 (POI 1:1 연결 가능)',
+        description:
+          '두루누비 걷기길 코스 (한국관광공사 DurunubiService). 코리아둘레길 4개 노선의 코스 단위 레코드이며 POI 와 1:1 연결된다.',
         properties: {
           id: { type: 'string', format: 'uuid' },
           poiId: { type: 'string', format: 'uuid', nullable: true },
-          routeIdx: { type: 'string' },
-          routeName: { type: 'string' },
-          themeName: { type: 'string', nullable: true },
+          crsIdx: { type: 'string', description: '코스 식별자 (API crsIdx). 코스 단위 유니크 키' },
+          routeIdx: {
+            type: 'string',
+            description: '노선 식별자 (API routeIdx). 남파랑길·서해랑길·DMZ 평화의 길·해파랑길 4개',
+          },
+          crsName: { type: 'string', description: '코스명 (API crsKorNm) 예: 서해랑길 76코스' },
+          themeName: {
+            type: 'string',
+            nullable: true,
+            description: '노선명 (routeList 의 themeNm)',
+          },
+          sigunText: { type: 'string', nullable: true, description: '소재 시군 예: 충남 서산시' },
           totalDistanceKm: { type: 'string', description: 'Decimal(6,2)' },
           totalElevationM: { type: 'integer', nullable: true },
-          estimatedMin: { type: 'integer', nullable: true },
+          estimatedMin: {
+            type: 'integer',
+            nullable: true,
+            description: '도보 소요 분 (crsTotlRqrmHour)',
+          },
           difficultyLevel: { type: 'integer', nullable: true },
-          pathGeoJson: { type: 'object', nullable: true, description: 'GeoJSON' },
+          gpxPath: { type: 'string', nullable: true, description: '원본 GPX 파일 주소' },
+          pathGeoJson: {
+            type: 'object',
+            nullable: true,
+            description: 'GeoJSON LineString. GPX 를 약 100 포인트로 솎아 저장',
+          },
           imageUrls: { type: 'array', items: { type: 'string' } },
           description: { type: 'string', nullable: true },
           lastSyncedAt: { type: 'string', format: 'date-time' },

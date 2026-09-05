@@ -76,3 +76,7 @@ coverage/
 # ─── Supabase 로컬 ───
 supabase/.branches/
 supabase/.temp/
+
+# ─── AI 분석 산출물 (로컬 참고용, 커밋 제외) ───
+docs/audit/
+docs/superpowers/specs/2026-09-05-contest-submission-readiness-design.md

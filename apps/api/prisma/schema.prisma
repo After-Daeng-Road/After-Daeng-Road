@@ -240,22 +240,36 @@ model Poi {
 }
 
 model DurunubiCourse {
-  id              String   @id @default(uuid()) @db.Uuid
-  poiId           String?  @unique @map("poi_id") @db.Uuid
-  routeIdx        String   @unique @map("route_idx")
-  routeName       String   @map("route_name")
-  themeName       String?  @map("theme_name")
-  totalDistanceKm Decimal  @map("total_distance_km") @db.Decimal(6, 2)
-  totalElevationM Int?     @map("total_elevation_m")
-  estimatedMin    Int?     @map("estimated_min")
-  difficultyLevel Int?     @map("difficulty_level")
-  pathGeoJson     Json?    @map("path_geojson")
-  imageUrls       String[] @map("image_urls")
-  description     String?
-  lastSyncedAt    DateTime @map("last_synced_at")
+  id        String  @id @default(uuid()) @db.Uuid
+  poiId     String? @unique @map("poi_id") @db.Uuid
+  // 코스 식별자 (두루누비 crsIdx). 실제 코스 단위 키 — 전국 142건
+  crsIdx    String  @unique @map("crs_idx")
+  // 노선 식별자 (두루누비 routeIdx). 남파랑길·서해랑길·DMZ 평화의 길·해파랑길 4개뿐이라
+  // 코스 여러 개가 같은 값을 공유한다. 유니크가 아니다
+  routeIdx  String  @map("route_idx")
+  // 코스명 (crsKorNm) 예: "서해랑길 76코스"
+  crsName   String  @map("crs_name")
+  // 노선명 (routeList 의 themeNm 을 routeIdx 로 조인) 예: "서해랑길"
+  themeName String? @map("theme_name")
+  // 소재 시군 원문 (sigun) 예: "충남 서산시". 지역 필터·표시용
+  sigunText String? @map("sigun_text")
+
+  totalDistanceKm Decimal @map("total_distance_km") @db.Decimal(6, 2)
+  totalElevationM Int?    @map("total_elevation_m")
+  estimatedMin    Int?    @map("estimated_min")
+  difficultyLevel Int?    @map("difficulty_level")
+
+  // 원본 GPX 주소 (gpxpath). 재적재 시 좌표 재추출 근거
+  gpxPath     String?  @map("gpx_path")
+  pathGeoJson Json?    @map("path_geojson")
+  imageUrls   String[] @map("image_urls")
+  description String?
+
+  lastSyncedAt DateTime @map("last_synced_at")
 
   poi Poi? @relation(fields: [poiId], references: [id], onDelete: SetNull)
 
+  @@index([routeIdx])
   @@map("durunubi_courses")
 }
 

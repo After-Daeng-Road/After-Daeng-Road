@@ -15,8 +15,15 @@ async function main() {
   // 시드된 실재 유저 id 사용 (FK 충족)
   const prisma = new PrismaClient();
   const user = await prisma.user.findFirst({ select: { id: true } });
-  await prisma.$disconnect();
-  if (!user) throw new Error('users 비어있음 — 먼저 npm run seed 로 데모 유저 생성');
+  if (!user) {
+    await prisma.$disconnect();
+    throw new Error('users 비어있음 — 먼저 npm run seed 로 데모 유저 생성');
+  }
+
+  // 호출 전 이력 건수 — 응답 200 만으로는 영속화를 보장하지 못한다.
+  // supabase-js 는 실패해도 예외를 던지지 않고 { error } 를 돌려주므로,
+  // 저장이 전부 실패해도 추천 응답은 정상으로 보인다(0014 이전의 실제 버그).
+  const before = await prisma.recommendation.count({ where: { userId: user.id } });
 
   const token = await new SignJWT({ role: 'authenticated' })
     .setProtectedHeader({ alg: 'HS256', typ: 'JWT' })
@@ -58,13 +65,25 @@ async function main() {
 
   if (res.status !== 200) {
     console.error('❌ 200 아님:', JSON.stringify(data));
+    await prisma.$disconnect();
     process.exit(1);
   }
   if (recs.length === 0) {
     console.error('❌ 빈 결과');
+    await prisma.$disconnect();
     process.exit(1);
   }
-  console.log('✅ 통과: 추천 결과 존재');
+
+  // 영속화 검증 — offset 0 요청이므로 이력이 정확히 1건 늘어야 한다
+  const after = await prisma.recommendation.count({ where: { userId: user.id } });
+  await prisma.$disconnect();
+  console.log(`recommendations: ${before} → ${after}`);
+  if (after !== before + 1) {
+    console.error(`❌ 이력 미기록 — ${before + 1}건이어야 하는데 ${after}건. Edge 저장 실패 의심`);
+    process.exit(1);
+  }
+
+  console.log('✅ 통과: 추천 결과 존재 + 이력 1건 기록');
 }
 
 main().catch((e) => {

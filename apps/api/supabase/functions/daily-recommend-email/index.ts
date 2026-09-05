@@ -85,13 +85,19 @@ Deno.serve(async (_req: Request): Promise<Response> => {
         continue;
       }
 
-      await admin.from('email_logs').insert({
+      // id 명시 — email_logs.id 는 UUID NOT NULL 이고 컬럼 DEFAULT 가 없다(0014 참고).
+      // 이 로그가 비면 checkFrequency 의 주 5회 상한이 영구히 열린다.
+      const { error: logErr } = await admin.from('email_logs').insert({
+        id: crypto.randomUUID(),
         user_id: user.id,
         type: 'daily_recommend',
         subject,
         status: 'sent',
         sent_at: new Date().toISOString(),
       });
+      if (logErr) {
+        console.error('[email_logs.insert] 실패', user.id, logErr.message);
+      }
       sent++;
     } catch (e) {
       console.error('send failed', user.id, e);

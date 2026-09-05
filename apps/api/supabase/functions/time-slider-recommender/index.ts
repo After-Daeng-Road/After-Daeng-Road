@@ -293,7 +293,10 @@ Deno.serve(async (req: Request): Promise<Response> => {
     // ─ 영속화 (PRD: recommendations 테이블) ─
     // 첫 페이지만 기록한다 — "더보기"는 같은 검색의 연속이라 이력이 중복되면 안 된다
     if (offset === 0) {
-      await admin.from('recommendations').insert({
+      // id 는 명시 생성한다 — recommendations.id 는 UUID NOT NULL 이고 컬럼 DEFAULT 가 없다.
+      // Prisma 의 @default(uuid()) 는 클라이언트 기능이라 SQL 에 반영되지 않는다(0014 로 DB 기본값도 추가).
+      const { error: persistErr } = await admin.from('recommendations').insert({
+        id: crypto.randomUUID(),
         user_id: userId,
         pet_id: input.petId ?? null,
         status: 'COMPLETED',
@@ -306,6 +309,10 @@ Deno.serve(async (req: Request): Promise<Response> => {
         reason_chips: recommendations.map((r) => r.reason),
         completed_at: new Date().toISOString(),
       });
+      // 이력 저장 실패로 추천 응답까지 막지는 않는다. 다만 조용히 넘기지 않고 반드시 남긴다.
+      if (persistErr) {
+        console.error('[recommendations.insert] 실패', userId, persistErr.message);
+      }
     }
 
     return j({ recommendations, offset, limit, hasMore });
