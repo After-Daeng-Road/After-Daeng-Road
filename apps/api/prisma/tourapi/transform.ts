@@ -2,7 +2,13 @@
 // 근거: 2026-08-29 실데이터 프로브 (KorService2/areaBasedList2 + detailPetTour2)
 
 export type PoiTypeStr =
-  'CAFE' | 'RESTAURANT' | 'TRAIL' | 'PARK' | 'ATTRACTION' | 'ACCOMMODATION' | 'REST_AREA';
+  | 'CAFE'
+  | 'RESTAURANT'
+  | 'TRAIL'
+  | 'PARK'
+  | 'ATTRACTION'
+  | 'ACCOMMODATION'
+  | 'REST_AREA';
 
 export const LDONG_REGN_CD = 44; // 충청남도 법정동 시도코드
 
