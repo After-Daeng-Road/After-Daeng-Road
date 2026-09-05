@@ -15,10 +15,14 @@ export type Recommendation = {
   address: string;
   lat: number;
   lng: number;
-  sourceLabel: '두루누비 코스' | '펫동반 가능' | 'TourAPI';
+  // Edge Function 실제 반환값. 두루누비 미연동이라 코스 라벨은 아직 없다.
+  sourceLabel: '펫 동반 가능' | '한적한 산책지';
   type: 'CAFE' | 'RESTAURANT' | 'TRAIL' | 'PARK' | 'ATTRACTION';
   imageUrl: string | null;
   badges: Array<'PET_VERIFIED' | 'WELLNESS' | 'ECO' | 'TRAIL_OFFICIAL'>;
+  petAllowed: boolean;
+  /** TourAPI detailIntro2 운영시간 원문 ("상시 개방" / "08:00~17:00"). 없으면 null */
+  openHoursText: string | null;
   reason: ReasonChip;
   sampleSufficient: boolean;
 };

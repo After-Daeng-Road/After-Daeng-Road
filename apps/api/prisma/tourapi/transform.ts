@@ -215,3 +215,89 @@ export function mergeImageUrls(existing: string[], extra: string[]): string[] {
   }
   return out;
 }
+
+// ─── detailIntro2 운영시간 ───
+// 실응답은 세 형태다: "상시 개방" / "08:00~17:00" / "기상여건에 따라 통제 되므로 …"(안내문).
+// 안내문은 파싱하지 않고 null 로 둔다 — 추천에서 시간 판단 자체를 건너뛰게 해서
+// 정보가 없다는 이유로 후보에서 탈락시키지 않는다.
+
+const ALWAYS_OPEN_RE = /상시|24\s*시간|연중\s*무휴\s*개방/;
+const HOUR_RANGE_RE = /(\d{1,2}):(\d{2})\s*[~\-–—]\s*(\d{1,2}):(\d{2})/;
+
+export type OpenHours = { openFrom: number | null; openTo: number | null };
+
+export function parseUseTime(raw: string | undefined | null): OpenHours {
+  const s = (raw ?? '').trim();
+  if (!s) return { openFrom: null, openTo: null };
+  if (ALWAYS_OPEN_RE.test(s)) return { openFrom: 0, openTo: 24 };
+
+  // 여러 범위(하절기/동절기)가 있으면 첫 번째를 대표값으로 쓴다
+  const m = s.match(HOUR_RANGE_RE);
+  if (!m) return { openFrom: null, openTo: null };
+
+  const from = Number(m[1]);
+  const to = Number(m[3]);
+  if (!Number.isFinite(from) || !Number.isFinite(to) || from > 24 || to > 24) {
+    return { openFrom: null, openTo: null };
+  }
+  return { openFrom: from, openTo: to };
+}
+
+/** 해당 시각에 열려 있는가. 정보가 없으면 true (모르는 것을 닫힘으로 취급하지 않는다) */
+export function isOpenAtHour(
+  openFrom: number | null | undefined,
+  openTo: number | null | undefined,
+  hour: number,
+): boolean {
+  if (openFrom == null || openTo == null) return true;
+  if (openFrom === openTo) return true; // 24시간 운영 표기
+  if (openFrom < openTo) return hour >= openFrom && hour < openTo;
+  return hour >= openFrom || hour < openTo; // 자정 넘김 (예: 22~02)
+}
+
+// detailIntro2 는 contentTypeId 마다 필드명이 다르다 (실응답 확인):
+//   12 관광지 usetime / 14 문화시설 usetimeculture / 28 레포츠 usetimeleports
+//   38 쇼핑 opentime / 39 음식점 opentimefood
+// 타입 → 키 매핑표를 두는 대신, 후보 키를 순서대로 훑어 첫 값을 쓴다.
+// 응답에는 해당 타입의 키만 오므로 충돌하지 않고, 새 타입이 늘어도 목록만 추가하면 된다.
+const INTRO_KEYS = {
+  useTimeText: ['usetime', 'usetimeleports', 'usetimeculture', 'opentime', 'opentimefood'],
+  restDateText: [
+    'restdate',
+    'restdateleports',
+    'restdateculture',
+    'restdateshopping',
+    'restdatefood',
+  ],
+  parkingText: ['parking', 'parkingleports', 'parkingculture', 'parkingshopping', 'parkingfood'],
+  infoCenter: [
+    'infocenter',
+    'infocenterleports',
+    'infocenterculture',
+    'infocentershopping',
+    'infocenterfood',
+  ],
+} as const;
+
+export type IntroFields = {
+  useTimeText: string | null;
+  restDateText: string | null;
+  parkingText: string | null;
+  infoCenter: string | null;
+};
+
+export function pickIntroFields(intro: Record<string, string> | null | undefined): IntroFields {
+  const pick = (keys: readonly string[]): string | null => {
+    for (const k of keys) {
+      const v = intro?.[k]?.trim();
+      if (v) return v;
+    }
+    return null;
+  };
+  return {
+    useTimeText: pick(INTRO_KEYS.useTimeText),
+    restDateText: pick(INTRO_KEYS.restDateText),
+    parkingText: pick(INTRO_KEYS.parkingText),
+    infoCenter: pick(INTRO_KEYS.infoCenter),
+  };
+}
