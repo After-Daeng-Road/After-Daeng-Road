@@ -41,7 +41,7 @@ export function SiteHeader() {
         </Link>
 
         <nav className="hidden items-center gap-[30px] md:flex">
-          {NAV_ITEMS.slice(0, 3).map((item) => {
+          {NAV_ITEMS.slice(0, 4).map((item) => {
             const active = pathname === item.href;
             return (
               <Link

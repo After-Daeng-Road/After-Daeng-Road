@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { ArrowRight, ChevronDown, Clock, Dog, MapPin } from 'lucide-react';
 import { getConsentStatus, recordConsent } from '@/lib/actions/consent';
+import { useToast } from '@/components/ui/toast';
 import { Spinner } from '@/components/ui/spinner';
 import { COPY } from '@/lib/copy';
 import { CHUNGNAM_SEED, TIME_MAX, TIME_MIN, TIME_STEP } from '@/lib/constants';
@@ -50,6 +51,7 @@ export function RecommendForm({
   onSubmit: (input: RecommendInput) => void;
 }) {
   const { data: session } = useSession();
+  const toast = useToast();
   const [departure, setDeparture] = useState(CHUNGNAM_SEED.CHEONAN);
   const [showLocationConsent, setShowLocationConsent] = useState(false);
   const locationOk = useRef(false);
@@ -62,11 +64,17 @@ export function RecommendForm({
   }, []);
 
   const radiusKm = radiusFromHours(timeHours);
-  const canRecommend = selectedPetId !== null && !loading;
+  // 비로그인: 버튼을 살려두고 클릭 시 토스트로 안내. 로그인 상태에선 펫 미선택만 비활성.
+  const authed = !!session?.user;
+  const canRecommend = !loading && (!authed || selectedPetId !== null);
   // 슬라이더 채움 비율 (브랜드 → 라인)
   const pct = ((timeHours - TIME_MIN) / (TIME_MAX - TIME_MIN)) * 100;
 
   const handleSubmit = () => {
+    if (!authed) {
+      toast(COPY.toast.loginRequired);
+      return;
+    }
     onSubmit({
       petId: selectedPetId,
       timeHours,
@@ -311,7 +319,7 @@ export function RecommendForm({
         </button>
       </div>
 
-      {!selectedPetId && pets.length === 0 && (
+      {authed && !selectedPetId && pets.length === 0 && (
         <p className="mt-3 text-center text-[11px] text-muted">{C.needPet}</p>
       )}
     </section>

@@ -112,8 +112,10 @@ export function IntroSplash() {
       {/* 영상 + 하단 컨트롤 — 여백 있는 중앙 배치, 컨트롤은 영상 하단 오른쪽 */}
       <div className="grid h-full w-full place-items-center px-5 py-10 sm:px-10 sm:py-14">
         <div className="flex max-h-full max-w-full flex-col">
-          {/* 영상 — 재생 대기 오버레이는 영상 영역만 덮어, 아래 컨트롤은 항상 클릭 가능 */}
-          <div className="relative min-h-0 flex-1">
+          {/* 영상 — 재생 대기 오버레이는 영상 영역만 덮어, 아래 컨트롤은 항상 클릭 가능.
+              가로뿐 아니라 세로도 78vh 로 상한 — 16:9 화면(1920×1080)에서 가로 기준으로만
+              커지면 하단 컨트롤이 뷰포트 밖으로 밀려 짤리던 문제 방지 */}
+          <div className="relative">
             <video
               ref={videoRef}
               src={VIDEO_SRC}
@@ -121,7 +123,7 @@ export function IntroSplash() {
               playsInline
               preload="auto"
               onEnded={close}
-              className="h-full w-auto max-w-full object-contain shadow-lift"
+              className="max-h-[78vh] w-auto max-w-full object-contain shadow-lift"
             />
             {/* 자동재생 차단 시 — 글래스 플레이 버튼 (클릭 제스처로 소리 재생) */}
             {needsTap && (

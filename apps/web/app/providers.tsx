@@ -2,6 +2,8 @@
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SessionProvider } from 'next-auth/react';
+import { ToastProvider } from '@/components/ui/toast';
+import { AuthToastWatcher } from '@/components/auth-toast-watcher';
 import { useState } from 'react';
 
 // PRD §10.1: TanStack Query — 비기능 §성능 ≤ 5s 추천 응답을 위한 캐싱
@@ -24,7 +26,11 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
   return (
     <SessionProvider>
-      <QueryClientProvider client={client}>{children}</QueryClientProvider>
+      <ToastProvider>
+        <QueryClientProvider client={client}>{children}</QueryClientProvider>
+        {/* 로그인/로그아웃 전환 토스트 */}
+        <AuthToastWatcher />
+      </ToastProvider>
     </SessionProvider>
   );
 }
