@@ -33,6 +33,8 @@ const clientSchema = z.object({
   NEXT_PUBLIC_TURNSTILE_SITE_KEY: z.string().optional(),
   NEXT_PUBLIC_GA_ID: z.string().optional(),
   NEXT_PUBLIC_SENTRY_DSN: z.string().optional(),
+  // SEO·OG 절대 URL 기준 (미설정 시 https://daengroad.app 폴백 — robots/sitemap/metadata 공통)
+  NEXT_PUBLIC_APP_URL: z.string().url().optional(),
 });
 
 let _server: z.infer<typeof serverSchema> | null = null;

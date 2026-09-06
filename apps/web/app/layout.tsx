@@ -21,8 +21,12 @@ const newsreader = Newsreader({
 // 무플래시 테마 부트 — 페인트 전에 data-theme 설정 (localStorage > 시스템 선호 > light)
 const themeBoot = `(function(){try{var t=localStorage.getItem('daengroad-theme');if(!t){t=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';}document.documentElement.setAttribute('data-theme',t);}catch(e){document.documentElement.setAttribute('data-theme','light');}})();`;
 
-// PRD §1.1 — 댕로드 메타
+// PRD §1.1 — 댕로드 메타 (SEO·OG)
+// metadataBase 가 있어야 og:image 등이 절대 URL 로 나간다. 도메인은 robots.ts 와 동일 규칙.
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://daengroad.app';
+
 export const metadata: Metadata = {
+  metadataBase: new URL(APP_URL),
   title: {
     default: COPY.meta.titleDefault,
     template: COPY.meta.titleTemplate,
@@ -30,10 +34,32 @@ export const metadata: Metadata = {
   description: COPY.meta.description,
   applicationName: COPY.meta.appName,
   authors: [{ name: COPY.meta.author }],
+  keywords: [
+    '반려견 동반',
+    '펫 동반 여행',
+    '강아지 산책',
+    '펫 동반 카페',
+    '충남 여행',
+    '천안',
+    '아산',
+    '공주',
+    '서산',
+    '한적한 여행지',
+  ],
+  alternates: { canonical: '/' },
   openGraph: {
     type: 'website',
     locale: 'ko_KR',
     siteName: COPY.meta.siteName,
+    title: COPY.meta.titleDefault,
+    description: COPY.meta.description,
+    url: '/',
+    // og:image 는 app/opengraph-image.jpg 파일 컨벤션으로 자동 주입 (1200×630)
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: COPY.meta.titleDefault,
+    description: COPY.meta.description,
   },
   robots: { index: true, follow: true },
   // 파비콘 — 브라우저 색상 테마별(라이트=ivory / 다크=dark). PNG 우선 + SVG 보강.
