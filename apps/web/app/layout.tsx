@@ -62,6 +62,8 @@ export const metadata: Metadata = {
     description: COPY.meta.description,
   },
   robots: { index: true, follow: true },
+  // Google Search Console 소유권 확인 (URL 접두어 속성)
+  verification: { google: '7gmXg5pU15JfehbcB_APx_C9StvOo4rS1O_R9_cELe0' },
   // 파비콘 — 브라우저 색상 테마별(라이트=ivory / 다크=dark). PNG 우선 + SVG 보강.
   icons: {
     icon: [
