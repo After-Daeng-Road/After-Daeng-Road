@@ -105,7 +105,13 @@ GNB 이동·로그인 복귀·뒤로가기에는 다시 나오지 않고(Navigat
 '오늘 하루 보지 않기'와 '건너뛰기'를 제공합니다. 소리 있는 자동재생이 차단된 브라우저에서는
 플레이 버튼 한 번으로 소리와 함께 시작합니다.
 
-![인트로 스플래시](docs/screenshots/intro-splash.jpg)
+<p align="center">
+  <img width="70%" alt="인트로 영상 미리보기" src="docs/screenshots/intro-preview.gif" />
+</p>
+
+<p align="center">
+  ▶️ <a href="apps/web/public/intro/daengroad-intro.mp4">소리 포함 전체 영상 보기 (31초)</a>
+</p>
 
 ## 홈 · 검색 콘솔
 
