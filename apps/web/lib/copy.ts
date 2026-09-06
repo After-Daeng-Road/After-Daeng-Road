@@ -148,6 +148,16 @@ export const COPY = {
     close: '닫기',
   },
 
+  // ───────── 토스트 ─────────
+  toast: {
+    loginRequired: '로그인 후 이용할 수 있어요',
+    loggedIn: '로그인되었어요',
+    loggedOut: '로그아웃되었어요',
+    bookmarkAdded: '저장한 장소에 담았어요',
+    bookmarkRemoved: '저장을 해제했어요',
+    actionFail: '잠시 후 다시 시도해주세요',
+  },
+
   // ───────── 인트로 스플래시 ─────────
   intro: {
     aria: '댕로드 인트로 영상',
@@ -177,6 +187,24 @@ export const COPY = {
     locationDesc:
       '현 위치 기반 추천을 위해 위치 정보를 이용해요. 위치는 추천 계산에만 쓰이고 원본 좌표는 저장하지 않아요.',
     locationAgree: '동의하고 사용',
+  },
+
+  // ───────── 두루누비 산책로 ─────────
+  trails: {
+    headTitle: '두루누비 산책로',
+    headDesc: '한국관광공사 두루누비의 충남 걷기여행길 — 반려견과 걷기 좋은 공식 코스예요.',
+    countUnit: '개 코스',
+    difficulty: ['쉬움', '보통', '힘듦'] as string[],
+    distance: '거리',
+    duration: '소요',
+    elevation: '고도',
+    kmUnit: 'km',
+    mUnit: 'm',
+    hourMin: (min: number) =>
+      min >= 60
+        ? `${Math.floor(min / 60)}시간 ${min % 60 ? `${min % 60}분` : ''}`.trim()
+        : `${min}분`,
+    kakao: '카카오 길찾기',
   },
 
   // ───────── 마이펫타임 ─────────

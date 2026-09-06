@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { LogIn, Star } from 'lucide-react';
 import { createReview } from '@/lib/actions/reviews';
+import { useToast } from '@/components/ui/toast';
 import { COPY } from '@/lib/copy';
 import dynamic from 'next/dynamic';
 
@@ -49,10 +50,10 @@ function RatingInput({ value, onChange }: { value: number; onChange: (n: number)
 export function ReviewForm({ poiId }: { poiId: string }) {
   const { status } = useSession();
   const router = useRouter();
+  const toast = useToast();
   const [rating, setRating] = useState(0);
   const [body, setBody] = useState('');
   const [photos, setPhotos] = useState<string[]>([]);
-  const [message, setMessage] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
   const [isPending, startTransition] = useTransition();
 
   // 비로그인 → 로그인 유도
@@ -72,24 +73,20 @@ export function ReviewForm({ poiId }: { poiId: string }) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setMessage(null);
     if (rating < 1) {
-      setMessage({ type: 'err', text: P.ratingRequired });
+      toast(P.ratingRequired, 'error');
       return;
     }
     startTransition(async () => {
       const res = await createReview({ poiId, rating, body: body.trim() || undefined, photos });
       if (res.ok) {
-        setMessage({ type: 'ok', text: P.reviewSaved });
+        toast(P.reviewSaved, 'success');
         setRating(0);
         setBody('');
         setPhotos([]);
         router.refresh();
       } else {
-        setMessage({
-          type: 'err',
-          text: res.error === 'Unauthorized' ? P.reviewLoginError : res.error,
-        });
+        toast(res.error === 'Unauthorized' ? P.reviewLoginError : res.error, 'error');
       }
     });
   };
@@ -127,14 +124,6 @@ export function ReviewForm({ poiId }: { poiId: string }) {
       >
         {isPending ? P.reviewSubmitting : P.reviewSubmit}
       </button>
-
-      {message && (
-        <p
-          className={`mt-2 text-center text-xs ${message.type === 'ok' ? 'text-quiet' : 'text-danger'}`}
-        >
-          {message.text}
-        </p>
-      )}
     </form>
   );
 }

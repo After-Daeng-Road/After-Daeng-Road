@@ -5,6 +5,7 @@
 export const NAV_ITEMS = [
   { href: '/', label: '홈' },
   { href: '/recommendations', label: '추천' },
+  { href: '/trails', label: '산책로' },
   { href: '/me', label: '마이펫타임' },
   { href: '/login', label: '로그인' },
 ] as const;
