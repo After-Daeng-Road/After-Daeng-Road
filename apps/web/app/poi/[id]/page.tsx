@@ -5,11 +5,12 @@ import { BadgeCheck, Leaf, PawPrint, Sprout, TreePine } from 'lucide-react';
 import { Chip } from '@/components/ui/chip';
 import { ReviewForm } from '@/components/poi/review-form';
 import { ReviewList } from '@/components/poi/review-list';
+import { CheckInForm } from '@/components/poi/checkin-form';
 import { KakaoDirectionsButton } from '@/components/poi/kakao-directions-button';
 import { BookmarkButton } from '@/components/poi/bookmark-button';
 import { COPY } from '@/lib/copy';
 
-// PRD §7.2 [장소 상세] — 사진·소개·펫정책 / 한적도 시간대 차트 / 검증 진행도 / 후기
+// PRD §7.2 [장소 상세] — 사진·소개·펫정책 / 한적도 시간대 차트 / 검증 진행도 / 방문 인증 / 후기
 
 export default async function PoiDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -19,6 +20,8 @@ export default async function PoiDetailPage({ params }: { params: Promise<{ id: 
 
   const { poi, hourly, verifiedCount } = detail;
   const maxScore = Math.max(...hourly.map((h) => h.score), 100);
+  // DB 트리거(0003)가 부여한 배지 — 유효 인증 3명 이상. 6개월 만료 후 회수되므로 count 와 별개로 본다
+  const petVerified = poi.badges.some((b) => b.badgeType === 'PET_VERIFIED');
 
   return (
     <main className="mx-auto max-w-2xl px-4 py-6">
@@ -34,6 +37,11 @@ export default async function PoiDetailPage({ params }: { params: Promise<{ id: 
       <p className="mt-1 text-sm text-muted">{poi.address}</p>
 
       <div className="mt-3 flex flex-wrap gap-1.5">
+        {petVerified && (
+          <Chip variant="pink" icon={<BadgeCheck className="h-3 w-3" aria-hidden />}>
+            {COPY.poi.verifiedBadge}
+          </Chip>
+        )}
         {poi.petAllowed && (
           <Chip variant="brand" icon={<PawPrint className="h-3 w-3" aria-hidden />}>
             {COPY.poi.petAllowed}
@@ -96,7 +104,7 @@ export default async function PoiDetailPage({ params }: { params: Promise<{ id: 
         <div className="flex items-center justify-between text-xs">
           <span className="inline-flex items-center gap-1 text-muted">
             {COPY.poi.verifyProgress(verifiedCount)}
-            {verifiedCount >= 3 && <BadgeCheck className="h-3.5 w-3.5 text-verify" aria-hidden />}
+            {petVerified && <BadgeCheck className="h-3.5 w-3.5 text-verify" aria-hidden />}
           </span>
         </div>
         <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-surface-2">
@@ -105,7 +113,13 @@ export default async function PoiDetailPage({ params }: { params: Promise<{ id: 
             style={{ width: `${Math.min(100, (verifiedCount / 3) * 100)}%` }}
           />
         </div>
+        <p className="mt-2 text-[11px] text-faint">
+          {petVerified ? COPY.poi.verifiedBadgeGranted : COPY.poi.verifyHint}
+        </p>
       </section>
+
+      {/* 방문 인증 (PRD §6.3) — checkIn → 트리거가 3명 충족 시 PET_VERIFIED 부여 */}
+      <CheckInForm poiId={poi.id} />
 
       {/* 방문 후기 (PRD §7.2) — 작성 폼(createReview) + 공개 리뷰 목록 */}
       <ReviewForm poiId={poi.id} />
