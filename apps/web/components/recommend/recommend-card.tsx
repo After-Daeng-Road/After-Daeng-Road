@@ -1,7 +1,8 @@
 import Link from 'next/link';
-import { ArrowUpRight, Navigation, TrendingUp } from 'lucide-react';
+import { ArrowUpRight, BadgeCheck, Leaf, Navigation, Sprout, TrendingUp } from 'lucide-react';
 import { BookmarkButton } from '@/components/poi/bookmark-button';
 import { PoiImageFallback } from '@/components/poi/poi-image-fallback';
+import { Chip } from '@/components/ui/chip';
 import { COPY } from '@/lib/copy';
 import { kakaoDirectionsUrl, stripHtmlText, type DeparturePoint } from '@/lib/format';
 import type { Recommendation } from '@/lib/types/recommendation';
@@ -103,6 +104,28 @@ export function RecommendCard({
             )}
           </div>
         </div>
+
+        {/* 배지 — Edge 가 내려주는 badges[]. PET_VERIFIED 는 실제 방문자 3명 인증(DB 트리거),
+            WELLNESS·ECO 는 데이터 메타. 두루누비 공식은 sourceLabel 이 이미 말하므로 생략 */}
+        {rec.badges.some((b) => b !== 'TRAIL_OFFICIAL') && (
+          <div className="mt-2.5 flex flex-wrap gap-1.5">
+            {rec.badges.includes('PET_VERIFIED') && (
+              <Chip variant="pink" icon={<BadgeCheck className="h-3 w-3" aria-hidden />}>
+                {C.badge.PET_VERIFIED}
+              </Chip>
+            )}
+            {rec.badges.includes('WELLNESS') && (
+              <Chip variant="blue" icon={<Sprout className="h-3 w-3" aria-hidden />}>
+                {C.badge.WELLNESS}
+              </Chip>
+            )}
+            {rec.badges.includes('ECO') && (
+              <Chip variant="green" icon={<Leaf className="h-3 w-3" aria-hidden />}>
+                {C.badge.ECO}
+              </Chip>
+            )}
+          </div>
+        )}
 
         {/* 스탯 행 — 세리프 누메랄 */}
         <div className="mt-[22px] flex border-y border-line-soft py-5">

@@ -10,15 +10,30 @@ export const NAV_ITEMS = [
   { href: '/login', label: '로그인' },
 ] as const;
 
-// ───────── 충남 4시 시드 좌표 (PRD §13.3) ─────────
-export type CityKey = 'CHEONAN' | 'ASAN' | 'GONGJU' | 'SEOSAN';
+// ───────── 충남 시·군 출발지 (드롭다운) ─────────
+// 좌표는 시청·군청 부근. 앞 4곳이 PRD §13.3 베타 서비스 지역이고 나머지는 인접 시군 —
+// POI 데이터는 4시 기준이라 먼 시군(태안·금산 등)에서 출발하면 반경 안 후보가 적을 수 있다.
+export type DepartureCity = { lat: number; lng: number; label: string };
 
-export const CHUNGNAM_SEED: Record<CityKey, { lat: number; lng: number; label: string }> = {
-  CHEONAN: { lat: 36.8151, lng: 127.1135, label: '천안' },
-  ASAN: { lat: 36.7898, lng: 127.0019, label: '아산' },
-  GONGJU: { lat: 36.4467, lng: 127.119, label: '공주' },
-  SEOSAN: { lat: 36.7848, lng: 126.4503, label: '서산' },
-};
+export const CHUNGNAM_CITIES: readonly DepartureCity[] = [
+  { lat: 36.8151, lng: 127.1135, label: '천안' },
+  { lat: 36.7898, lng: 127.0019, label: '아산' },
+  { lat: 36.4467, lng: 127.119, label: '공주' },
+  { lat: 36.7848, lng: 126.4503, label: '서산' },
+  { lat: 36.2745, lng: 127.2486, label: '계룡' },
+  { lat: 36.1088, lng: 127.4881, label: '금산' },
+  { lat: 36.1872, lng: 127.0987, label: '논산' },
+  { lat: 36.8897, lng: 126.6458, label: '당진' },
+  { lat: 36.3332, lng: 126.6128, label: '보령' },
+  { lat: 36.2756, lng: 126.9099, label: '부여' },
+  { lat: 36.0802, lng: 126.6919, label: '서천' },
+  { lat: 36.6826, lng: 126.8449, label: '예산' },
+  { lat: 36.4592, lng: 126.8024, label: '청양' },
+  { lat: 36.7456, lng: 126.298, label: '태안' },
+  { lat: 36.6013, lng: 126.6608, label: '홍성' },
+];
+
+export const DEFAULT_DEPARTURE: DepartureCity = CHUNGNAM_CITIES[0];
 
 // ───────── 요일 (이메일 알림 설정) ─────────
 export type DayKey = 'MON' | 'TUE' | 'WED' | 'THU' | 'FRI' | 'SAT' | 'SUN';

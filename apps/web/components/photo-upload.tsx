@@ -8,7 +8,7 @@ import { uploadPhoto, validatePhoto, type UploadPurpose } from '@/lib/upload';
 
 // 사진 업로드 컴포넌트 — 썸네일 그리드 + 추가 타일 + 업로드 상태 (리뷰·방문인증 공통)
 // value(업로드된 public URL 배열)는 controlled. 실제 업로드는 lib/upload(A방식, 브라우저 직접).
-// pet-photos 버킷 제약(jpeg·png·webp, 5MB)을 클라에서 먼저 검증.
+// pet-photos 버킷 제약(이미지·svg 제외, 10MB)을 클라에서 먼저 검증.
 
 const U = COPY.upload;
 
@@ -18,12 +18,15 @@ export function PhotoUpload({
   value,
   onChange,
   max = 8,
+  onFileSelected,
 }: {
   purpose: UploadPurpose;
   poiId: string;
   value: string[];
   onChange: (urls: string[]) => void;
   max?: number;
+  /** 검증 통과한 파일을 업로드하기 직전에 원본 File 로 넘긴다 — 방문 인증이 EXIF 를 읽는 자리 */
+  onFileSelected?: (file: File) => void;
 }) {
   const { data: session } = useSession();
   const accessToken = session?.supabaseAccessToken;
@@ -54,6 +57,7 @@ export function PhotoUpload({
         setError(v.error);
         continue;
       }
+      onFileSelected?.(file);
       setUploading((n) => n + 1);
       const res = await uploadPhoto(file, { accessToken, userId, purpose, poiId });
       setUploading((n) => n - 1);
@@ -107,7 +111,7 @@ export function PhotoUpload({
       <input
         ref={inputRef}
         type="file"
-        accept="image/jpeg,image/png,image/webp"
+        accept="image/*,.heic,.heif"
         multiple={max > 1}
         className="hidden"
         onChange={(e) => {
