@@ -146,7 +146,8 @@ try {
     signature:
       'checkIn(input: CheckInInput): Promise<{ ok: true; verification: Verification } | { ok: false; error: string }>',
     what: '방문 인증(체크인)을 등록한다. 사진 EXIF의 GPS·촬영시각으로 어뷰징을 막는다: POI 1km 이내 + 7일 이내 촬영이면 isValid=true(한적도·배지에 반영), 아니면 등록은 되지만 미검증.',
-    usedIn: 'POI 상세 화면의 "방문 인증" 플로우 (사진 업로드 + 한적/보통/붐빔 평가).',
+    usedIn:
+      'POI 상세 화면의 방문 인증 폼(components/poi/checkin-form.tsx) — 한적/보통/복잡 평가 + 현장 사진 1장. 업로드 직전 원본 File 에서 EXIF(lib/exif.ts, exifr)를 읽어 함께 보낸다.',
     authRequired: true,
     input:
       "z.object({ poiId: string.uuid(); evaluation: 'QUIET'|'OK'|'CROWDED'; photoUrl: string.url().nullable(); exif: { lat, lng, takenAt } | null })",

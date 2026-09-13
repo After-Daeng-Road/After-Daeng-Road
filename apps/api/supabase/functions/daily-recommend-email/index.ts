@@ -13,6 +13,10 @@ const SUPABASE_SERVICE_ROLE = env('SUPABASE_SERVICE_ROLE_KEY');
 const RESEND_API_KEY = env('RESEND_API_KEY');
 const APP_URL = env('APP_URL') || 'https://daengroad.app';
 const CRON_SECRET = env('CRON_SECRET');
+// 1탭 수신거부 토큰 서명키. 웹(apps/web/lib/unsubscribe-token.ts)이 AUTH_SECRET 으로 검증하므로
+// 같은 값을 Edge 시크릿에도 넣는다: supabase secrets set AUTH_SECRET=<web 과 동일>
+// 미설정이면 토큰 링크 대신 알림 설정 페이지(로그인 필요)로 보낸다 — 깨진 링크보다 낫다
+const AUTH_SECRET = env('AUTH_SECRET');
 
 /**
  * pg_cron 호출인지 확인한다.
@@ -103,7 +107,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
         time: user.email_notify_time,
         recommendations,
         ctaUrl: `${APP_URL}/?utm_source=email&utm_medium=daily`,
-        unsubscribeUrl: `${APP_URL}/me/settings?unsubscribe=1&u=${user.id}`,
+        unsubscribeUrl: await unsubscribeUrl(user.id),
       });
 
       const ok = await sendEmail(user.email, subject, html);
@@ -256,6 +260,31 @@ async function sendEmail(to: string, subject: string, html: string): Promise<boo
     body: JSON.stringify({ from: FROM_ADDRESS, to, subject, html }),
   });
   return res.ok;
+}
+
+// ═══════════════ 수신거부 링크 ═══════════════
+// 웹 /unsubscribe?token= 이 검증하는 형식과 동일: base64url(userId:ts) + '.' + base64url(HMAC-SHA256)
+// 이전에는 /me/settings?unsubscribe=1&u= 로 보냈는데 그 경로는 로그인 보호 구역이고 처리 로직도 없었다.
+
+function b64url(bytes: Uint8Array): string {
+  let bin = '';
+  for (const b of bytes) bin += String.fromCharCode(b);
+  return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+async function unsubscribeUrl(userId: string): Promise<string> {
+  if (!AUTH_SECRET) return `${APP_URL}/me/notifications`;
+  const enc = new TextEncoder();
+  const payload = b64url(enc.encode(`${userId}:${Date.now()}`));
+  const key = await crypto.subtle.importKey(
+    'raw',
+    enc.encode(AUTH_SECRET),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign'],
+  );
+  const sig = new Uint8Array(await crypto.subtle.sign('HMAC', key, enc.encode(payload)));
+  return `${APP_URL}/unsubscribe?token=${payload}.${b64url(sig)}`;
 }
 
 // ═══════════════ 유틸 ═══════════════

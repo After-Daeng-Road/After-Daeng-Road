@@ -8,7 +8,14 @@ import { getConsentStatus, recordConsent } from '@/lib/actions/consent';
 import { useToast } from '@/components/ui/toast';
 import { Spinner } from '@/components/ui/spinner';
 import { COPY } from '@/lib/copy';
-import { CHUNGNAM_SEED, TIME_MAX, TIME_MIN, TIME_STEP } from '@/lib/constants';
+import {
+  CHUNGNAM_CITIES,
+  DEFAULT_DEPARTURE,
+  TIME_MAX,
+  TIME_MIN,
+  TIME_STEP,
+  type DepartureCity,
+} from '@/lib/constants';
 import { formatHHmm, radiusFromHours } from '@/lib/format';
 import type { Pet, RecommendInput } from '@/lib/types/recommendation';
 
@@ -16,8 +23,12 @@ import type { Pet, RecommendInput } from '@/lib/types/recommendation';
 // 시그니처 TimeSlider: 세리프 누메랄 값 + "{n}시간 · 반경 약 {km}km" 라이브 캡션.
 // timeHours 만 controlled (부모가 EmptyResult.onRelax 등으로 외부 조작),
 // 나머지(departure, selectedPetId, startAt)는 내부 상태.
+//
+// 출발지는 충남 시·군 드롭다운 또는 현 위치. 어느 쪽이든 {lat, lng, label} 좌표라 추천 API 계약은 그대로다.
 
 const C = COPY.home.console;
+// 드롭다운 값 — 현 위치처럼 도시 목록에 없는 좌표일 때
+const CUSTOM_CITY = '__custom__';
 
 type StartOption = { value: string; label: string };
 
@@ -52,7 +63,7 @@ export function RecommendForm({
 }) {
   const { data: session } = useSession();
   const toast = useToast();
-  const [departure, setDeparture] = useState(CHUNGNAM_SEED.CHEONAN);
+  const [departure, setDeparture] = useState<DepartureCity>(DEFAULT_DEPARTURE);
   const [showLocationConsent, setShowLocationConsent] = useState(false);
   const locationOk = useRef(false);
   const [selectedPetId, setSelectedPetId] = useState<string | null>(pets[0]?.id ?? null);
@@ -81,6 +92,17 @@ export function RecommendForm({
       startAt: startAt === 'now' ? new Date().toISOString() : startAt,
       departure: { lat: departure.lat, lng: departure.lng, label: departure.label },
     });
+  };
+
+  // 드롭다운의 현재 값 — 도시 좌표와 정확히 일치할 때만 그 도시, 아니면 "직접 입력한 위치"
+  const cityValue =
+    CHUNGNAM_CITIES.find(
+      (c) => c.label === departure.label && c.lat === departure.lat && c.lng === departure.lng,
+    )?.label ?? CUSTOM_CITY;
+
+  const pickCity = (label: string) => {
+    const next = CHUNGNAM_CITIES.find((c) => c.label === label);
+    if (next) setDeparture(next);
   };
 
   const doGeolocate = () => {
@@ -170,14 +192,18 @@ export function RecommendForm({
           <div className="flex gap-1.5">
             <div className="relative flex-1">
               <select
-                value={departure.label}
-                onChange={(e) => {
-                  const next = Object.values(CHUNGNAM_SEED).find((c) => c.label === e.target.value);
-                  if (next) setDeparture(next);
-                }}
+                value={cityValue}
+                onChange={(e) => pickCity(e.target.value)}
+                aria-label={C.departure}
                 className={selectCls}
               >
-                {Object.values(CHUNGNAM_SEED).map((c) => (
+                {/* 현 위치 좌표는 도시 목록에 없다 — 현재 상태를 보여주는 자리 (이전엔 첫 도시가 선택된 것처럼 보였다) */}
+                {cityValue === CUSTOM_CITY && (
+                  <option value={CUSTOM_CITY} disabled>
+                    {departure.label}
+                  </option>
+                )}
+                {CHUNGNAM_CITIES.map((c) => (
                   <option key={c.label} value={c.label}>
                     {c.label}
                     {C.citySuffix}
