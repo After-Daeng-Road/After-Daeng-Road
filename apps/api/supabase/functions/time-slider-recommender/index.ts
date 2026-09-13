@@ -72,7 +72,7 @@ type PoiCandidate = {
   is_wellness: boolean;
   is_eco: boolean;
   pet_allowed: boolean;
-  sigungu_code: number;
+  sigungu_code: number | null; // 두루누비 코스는 서비스 4시 밖이면 null
   content_type_id: number | null;
   use_time_text: string | null;
   open_from: number | null;
@@ -230,7 +230,13 @@ Deno.serve(async (req: Request): Promise<Response> => {
     // ─ ETA + 한적도 + 검증 수 조회 (배치: POI별 개별쿼리 대신 slice 전체를 몇 개 쿼리로) ─
     const slice = candidates.slice(0, CANDIDATE_LIMIT);
     const poiIds = slice.map((p) => p.id);
-    const sigungus = [...new Set(slice.map((p) => p.sigungu_code))];
+    // sigungu_code 가 null 인 POI(두루누비 코스 — 태안·당진·보령·서천은 서비스 4시 밖이라 코드가 없다)를
+    // 그대로 넣으면 PostgREST 가 `in.(33050,null)` 을 integer 로 파싱하지 못해 400 을 돌려준다.
+    // 그 오류가 조용히 삼켜져 한적도 맵이 비고, 후보 전원이 "표본 부족" 60점이 됐다.
+    // 반경 안에 그런 코스가 하나라도 들어오는 검색(아산·서산 출발 대부분)이 전부 그랬다.
+    const sigungus = [
+      ...new Set(slice.map((p) => p.sigungu_code).filter((s): s is number => s != null)),
+    ];
     const weekday = kstWeekday(startAt);
     const hourSlot = kstHour(startAt);
 
@@ -577,11 +583,13 @@ async function fetchQuietnessNow(
   // 시드는 3시간 간격(hour_slot 9·12·15·18·21)이라 정확한 시각이 없을 수 있다.
   // hour_slot 필터 없이 요일 전체를 받아, 시군구별로 요청 시각과 "가장 가까운" hour_slot 을
   // 매칭한다 → 어느 시각에 검색해도 표본이 잡혀 "표본 부족"이 뜨지 않는다.
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('quietness_scores')
     .select('sigungu_code, hour_slot, score, sample_size')
     .in('sigungu_code', sigungus)
     .eq('weekday', weekday);
+  // supabase-js 는 실패해도 throw 하지 않는다. 여기서 놓치면 결과가 "표본 부족" 으로 위장된다
+  if (error) console.error('[quietness_scores.select] 실패', error.message);
 
   const rowsBySigungu = new Map<number, QuietnessNowRow[]>();
   for (const r of (data ?? []) as QuietnessNowRow[]) {
@@ -623,12 +631,13 @@ async function fetchForecasts(
   const weekFromNow = new Date(startAt);
   weekFromNow.setDate(weekFromNow.getDate() + 7);
 
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('poi_forecasts')
     .select('poi_id, forecast_date, expected_score')
     .in('poi_id', poiIds)
     .gte('forecast_date', kstDateStr(startAt))
     .lte('forecast_date', kstDateStr(weekFromNow));
+  if (error) console.error('[poi_forecasts.select] 실패', error.message);
 
   for (const r of (data ?? []) as ForecastRow[]) {
     const list = map.get(r.poi_id) ?? [];
@@ -654,7 +663,9 @@ function computeQuietness(
 } {
   const tomorrowDate = kstDateStr(new Date(startAt.getTime() + 24 * 60 * 60 * 1000));
 
-  const { nowScore, sampleSufficient } = quietnessBySigungu.get(poi.sigungu_code) ?? {
+  const { nowScore, sampleSufficient } = (poi.sigungu_code != null
+    ? quietnessBySigungu.get(poi.sigungu_code)
+    : undefined) ?? {
     nowScore: 60,
     sampleSufficient: false,
   };
@@ -700,13 +711,14 @@ async function fetchVerifiedCounts(
 
   const sixMonthsAgo = new Date();
   sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('verifications')
     .select('poi_id')
     .in('poi_id', poiIds)
     .eq('is_valid', true)
     .not('photo_url', 'is', null)
     .gte('visited_at', sixMonthsAgo.toISOString());
+  if (error) console.error('[verifications.select] 실패', error.message);
 
   for (const r of (data ?? []) as { poi_id: string }[]) {
     map.set(r.poi_id, (map.get(r.poi_id) ?? 0) + 1);
@@ -722,7 +734,11 @@ async function fetchBadges(
 ): Promise<Map<string, string[]>> {
   const map = new Map<string, string[]>();
   if (poiIds.length === 0) return map;
-  const { data } = await supabase.from('badges').select('poi_id, badge_type').in('poi_id', poiIds);
+  const { data, error } = await supabase
+    .from('badges')
+    .select('poi_id, badge_type')
+    .in('poi_id', poiIds);
+  if (error) console.error('[badges.select] 실패', error.message);
   for (const r of data ?? []) {
     const list = map.get(r.poi_id) ?? [];
     list.push(r.badge_type);
