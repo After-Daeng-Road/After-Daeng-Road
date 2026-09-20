@@ -16,6 +16,7 @@
     "seed:pet-overlay": "tsx prisma/seed-pet-overlay.ts",
     "seed:durunubi": "tsx prisma/seed-durunubi.ts",
     "seed:datalab": "tsx prisma/seed-datalab.ts",
+    "seed:forecast": "tsx prisma/seed-forecast.ts",
     "verify:recommend": "tsx scripts/verify-recommend.ts",
     "supabase:serve": "supabase functions serve --no-verify-jwt --env-file .env",
     "supabase:deploy": "supabase functions deploy time-slider-recommender",
