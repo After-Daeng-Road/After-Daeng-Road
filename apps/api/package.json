@@ -19,7 +19,8 @@
     "verify:recommend": "tsx scripts/verify-recommend.ts",
     "supabase:serve": "supabase functions serve --no-verify-jwt --env-file .env",
     "supabase:deploy": "supabase functions deploy time-slider-recommender",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "tsx --test \"prisma/**/*.test.ts\""
   },
   "dependencies": {
     "@prisma/adapter-pg": "^5.22.0",
