@@ -13,7 +13,7 @@
 //
 // ═══ 매칭 ═══
 // 응답에 contentId 도 좌표도 없어 관광지명으로만 붙일 수 있다. 정규화한 이름이 같은 시군구
-// 안에서 정확히 하나일 때만 매칭한다(후보 다수면 확정하지 않음). 규칙과 근거는 forecast/transform.ts.
+// 안에서 정확히 하나일 때만 매칭한다(후보 다수면 확정하지 않음). 규칙과 근거는 supabase/functions/_shared/forecast-transform.ts.
 //
 // 실측(2026-09-20): 예측 관광지 191곳 중 172곳(90.1%) 매칭, 후보 다수 1건.
 // 매칭 안 된 POI(매장·펜션·카페 등 예측 대상이 아닌 곳)는 같은 날 시군구 평균으로 채우고
@@ -29,7 +29,7 @@ import {
   type ForecastItem,
   type ForecastRow,
   type PoiRef,
-} from './forecast/transform.ts';
+} from '../supabase/functions/_shared/forecast-transform.ts';
 
 const prisma = new PrismaClient();
 
@@ -226,8 +226,8 @@ async function main() {
   for (let i = 0; i < allRows.length; i += CHUNK) {
     const chunk = allRows.slice(i, i + CHUNK);
     written += await prisma.$executeRaw`
-      INSERT INTO poi_forecasts (id, poi_id, forecast_date, expected_score, confidence, computed_at)
-      SELECT gen_random_uuid(), t.poi_id, t.forecast_date, t.expected_score, t.confidence, ${now}
+      INSERT INTO poi_forecasts (poi_id, forecast_date, expected_score, confidence, computed_at)
+      SELECT t.poi_id, t.forecast_date, t.expected_score, t.confidence, ${now}
       FROM unnest(
         ${chunk.map((r) => r.poiId)}::uuid[],
         ${chunk.map((r) => r.forecastDate)}::date[],

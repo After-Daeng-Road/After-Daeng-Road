@@ -9,7 +9,7 @@ import {
   MATCHED_CONFIDENCE,
   FALLBACK_CONFIDENCE,
   toIsoForecastDate,
-} from './transform.ts';
+} from '../../supabase/functions/_shared/forecast-transform.ts';
 
 // ── 이름 정규화 ──
 // 관광공사가 이 API 의 관광지명을 국문 관광정보 제목과 같은 표기로 내보내지만
